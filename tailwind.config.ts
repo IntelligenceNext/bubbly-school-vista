@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+                // Bubble theme custom colors
+                bubble: {
+                    primary: '#9b87f5',
+                    secondary: '#7E69AB',
+                    tertiary: '#6E59A5',
+                    dark: '#1A1F2C',
+                    light: '#D6BCFA',
+                    soft: '#E5DEFF',
+                    blue: '#33C3F0',
+                    ocean: '#0EA5E9'
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -69,27 +81,60 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
-				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+				"accordion-down": {
+					from: { height: "0" },
+					to: { height: "var(--radix-accordion-content-height)" },
 				},
-				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
-				}
+				"accordion-up": {
+					from: { height: "var(--radix-accordion-content-height)" },
+					to: { height: "0" },
+				},
+                "fade-in": {
+                    "0%": {
+                        opacity: "0",
+                        transform: "translateY(10px)"
+                    },
+                    "100%": {
+                        opacity: "1",
+                        transform: "translateY(0)"
+                    }
+                },
+                "scale-in": {
+                    "0%": {
+                        transform: "scale(0.95)",
+                        opacity: "0"
+                    },
+                    "100%": {
+                        transform: "scale(1)",
+                        opacity: "1"
+                    }
+                },
+                "slide-in": {
+                    "0%": { transform: "translateX(-100%)" },
+                    "100%": { transform: "translateX(0)" }
+                },
+                "pulse-light": {
+                    "0%, 100%": { opacity: "1" },
+                    "50%": { opacity: "0.7" }
+                },
 			},
 			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				"accordion-down": "accordion-down 0.2s ease-out",
+				"accordion-up": "accordion-up 0.2s ease-out",
+                "fade-in": "fade-in 0.3s ease-out",
+                "scale-in": "scale-in 0.2s ease-out",
+                "slide-in": "slide-in 0.3s ease-out",
+                "pulse-light": "pulse-light 2s ease-in-out infinite",
+			},
+            boxShadow: {
+                'bubble': '0 10px 25px -5px rgba(155, 135, 245, 0.1), 0 8px 10px -6px rgba(155, 135, 245, 0.1)',
+                'bubble-lg': '0 20px 35px -10px rgba(155, 135, 245, 0.15), 0 10px 15px -5px rgba(155, 135, 245, 0.1)',
+                'bubble-xl': '0 25px 50px -12px rgba(155, 135, 245, 0.25)'
+            },
+            backgroundImage: {
+                'gradient-bubble': 'linear-gradient(to right, #9b87f5, #7E69AB)',
+                'gradient-soft': 'linear-gradient(to right, #E5DEFF, #D6BCFA)',
+            }
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
