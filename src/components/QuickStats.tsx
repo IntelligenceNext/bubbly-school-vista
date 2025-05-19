@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, LineChart } from '@/components/ui/chart';
+import { BarChart } from '@/components/ui/BarChart';
+import { LineChart } from '@/components/ui/LineChart';
 
 const QuickStats: React.FC = () => {
   const attendanceData = {
