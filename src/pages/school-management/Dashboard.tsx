@@ -2,7 +2,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
-import DashboardSumm ary from '@/components/DashboardSummary';
+import DashboardSummary from '@/components/DashboardSummary';
 import QuickStats from '@/components/QuickStats';
 import RecentActivity from '@/components/RecentActivity';
 import UpcomingEvents from '@/components/UpcomingEvents';
