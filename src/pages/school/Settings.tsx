@@ -74,9 +74,9 @@ const SchoolSettings = () => {
               <div>
                 <h3 className="font-medium mb-4">Uploaded Logos</h3>
                 <FileGallery 
-                  bucket="school_logos"
+                  bucketName="school_logos"
                   refreshKey={refreshGallery}
-                  onFileDeleted={() => setRefreshGallery(prev => prev + 1)}
+                  onFileDelete={() => setRefreshGallery(prev => prev + 1)}
                 />
               </div>
             </CardContent>

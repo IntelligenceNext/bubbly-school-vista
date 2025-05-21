@@ -339,7 +339,7 @@ const SettingsPage = () => {
 
   // Dynamic form rendering based on setting type
   const renderDynamicForm = () => {
-    if (!settingType || !dynamicForm) return null;
+    if (!settingType || settingType === "") return null;
     
     const config = settingConfigs[settingType as keyof typeof settingConfigs];
     
@@ -834,7 +834,7 @@ const SettingsPage = () => {
             </DialogTitle>
           </DialogHeader>
           
-          {!settingType || settingType === "" ? (
+          {settingType === "" ? (
             <Form {...settingTypeForm}>
               <form onSubmit={settingTypeForm.handleSubmit(onSelectSettingType)} className="space-y-4">
                 <FormField

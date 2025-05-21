@@ -71,9 +71,9 @@ const Students = () => {
               <div>
                 <h3 className="font-medium mb-4">Photo Gallery</h3>
                 <FileGallery 
-                  bucket="student_photos" 
+                  bucketName="student_photos" 
                   refreshKey={refreshGallery}
-                  onFileDeleted={() => setRefreshGallery(prev => prev + 1)}
+                  onFileDelete={() => setRefreshGallery(prev => prev + 1)}
                 />
               </div>
             </CardContent>
@@ -103,10 +103,10 @@ const Students = () => {
               <div>
                 <h3 className="font-medium mb-4">Document Library</h3>
                 <FileGallery 
-                  bucket="attachments"
-                  folder="students"
+                  bucketName="attachments"
+                  filePath="students"
                   refreshKey={refreshGallery}
-                  onFileDeleted={() => setRefreshGallery(prev => prev + 1)}
+                  onFileDelete={() => setRefreshGallery(prev => prev + 1)}
                 />
               </div>
             </CardContent>

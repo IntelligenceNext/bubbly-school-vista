@@ -1,32 +1,32 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 export interface School {
   id: string;
   name: string;
   code: string;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  status: 'active' | 'inactive';
-  logo_url: string | null;
+  email?: string;
+  phone?: string;
+  address?: string;
+  logo_url?: string;
+  status: string;
   created_at: string;
   updated_at: string | null;
 }
 
-export interface Class {
+interface Class {
   id: string;
   name: string;
   code: string;
-  school_id: string;
+  description?: string;
   is_active: boolean;
+  school_id: string;
   created_at: string;
   updated_at: string | null;
-  description: string | null;
   schools?: School;
 }
 
-export interface Session {
+interface Session {
   id: string;
   name: string;
   school_id: string;
@@ -41,14 +41,14 @@ export interface Session {
 
 export interface Setting {
   id: string;
+  school_id: string;
   key: string;
   value: any;
-  school_id: string;
   created_at: string;
   updated_at: string | null;
 }
 
-interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> {
   data: T[];
   count: number;
 }
@@ -57,9 +57,8 @@ interface GetSchoolsParams {
   page?: number;
   pageSize?: number;
   name?: string;
-  status?: 'active' | 'inactive';
-  created_at_start?: string;
-  created_at_end?: string;
+  code?: string;
+  status?: string;
 }
 
 interface GetClassesParams {
@@ -80,22 +79,19 @@ interface GetSessionsParams {
 }
 
 interface GetSettingsParams {
-  page?: number;
-  pageSize?: number;
-  key?: string;
-  school_id?: string;
+  school_id: string;
 }
 
-export const getSchools = async (params: GetSchoolsParams = {}): Promise<PaginatedResponse<School>> => {
+// SCHOOLS
+
+export const getSchools = async (params: GetSchoolsParams = {}) => {
   try {
-    const { supabase } = await import('@/integrations/supabase/client');
     const {
       page = 1,
       pageSize = 10,
       name,
+      code,
       status,
-      created_at_start,
-      created_at_end,
     } = params;
 
     let query = supabase
@@ -106,40 +102,118 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
       query = query.ilike('name', `%${name}%`);
     }
 
+    if (code) {
+      query = query.ilike('code', `%${code}%`);
+    }
+
     if (status) {
       query = query.eq('status', status);
-    }
-
-    if (created_at_start) {
-      query = query.gte('created_at', created_at_start);
-    }
-
-    if (created_at_end) {
-      query = query.lte('created_at', created_at_end);
     }
 
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
+    const { data, count, error } = await query.range(from, to);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching schools:', error);
+      throw new Error(error.message);
+    }
 
     return {
-      data: data as School[],
+      data: data || [],
       count: count || 0,
     };
-  } catch (error) {
-    console.error('Error fetching schools:', error);
-    return { data: [], count: 0 };
+  } catch (error: any) {
+    console.error('Error in getSchools:', error);
+    throw new Error(error.message);
   }
 };
 
-export const getClasses = async (params: GetClassesParams = {}): Promise<PaginatedResponse<Class>> => {
+export const getSchoolById = async (id: string) => {
   try {
-    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase
+      .from('schools')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching school:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in getSchoolById:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const createSchool = async (school: Partial<School>) => {
+  try {
+    const { data, error } = await supabase
+      .from('schools')
+      .insert([school])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating school:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in createSchool:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const updateSchool = async (id: string, school: Partial<School>) => {
+  try {
+    const { data, error } = await supabase
+      .from('schools')
+      .update(school)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating school:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in updateSchool:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const deleteSchool = async (id: string) => {
+  try {
+    const { error } = await supabase
+      .from('schools')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting school:', error);
+      throw new Error(error.message);
+    }
+
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteSchool:', error);
+    throw new Error(error.message);
+  }
+};
+
+// CLASSES
+
+export const getClasses = async (params: GetClassesParams = {}) => {
+  try {
     const {
       page = 1,
       pageSize = 10,
@@ -167,25 +241,107 @@ export const getClasses = async (params: GetClassesParams = {}): Promise<Paginat
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
+    const { data, count, error } = await query.range(from, to);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching classes:', error);
+      throw new Error(error.message);
+    }
 
     return {
-      data: data as Class[],
+      data: data || [],
       count: count || 0,
     };
-  } catch (error) {
-    console.error('Error fetching classes:', error);
-    return { data: [], count: 0 };
+  } catch (error: any) {
+    console.error('Error in getClasses:', error);
+    throw new Error(error.message);
   }
 };
 
-export const getSessions = async (params: GetSessionsParams = {}): Promise<PaginatedResponse<Session>> => {
+export const getClassById = async (id: string) => {
   try {
-    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase
+      .from('classes')
+      .select('*, schools(*)')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching class:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in getClassById:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const createClass = async (classData: Partial<Class>) => {
+  try {
+    const { data, error } = await supabase
+      .from('classes')
+      .insert([classData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating class:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in createClass:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const updateClass = async (id: string, classData: Partial<Class>) => {
+  try {
+    const { data, error } = await supabase
+      .from('classes')
+      .update(classData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating class:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in updateClass:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const deleteClass = async (id: string) => {
+  try {
+    const { error } = await supabase
+      .from('classes')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting class:', error);
+      throw new Error(error.message);
+    }
+
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteClass:', error);
+    throw new Error(error.message);
+  }
+};
+
+// SESSIONS
+
+export const getSessions = async (params: GetSessionsParams = {}) => {
+  try {
     const {
       page = 1,
       pageSize = 10,
@@ -218,180 +374,153 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
+    const { data, count, error } = await query.range(from, to);
 
-    if (error) throw error;
-
-    return {
-      data: data as Session[],
-      count: count || 0,
-    };
-  } catch (error) {
-    console.error('Error fetching sessions:', error);
-    return { data: [], count: 0 };
-  }
-};
-
-export const getSettings = async (params: GetSettingsParams = {}): Promise<PaginatedResponse<Setting>> => {
-  try {
-    const { supabase } = await import('@/integrations/supabase/client');
-    const {
-      page = 1,
-      pageSize = 10,
-      key,
-      school_id,
-    } = params;
-
-    let query = supabase
-      .from('settings')
-      .select('*', { count: 'exact' });
-
-    if (key) {
-      query = query.eq('key', key);
+    if (error) {
+      console.error('Error fetching sessions:', error);
+      throw new Error(error.message);
     }
 
-    if (school_id) {
-      query = query.eq('school_id', school_id);
-    }
-
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) throw error;
-
     return {
-      data: data as Setting[],
+      data: data || [],
       count: count || 0,
     };
-  } catch (error) {
-    console.error('Error fetching settings:', error);
-    return { data: [], count: 0 };
+  } catch (error: any) {
+    console.error('Error in getSessions:', error);
+    throw new Error(error.message);
   }
 };
 
-export const deleteSchool = async (schoolId: string): Promise<boolean> => {
-  try {
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { error } = await supabase
-      .from('schools')
-      .delete()
-      .eq('id', schoolId);
-    
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Error deleting school:', error);
-    return false;
-  }
-};
+// SETTINGS
 
-export const deleteClass = async (classId: string): Promise<boolean> => {
+export const getSettings = async (schoolId: string): Promise<Setting[]> => {
   try {
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { error } = await supabase
-      .from('classes')
-      .delete()
-      .eq('id', classId);
-    
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Error deleting class:', error);
-    return false;
-  }
-};
-
-export const deleteSession = async (sessionId: string): Promise<boolean> => {
-  try {
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { error } = await supabase
-      .from('sessions')
-      .delete()
-      .eq('id', sessionId);
-    
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Error deleting session:', error);
-    return false;
-  }
-};
-
-export const deleteSetting = async (settingId: string): Promise<boolean> => {
-  try {
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('settings')
-      .delete()
-      .eq('id', settingId);
-    
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Error deleting setting:', error);
-    return false;
+      .select('*')
+      .eq('school_id', schoolId);
+
+    if (error) {
+      console.error('Error fetching settings:', error);
+      throw new Error(error.message);
+    }
+
+    return data || [];
+  } catch (error: any) {
+    console.error('Error in getSettings:', error);
+    throw new Error(error.message);
   }
 };
 
-export const bulkUpdateSchoolStatus = async (schoolIds: string[], status: 'active' | 'inactive'): Promise<boolean> => {
+export const getSettingById = async (id: string) => {
   try {
-    const { supabase } = await import('@/integrations/supabase/client');
-    
-    const { error } = await supabase
-      .from('schools')
-      .update({ status, updated_at: new Date().toISOString() })
-      .in('id', schoolIds);
-    
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Error updating school status:', error);
-    return false;
+    const { data, error } = await supabase
+      .from('settings')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching setting:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in getSettingById:', error);
+    throw new Error(error.message);
   }
 };
 
-export const createOrUpdateSetting = async (settingData: Partial<Setting>): Promise<Setting | null> => {
+export const getSettingByKey = async (schoolId: string, key: string) => {
   try {
-    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase
+      .from('settings')
+      .select('*')
+      .eq('school_id', schoolId)
+      .eq('key', key)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null;
+      }
+      console.error('Error fetching setting by key:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in getSettingByKey:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const createOrUpdateSetting = async (
+  schoolId: string,
+  key: string,
+  value: any
+) => {
+  try {
+    // Check if setting exists
+    const existingSetting = await getSettingByKey(schoolId, key);
     
-    if (settingData.id) {
+    if (existingSetting) {
       // Update existing setting
       const { data, error } = await supabase
         .from('settings')
-        .update({
-          key: settingData.key,
-          value: settingData.value,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', settingData.id)
+        .update({ value })
+        .eq('id', existingSetting.id)
         .select()
         .single();
-      
-      if (error) throw error;
-      return data as Setting;
+
+      if (error) {
+        console.error('Error updating setting:', error);
+        throw new Error(error.message);
+      }
+
+      return data;
     } else {
       // Create new setting
       const { data, error } = await supabase
         .from('settings')
-        .insert({
-          key: settingData.key,
-          value: settingData.value,
-          school_id: settingData.school_id,
-        })
+        .insert([{ 
+          school_id: schoolId, 
+          key, 
+          value 
+        }])
         .select()
         .single();
-      
-      if (error) throw error;
-      return data as Setting;
+
+      if (error) {
+        console.error('Error creating setting:', error);
+        throw new Error(error.message);
+      }
+
+      return data;
     }
-  } catch (error) {
-    console.error('Error creating/updating setting:', error);
-    return null;
+  } catch (error: any) {
+    console.error('Error in createOrUpdateSetting:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const deleteSetting = async (id: string) => {
+  try {
+    const { error } = await supabase
+      .from('settings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting setting:', error);
+      throw new Error(error.message);
+    }
+
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteSetting:', error);
+    throw new Error(error.message);
   }
 };
