@@ -214,11 +214,11 @@ const Certificates = () => {
                   <Label htmlFor="content">Certificate Content</Label>
                   <div className="border rounded-md p-4">
                     <div className="text-sm text-muted-foreground mb-3">
-                      Use variables like {{student_name}}, {{class}}, {{admission_number}} in your template
+                      Use variables like {'{student_name}'}, {'{class}'}, {'{admission_number}'} in your template
                     </div>
                     <textarea 
                       className="min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      defaultValue="This is to certify that {{student_name}}, admission number {{admission_number}}, is a bonafide student of {{class}} in our school during the academic year 2022-2023."
+                      defaultValue="This is to certify that {student_name}, admission number {admission_number}, is a bonafide student of {class} in our school during the academic year 2022-2023."
                     ></textarea>
                   </div>
                 </div>
@@ -260,9 +260,9 @@ const Certificates = () => {
                       <TableCell>{template.description}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          <Badge variant="outline" className="text-xs">{{student_name}}</Badge>
-                          <Badge variant="outline" className="text-xs">{{class}}</Badge>
-                          <Badge variant="outline" className="text-xs">{{admission_number}}</Badge>
+                          <Badge variant="outline" className="text-xs">{'{student_name}'}</Badge>
+                          <Badge variant="outline" className="text-xs">{'{class}'}</Badge>
+                          <Badge variant="outline" className="text-xs">{'{admission_number}'}</Badge>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
