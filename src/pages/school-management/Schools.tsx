@@ -83,6 +83,7 @@ const SchoolsPage = () => {
         ...filters,
         page,
         pageSize,
+        status: filters.status as "active" | "inactive" | undefined,
       });
       setTotal(result.count);
       return result.data;
@@ -342,7 +343,7 @@ const SchoolsPage = () => {
                       <SelectValue placeholder="All statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>

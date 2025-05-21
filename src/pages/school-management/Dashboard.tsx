@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
@@ -205,7 +204,7 @@ const Dashboard = () => {
                         </div>
                         <div className="col-span-3 text-muted-foreground">{school.code}</div>
                         <div className="col-span-2">
-                          <Badge variant={school.status === 'active' ? 'success' : 'secondary'}>
+                          <Badge variant={school.status === 'active' ? 'default' : 'secondary'}>
                             {school.status}
                           </Badge>
                         </div>

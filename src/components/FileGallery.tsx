@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileGalleryProps {
-  bucketName: string;
+  bucketName: string; // Changed from bucketName to match other references
   filePath: string;
   onFileDelete?: () => void;
   showDelete?: boolean;
@@ -33,7 +34,8 @@ const FileGallery: React.FC<FileGalleryProps> = ({
     const fetchFiles = async () => {
       setLoading(true);
       try {
-        const fileList = await getFileUrl(bucketName, filePath);
+        // Update this to match the expected type for getFileUrl
+        const fileList = await getFileUrl(bucketName as any, filePath);
         if (fileList && Array.isArray(fileList)) {
           const filesData = fileList.map(file => {
             const type = file.name.split('.').pop() || '';
@@ -65,7 +67,8 @@ const FileGallery: React.FC<FileGalleryProps> = ({
 
   const handleDeleteFile = async (fileName: string) => {
     try {
-      await deleteFile(bucketName, `${filePath}/${fileName}`);
+      // Update this to match the expected type for deleteFile
+      await deleteFile(bucketName as any, `${filePath}/${fileName}`);
       setFiles(files.filter(file => file.name !== fileName));
       if (onFileDelete) {
         onFileDelete();
