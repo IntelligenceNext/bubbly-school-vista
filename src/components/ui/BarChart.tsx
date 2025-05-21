@@ -11,7 +11,7 @@ import {
   Legend,
 } from 'recharts';
 
-interface BarChartProps {
+export interface BarChartProps {
   data: any;
   index: string;
   categories: string[];

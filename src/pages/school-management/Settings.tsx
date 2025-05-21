@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -147,6 +147,8 @@ const SettingsPage = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("general");
   const [currentEditSetting, setCurrentEditSetting] = useState<Setting | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const settingTypeForm = useForm<SettingTypeFormValues>({
     resolver: zodResolver(settingTypeSchema),
@@ -174,41 +176,38 @@ const SettingsPage = () => {
     }
   }, [settingType, currentEditSetting]);
 
-  const { data: schools } = useQuery({
+  const { data: schools = [] } = useQuery({
     queryKey: ['schools-settings'],
     queryFn: async () => {
       const result = await getSchools();
       
-      if (result.data.length > 0 && !selectedSchool) {
-        setSelectedSchool(result.data[0].id);
+      if (result && result.length > 0 && !selectedSchool) {
+        setSelectedSchool(result[0].id);
       }
       
-      return result.data;
+      return result || [];
     },
   });
 
-  const fetchSettings = async () => {
-    setLoading(true);
-    try {
-      // Change from string parameter to object parameter
-      const data = await getSettings({ schoolId: selectedSchool });
-      if (data) {
-        setSettings(data);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "An error occurred while fetching settings",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const { data: settings, refetch: refetchSettings } = useQuery({
+  const { data: settings = [], refetch: refetchSettings } = useQuery({
     queryKey: ['settings', selectedSchool],
-    queryFn: fetchSettings,
+    queryFn: async () => {
+      if (!selectedSchool) return [];
+      setIsLoading(true);
+      try {
+        const data = await getSettings({ schoolId: selectedSchool });
+        return data || [];
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "An error occurred while fetching settings",
+          variant: "destructive"
+        });
+        return [];
+      } finally {
+        setIsLoading(false);
+      }
+    },
     enabled: !!selectedSchool,
   });
 
@@ -242,16 +241,27 @@ const SettingsPage = () => {
   const confirmDeleteSetting = async () => {
     if (!settingToDelete) return;
     
-    const success = await deleteSetting(settingToDelete.id);
-    if (success) {
+    try {
+      await deleteSetting(settingToDelete.id!);
       refetchSettings();
       setIsDeleteModalOpen(false);
       setSettingToDelete(null);
+      
+      toast({
+        title: "Setting deleted",
+        description: "The setting has been deleted successfully."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete setting",
+        variant: "destructive"
+      });
     }
   };
 
   const onSelectSettingType = (data: SettingTypeFormValues) => {
-    const settingExists = settings?.find(s => s.key === data.key);
+    const settingExists = settings.find(s => s.key === data.key);
     if (settingExists && !isEditMode) {
       toast({
         title: "Setting already exists",
@@ -704,8 +714,8 @@ const SettingsPage = () => {
                   <SelectValue placeholder="Select a school" />
                 </SelectTrigger>
                 <SelectContent>
-                  {schools?.map((school) => (
-                    <SelectItem key={school.id} value={school.id}>
+                  {schools.map((school) => (
+                    <SelectItem key={school.id} value={school.id!}>
                       {school.name}
                     </SelectItem>
                   ))}
@@ -869,8 +879,8 @@ const SettingsPage = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {schools?.map((school) => (
-                            <SelectItem key={school.id} value={school.id}>
+                          {schools.map((school) => (
+                            <SelectItem key={school.id} value={school.id!}>
                               {school.name}
                             </SelectItem>
                           ))}
@@ -929,7 +939,7 @@ const SettingsPage = () => {
             <p>
               Are you sure you want to delete the{" "}
               <span className="font-semibold">
-                {settingConfigs[settingToDelete?.key as keyof typeof settingConfigs]?.title || settingToDelete?.key}
+                {settingToDelete?.key && settingConfigs[settingToDelete.key as keyof typeof settingConfigs]?.title || settingToDelete?.key}
               </span>{" "}
               setting?
             </p>

@@ -6,6 +6,7 @@ import FileUpload from '@/components/FileUpload';
 import FileGallery from '@/components/FileGallery';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
+import { getSchoolSettings, updateSchoolSetting } from '@/services/schoolSettingsService';
 
 const Settings = () => {
   const [refreshGallery, setRefreshGallery] = useState(0);
@@ -17,13 +18,10 @@ const Settings = () => {
     setRefreshGallery(prev => prev + 1);
   };
 
-  // Fix the type error by checking for an empty string with !selectedSetting instead of comparing to ""
+  // Fixed implementation avoiding direct comparison to empty string
   const handleTabChange = (value: string) => {
-    // Instead of:
-    // if (selectedSetting === "") {
-    // Use:
     if (!selectedSetting) {
-      setValue("key", value);
+      setValue(value);
       setSelectedSetting(value);
     } else {
       // ... keep existing code

@@ -1,6 +1,4 @@
 
-// We need to update this file to fix various TypeScript errors
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Export the interfaces that were causing "locally declared but not exported" errors
@@ -119,20 +117,26 @@ export const deleteSchool = async (id: string) => {
 
 // Bulk update school status
 export const bulkUpdateSchoolStatus = async (schoolIds: string[], status: 'active' | 'inactive') => {
-  // Fix the bulk update to use an array of objects, each with the required fields
-  const updates = schoolIds.map(id => ({
-    id,
-    status,
-    updated_at: new Date().toISOString()
-  }));
-
-  const { data, error } = await supabase
-    .from('schools')
-    .upsert(updates)
-    .select();
-
-  if (error) throw error;
-  return data;
+  // Fix the bulk update - process items one by one to avoid array issue
+  const results = [];
+  
+  for (const id of schoolIds) {
+    const { data, error } = await supabase
+      .from('schools')
+      .update({ 
+        status, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id)
+      .select();
+      
+    if (error) throw error;
+    if (data && data.length > 0) {
+      results.push(data[0]);
+    }
+  }
+  
+  return results;
 };
 
 // Get all classes for a school
@@ -197,20 +201,26 @@ export const deleteClass = async (id: string) => {
 
 // Bulk update class status
 export const bulkUpdateClassStatus = async (classIds: string[], isActive: boolean) => {
-  // Fix the bulk update to use an array of objects, each with the required fields
-  const updates = classIds.map(id => ({
-    id,
-    is_active: isActive,
-    updated_at: new Date().toISOString()
-  }));
-
-  const { data, error } = await supabase
-    .from('classes')
-    .upsert(updates)
-    .select();
-
-  if (error) throw error;
-  return data;
+  // Fix the bulk update - process items one by one to avoid array issue
+  const results = [];
+  
+  for (const id of classIds) {
+    const { data, error } = await supabase
+      .from('classes')
+      .update({ 
+        is_active: isActive, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id)
+      .select();
+      
+    if (error) throw error;
+    if (data && data.length > 0) {
+      results.push(data[0]);
+    }
+  }
+  
+  return results;
 };
 
 // Get all sessions for a school
@@ -366,4 +376,51 @@ export const deleteSetting = async (id: string) => {
 
   if (error) throw error;
   return true;
+};
+
+// Add the missing createOrUpdateSetting function
+export const createOrUpdateSetting = async (
+  schoolId: string,
+  key: string,
+  value: any
+) => {
+  // Try to find existing setting
+  const { data: existingSettings, error: findError } = await supabase
+    .from('settings')
+    .select('*')
+    .eq('school_id', schoolId)
+    .eq('key', key);
+
+  if (findError) throw findError;
+
+  if (existingSettings && existingSettings.length > 0) {
+    // Update existing setting
+    const { data, error } = await supabase
+      .from('settings')
+      .update({ 
+        value, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', existingSettings[0].id)
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  } else {
+    // Create new setting
+    const setting: Setting = {
+      school_id: schoolId,
+      key,
+      value,
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('settings')
+      .insert([setting])
+      .select();
+
+    if (error) throw error;
+    return data[0];
+  }
 };
