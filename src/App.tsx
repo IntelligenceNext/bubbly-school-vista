@@ -78,7 +78,7 @@ import AcademicReport from "./pages/examination/AcademicReport";
 // Transportation Routes
 import TransportationDashboard from "./pages/transportation/Dashboard";
 import Vehicles from "./pages/transportation/Vehicles";
-import Routes from "./pages/transportation/Routes";
+import TransportRoutes from "./pages/transportation/Routes"; // Renamed to TransportRoutes
 import Report from "./pages/transportation/Report";
 
 // Activities Route
@@ -185,7 +185,7 @@ const App = () => (
           {/* Transportation Routes */}
           <Route path="/transportation/dashboard" element={<TransportationDashboard />} />
           <Route path="/transportation/vehicles" element={<Vehicles />} />
-          <Route path="/transportation/routes" element={<Routes />} />
+          <Route path="/transportation/routes" element={<TransportRoutes />} /> {/* Updated to TransportRoutes */}
           <Route path="/transportation/report" element={<Report />} />
           
           {/* Activities Route */}
