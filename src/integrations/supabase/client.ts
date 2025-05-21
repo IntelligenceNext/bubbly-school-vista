@@ -16,6 +16,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   global: {
     // Add retries to handle temporary service issues
-    fetch: (url, options) => fetch(url, options)
+    fetch: (...args) => fetch(...args)
   }
 });

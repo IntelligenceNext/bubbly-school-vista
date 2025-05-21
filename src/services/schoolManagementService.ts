@@ -9,12 +9,12 @@ export interface School {
   phone?: string;
   address?: string;
   logo_url?: string;
-  status: string;
+  status: "active" | "inactive";
   created_at: string;
   updated_at: string | null;
 }
 
-interface Class {
+export interface Class {
   id: string;
   name: string;
   code: string;
@@ -26,7 +26,7 @@ interface Class {
   schools?: School;
 }
 
-interface Session {
+export interface Session {
   id: string;
   name: string;
   school_id: string;
@@ -58,7 +58,7 @@ interface GetSchoolsParams {
   pageSize?: number;
   name?: string;
   code?: string;
-  status?: string;
+  status?: "active" | "inactive";
 }
 
 interface GetClassesParams {
@@ -78,13 +78,13 @@ interface GetSessionsParams {
   is_active?: boolean;
 }
 
-interface GetSettingsParams {
+export interface GetSettingsParams {
   school_id: string;
 }
 
 // SCHOOLS
 
-export const getSchools = async (params: GetSchoolsParams = {}) => {
+export const getSchools = async (params: GetSchoolsParams = {}): Promise<PaginatedResponse<School>> => {
   try {
     const {
       page = 1,
@@ -130,7 +130,7 @@ export const getSchools = async (params: GetSchoolsParams = {}) => {
   }
 };
 
-export const getSchoolById = async (id: string) => {
+export const getSchoolById = async (id: string): Promise<School> => {
   try {
     const { data, error } = await supabase
       .from('schools')
@@ -150,8 +150,13 @@ export const getSchoolById = async (id: string) => {
   }
 };
 
-export const createSchool = async (school: Partial<School>) => {
+export const createSchool = async (school: Partial<School>): Promise<School> => {
   try {
+    // Make sure required fields are provided
+    if (!school.name || !school.code) {
+      throw new Error('School name and code are required');
+    }
+    
     const { data, error } = await supabase
       .from('schools')
       .insert([school])
@@ -170,7 +175,7 @@ export const createSchool = async (school: Partial<School>) => {
   }
 };
 
-export const updateSchool = async (id: string, school: Partial<School>) => {
+export const updateSchool = async (id: string, school: Partial<School>): Promise<School> => {
   try {
     const { data, error } = await supabase
       .from('schools')
@@ -191,7 +196,7 @@ export const updateSchool = async (id: string, school: Partial<School>) => {
   }
 };
 
-export const deleteSchool = async (id: string) => {
+export const deleteSchool = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('schools')
@@ -210,9 +215,31 @@ export const deleteSchool = async (id: string) => {
   }
 };
 
+// Add bulk update status function
+export const bulkUpdateSchoolStatus = async (schoolIds: string[], status: "active" | "inactive"): Promise<boolean> => {
+  try {
+    for (const id of schoolIds) {
+      const { error } = await supabase
+        .from('schools')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) {
+        console.error(`Error updating school ${id} status:`, error);
+        throw new Error(error.message);
+      }
+    }
+    
+    return true;
+  } catch (error: any) {
+    console.error('Error in bulkUpdateSchoolStatus:', error);
+    throw new Error(error.message);
+  }
+};
+
 // CLASSES
 
-export const getClasses = async (params: GetClassesParams = {}) => {
+export const getClasses = async (params: GetClassesParams = {}): Promise<PaginatedResponse<Class>> => {
   try {
     const {
       page = 1,
@@ -258,7 +285,7 @@ export const getClasses = async (params: GetClassesParams = {}) => {
   }
 };
 
-export const getClassById = async (id: string) => {
+export const getClassById = async (id: string): Promise<Class> => {
   try {
     const { data, error } = await supabase
       .from('classes')
@@ -278,8 +305,13 @@ export const getClassById = async (id: string) => {
   }
 };
 
-export const createClass = async (classData: Partial<Class>) => {
+export const createClass = async (classData: Partial<Class>): Promise<Class> => {
   try {
+    // Make sure required fields are provided
+    if (!classData.name || !classData.code || !classData.school_id) {
+      throw new Error('Class name, code, and school_id are required');
+    }
+    
     const { data, error } = await supabase
       .from('classes')
       .insert([classData])
@@ -298,7 +330,7 @@ export const createClass = async (classData: Partial<Class>) => {
   }
 };
 
-export const updateClass = async (id: string, classData: Partial<Class>) => {
+export const updateClass = async (id: string, classData: Partial<Class>): Promise<Class> => {
   try {
     const { data, error } = await supabase
       .from('classes')
@@ -319,7 +351,7 @@ export const updateClass = async (id: string, classData: Partial<Class>) => {
   }
 };
 
-export const deleteClass = async (id: string) => {
+export const deleteClass = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('classes')
@@ -340,7 +372,7 @@ export const deleteClass = async (id: string) => {
 
 // SESSIONS
 
-export const getSessions = async (params: GetSessionsParams = {}) => {
+export const getSessions = async (params: GetSessionsParams = {}): Promise<PaginatedResponse<Session>> => {
   try {
     const {
       page = 1,
@@ -391,14 +423,102 @@ export const getSessions = async (params: GetSessionsParams = {}) => {
   }
 };
 
+// Adding missing session functions
+export const getSessionById = async (id: string): Promise<Session> => {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*, schools(*)')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching session:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in getSessionById:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const createSession = async (session: Partial<Session>): Promise<Session> => {
+  try {
+    // Make sure required fields are provided
+    if (!session.name || !session.school_id || !session.start_date || !session.end_date) {
+      throw new Error('Session name, school_id, start_date, and end_date are required');
+    }
+    
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert([session])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating session:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in createSession:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const updateSession = async (id: string, session: Partial<Session>): Promise<Session> => {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .update(session)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating session:', error);
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error in updateSession:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const deleteSession = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting session:', error);
+      throw new Error(error.message);
+    }
+
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteSession:', error);
+    throw new Error(error.message);
+  }
+};
+
 // SETTINGS
 
-export const getSettings = async (schoolId: string): Promise<Setting[]> => {
+export const getSettings = async (params: GetSettingsParams): Promise<Setting[]> => {
   try {
+    const { school_id } = params;
+    
     const { data, error } = await supabase
       .from('settings')
       .select('*')
-      .eq('school_id', schoolId);
+      .eq('school_id', school_id);
 
     if (error) {
       console.error('Error fetching settings:', error);
@@ -412,7 +532,7 @@ export const getSettings = async (schoolId: string): Promise<Setting[]> => {
   }
 };
 
-export const getSettingById = async (id: string) => {
+export const getSettingById = async (id: string): Promise<Setting> => {
   try {
     const { data, error } = await supabase
       .from('settings')
@@ -432,7 +552,7 @@ export const getSettingById = async (id: string) => {
   }
 };
 
-export const getSettingByKey = async (schoolId: string, key: string) => {
+export const getSettingByKey = async (schoolId: string, key: string): Promise<Setting | null> => {
   try {
     const { data, error } = await supabase
       .from('settings')
@@ -461,7 +581,7 @@ export const createOrUpdateSetting = async (
   schoolId: string,
   key: string,
   value: any
-) => {
+): Promise<Setting> => {
   try {
     // Check if setting exists
     const existingSetting = await getSettingByKey(schoolId, key);
@@ -506,7 +626,7 @@ export const createOrUpdateSetting = async (
   }
 };
 
-export const deleteSetting = async (id: string) => {
+export const deleteSetting = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('settings')

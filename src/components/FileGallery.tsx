@@ -24,7 +24,7 @@ export interface FileGalleryProps {
 
 const FileGallery: React.FC<FileGalleryProps> = ({
   bucketName,
-  filePath,
+  filePath = '', // Set default value for filePath
   bucket, // Alias support
   folder, // Alias support
   onFileDelete,

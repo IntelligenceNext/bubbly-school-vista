@@ -71,7 +71,8 @@ const Students = () => {
               <div>
                 <h3 className="font-medium mb-4">Photo Gallery</h3>
                 <FileGallery 
-                  bucketName="student_photos" 
+                  bucketName="student_photos"
+                  filePath=""
                   refreshKey={refreshGallery}
                   onFileDelete={() => setRefreshGallery(prev => prev + 1)}
                 />

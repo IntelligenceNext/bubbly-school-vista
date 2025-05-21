@@ -75,6 +75,7 @@ const SchoolSettings = () => {
                 <h3 className="font-medium mb-4">Uploaded Logos</h3>
                 <FileGallery 
                   bucketName="school_logos"
+                  filePath=""
                   refreshKey={refreshGallery}
                   onFileDelete={() => setRefreshGallery(prev => prev + 1)}
                 />
