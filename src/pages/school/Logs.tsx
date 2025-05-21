@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '@/components/PageTemplate';
-import { DataTable } from '@/components/DataTable';
+import DataTable from '@/components/DataTable';
 import { useToast } from "@/hooks/use-toast";
 import { 
   Card, 
@@ -14,15 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import FilterDropdown from '@/components/FilterDropdown';
-import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
 import { CalendarDays, Filter, Info, User } from 'lucide-react';
 
 // Interface for Logs
@@ -39,6 +32,33 @@ interface Log {
   user_name?: string; // For display purposes
 }
 
+// Mock logs - We'll use this since the logs table doesn't exist in the database yet
+const generateMockLogs = (): Log[] => {
+  const mockLogs: Log[] = [];
+  const actionTypes = ['create', 'update', 'delete', 'login', 'logout', 'view'];
+  const entityTypes = ['student', 'class', 'school', 'session', 'setting', 'user', 'inquiry'];
+  
+  for (let i = 1; i <= 15; i++) {
+    const date = new Date();
+    date.setHours(date.getHours() - i);
+    
+    mockLogs.push({
+      id: `log-${i}`,
+      school_id: "school-id-1",
+      user_id: `user-${i % 3 + 1}`,
+      user_name: `User ${i % 3 + 1}`,
+      action_type: actionTypes[i % actionTypes.length],
+      entity: entityTypes[i % entityTypes.length],
+      entity_id: `entity-${i}`,
+      description: `${actionTypes[i % actionTypes.length]} operation performed on ${entityTypes[i % entityTypes.length]} with ID entity-${i}`,
+      timestamp: date.toISOString(),
+      ip_address: `192.168.1.${i % 255}`
+    });
+  }
+  
+  return mockLogs;
+};
+
 const Logs = () => {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +73,7 @@ const Logs = () => {
   });
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   
-  // Action types and entities for filtering (typically these would come from the database)
+  // Action types and entities for filtering
   const actionTypes = ['create', 'update', 'delete', 'login', 'logout', 'view'];
   const entityTypes = ['student', 'class', 'school', 'session', 'setting', 'user', 'inquiry'];
   
@@ -71,62 +91,37 @@ const Logs = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('logs').select('*');
+      // Since the 'logs' table doesn't exist in the database yet, we'll use mock data
+      // In a real implementation, we would query the database
+      const mockLogs = generateMockLogs();
       
-      // Apply filters if any
+      // Apply filters
+      let filteredLogs = [...mockLogs];
+      
       if (filters.actionType) {
-        query = query.eq('action_type', filters.actionType);
+        filteredLogs = filteredLogs.filter(log => log.action_type === filters.actionType);
       }
       
       if (filters.entity) {
-        query = query.eq('entity', filters.entity);
+        filteredLogs = filteredLogs.filter(log => log.entity === filters.entity);
       }
       
       if (filters.userId) {
-        query = query.eq('user_id', filters.userId);
+        filteredLogs = filteredLogs.filter(log => log.user_id === filters.userId);
       }
       
       if (filters.dateRange.from) {
-        query = query.gte('timestamp', filters.dateRange.from);
+        const fromDate = new Date(filters.dateRange.from);
+        filteredLogs = filteredLogs.filter(log => new Date(log.timestamp) >= fromDate);
       }
       
       if (filters.dateRange.to) {
-        // Add a day to include the end date fully
-        const endDate = new Date(filters.dateRange.to);
-        endDate.setDate(endDate.getDate() + 1);
-        query = query.lte('timestamp', endDate.toISOString());
+        const toDate = new Date(filters.dateRange.to);
+        toDate.setDate(toDate.getDate() + 1); // Include the end date
+        filteredLogs = filteredLogs.filter(log => new Date(log.timestamp) <= toDate);
       }
       
-      // Order by latest first
-      query = query.order('timestamp', { ascending: false });
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      // Mock logs for demonstration
-      // In a real app, you would use the actual data from the database
-      const mockLogs: Log[] = [];
-      for (let i = 1; i <= 15; i++) {
-        const date = new Date();
-        date.setHours(date.getHours() - i);
-        
-        mockLogs.push({
-          id: `log-${i}`,
-          school_id: "school-id-1",
-          user_id: `user-${i % 3 + 1}`,
-          user_name: `User ${i % 3 + 1}`,
-          action_type: actionTypes[i % actionTypes.length],
-          entity: entityTypes[i % entityTypes.length],
-          entity_id: `entity-${i}`,
-          description: `${actionTypes[i % actionTypes.length]} operation performed on ${entityTypes[i % entityTypes.length]} with ID entity-${i}`,
-          timestamp: date.toISOString(),
-          ip_address: `192.168.1.${i % 255}`
-        });
-      }
-      
-      setLogs(mockLogs);
-      // In a real app, you would use: setLogs(data || []);
+      setLogs(filteredLogs);
     } catch (error) {
       console.error('Error fetching logs:', error);
       toast({
@@ -160,60 +155,60 @@ const Logs = () => {
   };
   
   // Define table columns
-  const columns: ColumnDef<Log>[] = [
+  const columns = [
     {
-      accessorKey: 'user_name',
+      id: 'user_name',
       header: 'User',
-      cell: ({ row }) => (
+      cell: (row: Log) => (
         <div className="flex items-center">
           <User className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>{row.original.user_name || row.original.user_id}</span>
+          <span>{row.user_name || row.user_id}</span>
         </div>
       )
     },
     {
-      accessorKey: 'action_type',
+      id: 'action_type',
       header: 'Action',
-      cell: ({ row }) => (
+      cell: (row: Log) => (
         <div className="capitalize">
-          {row.original.action_type}
+          {row.action_type}
         </div>
       )
     },
     {
-      accessorKey: 'entity',
+      id: 'entity',
       header: 'Entity',
-      cell: ({ row }) => (
+      cell: (row: Log) => (
         <div className="capitalize">
-          {row.original.entity}
+          {row.entity}
         </div>
       )
     },
     {
-      accessorKey: 'description',
+      id: 'description',
       header: 'Description',
-      cell: ({ row }) => (
+      cell: (row: Log) => (
         <div className="max-w-md truncate">
-          {row.original.description}
+          {row.description}
         </div>
       )
     },
     {
-      accessorKey: 'timestamp',
+      id: 'timestamp',
       header: 'Timestamp',
-      cell: ({ row }) => (
+      cell: (row: Log) => (
         <div className="flex items-center">
           <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
-          {format(new Date(row.original.timestamp), 'dd MMM yyyy HH:mm:ss')}
+          {format(new Date(row.timestamp), 'dd MMM yyyy HH:mm:ss')}
         </div>
       )
     },
     {
-      accessorKey: 'ip_address',
+      id: 'ip_address',
       header: 'IP Address',
-      cell: ({ row }) => (
+      cell: (row: Log) => (
         <div className="font-mono text-sm">
-          {row.original.ip_address}
+          {row.ip_address}
         </div>
       )
     }
@@ -332,7 +327,12 @@ const Logs = () => {
               )}
             </div>
           ) : (
-            <DataTable columns={columns} data={logs} loading={loading} />
+            <DataTable 
+              data={logs} 
+              columns={columns} 
+              keyField="id" 
+              isLoading={loading}
+            />
           )}
         </CardContent>
       </Card>

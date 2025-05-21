@@ -12,34 +12,42 @@ import {
 } from 'recharts';
 
 interface LineChartProps {
-  data: {
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      borderColor: string;
-      backgroundColor: string;
-      tension?: number;
-    }[];
-  };
+  data: any;
+  index: string;
+  categories: string[];
+  colors: string[];
+  valueFormatter?: (value: number) => string;
+  showLegend?: boolean;
+  yAxisWidth?: number;
+  startAtZero?: boolean;
 }
 
-export function LineChart({ data }: LineChartProps) {
-  // Convert the data format to what Recharts expects
-  const formattedData = data.labels.map((label, index) => {
-    const dataPoint: Record<string, any> = { name: label };
+export function LineChart({ 
+  data, 
+  index, 
+  categories, 
+  colors,
+  valueFormatter = (value) => String(value),
+  showLegend = true,
+  yAxisWidth = 40,
+  startAtZero = true
+}: LineChartProps) {
+  // Process data to make it compatible with Recharts
+  const processedData = data.labels?.map((label: string, i: number) => {
+    const item: Record<string, any> = { name: label };
     
-    data.datasets.forEach((dataset) => {
-      dataPoint[dataset.label] = dataset.data[index];
+    // Add each dataset's data point to this item
+    data.datasets.forEach((dataset: any, datasetIndex: number) => {
+      item[dataset.label] = dataset.data[i];
     });
     
-    return dataPoint;
+    return item;
   });
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RechartsLineChart
-        data={formattedData}
+        data={processedData}
         margin={{
           top: 5,
           right: 30,
@@ -49,19 +57,21 @@ export function LineChart({ data }: LineChartProps) {
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        {data.datasets.map((dataset, index) => (
+        <YAxis width={yAxisWidth} domain={startAtZero ? [0, 'auto'] : undefined} />
+        <Tooltip formatter={valueFormatter} />
+        {showLegend && <Legend />}
+        {data.datasets.map((dataset: any, index: number) => (
           <Line
             key={index}
             type="monotone"
             dataKey={dataset.label}
-            stroke={dataset.borderColor}
-            fill={dataset.backgroundColor}
+            stroke={colors?.[index % colors.length] ? 
+                   `rgb(${colors[index % colors.length]})` : 
+                   dataset.borderColor || '#8884d8'}
             strokeWidth={2}
             dot={{ r: 4 }}
             activeDot={{ r: 6 }}
+            fill={dataset.backgroundColor || 'transparent'}
           />
         ))}
       </RechartsLineChart>

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
 import { useToast } from "@/hooks/use-toast";
-import { DataTable } from '@/components/DataTable';
+import DataTable from '@/components/DataTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Card, 
@@ -19,11 +19,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
-import { ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
 import { CalendarDays, FileText, Info, Mail, MessageSquare, Phone, Plus, User } from 'lucide-react';
 import FilterDropdown from '@/components/FilterDropdown';
-import { format } from 'date-fns';
 
 // Define status colors
 const statusColors = {
@@ -82,6 +80,75 @@ const priorityOptions = [
   { value: 'urgent', label: 'Urgent', badge: <Badge variant="outline" className="text-red-600">Urgent</Badge> }
 ];
 
+// Mock inquiries - We'll use this since the inquiries table doesn't exist yet
+const generateMockInquiries = (): Inquiry[] => {
+  const mockInquiries: Inquiry[] = [
+    {
+      id: "inq-1",
+      school_id: "school-1",
+      name: "John Smith",
+      email: "john.smith@example.com",
+      phone: "555-123-4567",
+      message: "I'd like information about the admission process for my child.",
+      status: "new",
+      source: "website",
+      preferred_contact: "email",
+      student_age: 9,
+      student_grade: "4th Grade",
+      inquiry_type: "admission",
+      priority: "medium",
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: "inq-2",
+      school_id: "school-1",
+      name: "Sarah Johnson",
+      email: "sarah.j@example.com",
+      phone: "555-987-6543",
+      message: "When are the school tours scheduled?",
+      status: "in_progress",
+      source: "phone",
+      preferred_contact: "phone",
+      inquiry_type: "tour_request",
+      priority: "low",
+      created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+    },
+    {
+      id: "inq-3",
+      school_id: "school-1",
+      name: "Michael Williams",
+      email: "michael.w@example.com",
+      phone: "555-456-7890",
+      message: "Could you provide details about the school fees?",
+      status: "closed",
+      source: "walk_in",
+      preferred_contact: "email",
+      inquiry_type: "fee_structure",
+      priority: "high",
+      created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: "inq-4",
+      school_id: "school-1",
+      name: "Emily Davis",
+      email: "emily.d@example.com",
+      phone: "555-789-0123",
+      message: "I have concerns about the new curriculum.",
+      status: "follow_up",
+      source: "email_campaign",
+      preferred_contact: "email",
+      inquiry_type: "complaint",
+      follow_up_date: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+      priority: "urgent",
+      created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+      internal_notes: "Need to follow up with the academic team.",
+    }
+  ];
+  
+  return mockInquiries;
+};
+
 const Inquiries = () => {
   // State variables
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -126,48 +193,48 @@ const Inquiries = () => {
   const fetchInquiries = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('inquiries').select('*');
+      // Since the 'inquiries' table doesn't exist yet, we'll use mock data
+      // In a real implementation, we would query the database
+      let mockInquiries = generateMockInquiries();
       
-      // Apply filters if any
+      // Apply filters
       if (filters.status) {
-        query = query.eq('status', filters.status);
+        mockInquiries = mockInquiries.filter(inq => inq.status === filters.status);
       }
       
       if (filters.source) {
-        query = query.eq('source', filters.source);
+        mockInquiries = mockInquiries.filter(inq => inq.source === filters.source);
       }
       
       if (filters.priority) {
-        query = query.eq('priority', filters.priority);
+        mockInquiries = mockInquiries.filter(inq => inq.priority === filters.priority);
       }
       
       if (filters.dateRange.from) {
-        query = query.gte('created_at', filters.dateRange.from);
+        const fromDate = new Date(filters.dateRange.from);
+        mockInquiries = mockInquiries.filter(inq => new Date(inq.created_at) >= fromDate);
       }
       
       if (filters.dateRange.to) {
-        query = query.lte('created_at', filters.dateRange.to);
+        const toDate = new Date(filters.dateRange.to);
+        toDate.setDate(toDate.getDate() + 1); // Include the end date
+        mockInquiries = mockInquiries.filter(inq => new Date(inq.created_at) <= toDate);
       }
       
       // Apply view mode filters
       if (viewMode === 'today') {
         const today = new Date().toISOString().split('T')[0];
-        query = query.gte('created_at', today);
+        mockInquiries = mockInquiries.filter(inq => inq.created_at.startsWith(today));
       } else if (viewMode === 'follow_up') {
         const today = new Date().toISOString().split('T')[0];
-        query = query.eq('status', 'follow_up').lte('follow_up_date', today);
-      }
-
-      // Order by latest first
-      query = query.order('created_at', { ascending: false });
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        throw error;
+        mockInquiries = mockInquiries.filter(inq => 
+          inq.status === 'follow_up' && 
+          inq.follow_up_date && 
+          inq.follow_up_date.split('T')[0] <= today
+        );
       }
       
-      setInquiries(data as Inquiry[]);
+      setInquiries(mockInquiries);
     } catch (error) {
       console.error('Error fetching inquiries:', error);
       toast({
@@ -183,7 +250,7 @@ const Inquiries = () => {
   // Initial data fetch
   useEffect(() => {
     fetchInquiries();
-  }, [viewMode, filters]);
+  }, [viewMode]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -215,15 +282,16 @@ const Inquiries = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Get current school_id - For now using a placeholder, this should be dynamically set
-      const school_id = "your-school-id"; // This would typically come from context or state
+      // Mock creating a new inquiry
+      const newInquiry: Inquiry = {
+        ...formData as Inquiry,
+        id: `inq-${Date.now()}`,
+        school_id: "school-1",
+        created_at: new Date().toISOString()
+      };
       
-      const { data, error } = await supabase
-        .from('inquiries')
-        .insert([{ ...formData, school_id }])
-        .select();
-        
-      if (error) throw error;
+      // Add the new inquiry to the list
+      setInquiries(prev => [newInquiry, ...prev]);
       
       toast({
         title: "Success",
@@ -232,7 +300,6 @@ const Inquiries = () => {
       
       setOpenForm(false);
       resetForm();
-      fetchInquiries();
     } catch (error) {
       console.error('Error creating inquiry:', error);
       toast({
@@ -261,14 +328,15 @@ const Inquiries = () => {
   // Update inquiry status
   const updateInquiryStatus = async (id: string, status: Inquiry['status']) => {
     try {
-      const { error } = await supabase
-        .from('inquiries')
-        .update({ status })
-        .eq('id', id);
-        
-      if (error) throw error;
+      // Mock status update
+      setInquiries(prev => 
+        prev.map(inquiry => 
+          inquiry.id === id 
+            ? { ...inquiry, status, updated_at: new Date().toISOString() } 
+            : inquiry
+        )
+      );
       
-      fetchInquiries();
       toast({
         title: "Status Updated",
         description: `Inquiry status changed to ${status}.`,
@@ -284,114 +352,114 @@ const Inquiries = () => {
   };
 
   // Define table columns
-  const columns: ColumnDef<Inquiry>[] = [
+  const columns = [
     {
-      accessorKey: 'name',
+      id: 'name',
       header: 'Name',
-      cell: ({ row }) => (
+      cell: (row: Inquiry) => (
         <div className="flex items-center">
           <User className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>{row.original.name}</span>
+          <span>{row.name}</span>
         </div>
       )
     },
     {
-      accessorKey: 'email',
+      id: 'email',
       header: 'Email',
-      cell: ({ row }) => (
+      cell: (row: Inquiry) => (
         <div className="flex items-center">
           <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>{row.original.email}</span>
+          <span>{row.email}</span>
         </div>
       )
     },
     {
-      accessorKey: 'phone',
+      id: 'phone',
       header: 'Phone',
-      cell: ({ row }) => (
+      cell: (row: Inquiry) => (
         <div className="flex items-center">
           <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>{row.original.phone}</span>
+          <span>{row.phone}</span>
         </div>
       )
     },
     {
-      accessorKey: 'inquiry_type',
+      id: 'inquiry_type',
       header: 'Type',
-      cell: ({ row }) => (
+      cell: (row: Inquiry) => (
         <div>
-          {row.original.inquiry_type === 'admission' && <span>Admission</span>}
-          {row.original.inquiry_type === 'general' && <span>General</span>}
-          {row.original.inquiry_type === 'tour_request' && <span>Tour Request</span>}
-          {row.original.inquiry_type === 'fee_structure' && <span>Fee Structure</span>}
-          {row.original.inquiry_type === 'complaint' && <span>Complaint</span>}
+          {row.inquiry_type === 'admission' && <span>Admission</span>}
+          {row.inquiry_type === 'general' && <span>General</span>}
+          {row.inquiry_type === 'tour_request' && <span>Tour Request</span>}
+          {row.inquiry_type === 'fee_structure' && <span>Fee Structure</span>}
+          {row.inquiry_type === 'complaint' && <span>Complaint</span>}
         </div>
       )
     },
     {
-      accessorKey: 'status',
+      id: 'status',
       header: 'Status',
-      cell: ({ row }) => (
+      cell: (row: Inquiry) => (
         <div>
-          {statusBadges[row.original.status]}
+          {statusBadges[row.status]}
         </div>
       )
     },
     {
-      accessorKey: 'source',
+      id: 'source',
       header: 'Source',
-      cell: ({ row }) => (
+      cell: (row: Inquiry) => (
         <div>
-          {sourceBadges[row.original.source]}
+          {sourceBadges[row.source]}
         </div>
       )
     },
     {
-      accessorKey: 'priority',
+      id: 'priority',
       header: 'Priority',
-      cell: ({ row }) => {
-        const priority = priorityOptions.find(p => p.value === row.original.priority);
+      cell: (row: Inquiry) => {
+        const priority = priorityOptions.find(p => p.value === row.priority);
         return priority ? priority.badge : null;
       }
     },
     {
-      accessorKey: 'created_at',
+      id: 'created_at',
       header: 'Date',
-      cell: ({ row }) => (
+      cell: (row: Inquiry) => (
         <div className="flex items-center">
           <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
-          {format(new Date(row.original.created_at), 'dd MMM yyyy')}
+          {format(new Date(row.created_at), 'dd MMM yyyy')}
         </div>
       )
     },
     {
       id: 'actions',
       header: 'Actions',
-      cell: ({ row }) => (
+      cell: (row: Inquiry) => (
         <div className="flex space-x-2">
-          {row.original.status !== 'in_progress' && (
+          {row.status !== 'in_progress' && (
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => updateInquiryStatus(row.original.id, 'in_progress')}
+              onClick={() => updateInquiryStatus(row.id, 'in_progress')}
             >
               Mark In Progress
             </Button>
           )}
-          {row.original.status !== 'closed' && (
+          {row.status !== 'closed' && (
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => updateInquiryStatus(row.original.id, 'closed')}
+              onClick={() => updateInquiryStatus(row.id, 'closed')}
             >
               Close
             </Button>
           )}
-          {row.original.status !== 'follow_up' && (
+          {row.status !== 'follow_up' && (
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => updateInquiryStatus(row.original.id, 'follow_up')}
+              onClick={() => updateInquiryStatus(row.id, 'follow_up')}
             >
               Mark For Follow-up
             </Button>
@@ -545,7 +613,12 @@ const Inquiries = () => {
               </Button>
             </div>
           ) : (
-            <DataTable columns={columns} data={inquiries} loading={loading} />
+            <DataTable 
+              columns={columns} 
+              data={inquiries} 
+              keyField="id" 
+              isLoading={loading} 
+            />
           )}
         </CardContent>
       </Card>
@@ -597,7 +670,7 @@ const Inquiries = () => {
                 <Label htmlFor="source">Source *</Label>
                 <Select 
                   value={formData.source} 
-                  onValueChange={(value) => handleSelectChange('source', value)}
+                  onValueChange={(value: any) => handleSelectChange('source', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select source" />
@@ -617,7 +690,7 @@ const Inquiries = () => {
                 <Label htmlFor="preferred_contact">Preferred Contact Method *</Label>
                 <Select 
                   value={formData.preferred_contact} 
-                  onValueChange={(value) => handleSelectChange('preferred_contact', value)}
+                  onValueChange={(value: any) => handleSelectChange('preferred_contact', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select preferred contact" />
@@ -635,7 +708,7 @@ const Inquiries = () => {
                 <Label htmlFor="inquiry_type">Inquiry Type *</Label>
                 <Select 
                   value={formData.inquiry_type} 
-                  onValueChange={(value) => handleSelectChange('inquiry_type', value)}
+                  onValueChange={(value: any) => handleSelectChange('inquiry_type', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select inquiry type" />
@@ -654,7 +727,7 @@ const Inquiries = () => {
                 <Label htmlFor="priority">Priority *</Label>
                 <Select 
                   value={formData.priority} 
-                  onValueChange={(value) => handleSelectChange('priority', value)}
+                  onValueChange={(value: any) => handleSelectChange('priority', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />

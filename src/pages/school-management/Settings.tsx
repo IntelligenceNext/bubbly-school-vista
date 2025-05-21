@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
@@ -188,12 +187,28 @@ const SettingsPage = () => {
     },
   });
 
+  const fetchSettings = async () => {
+    setLoading(true);
+    try {
+      // Change from string parameter to object parameter
+      const data = await getSettings({ schoolId: selectedSchool });
+      if (data) {
+        setSettings(data);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while fetching settings",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const { data: settings, refetch: refetchSettings } = useQuery({
     queryKey: ['settings', selectedSchool],
-    queryFn: async () => {
-      if (!selectedSchool) return [];
-      return getSettings(selectedSchool);
-    },
+    queryFn: fetchSettings,
     enabled: !!selectedSchool,
   });
 

@@ -12,32 +12,44 @@ import {
 } from 'recharts';
 
 interface BarChartProps {
-  data: {
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      backgroundColor: string;
-    }[];
-  };
+  data: any;
+  index: string;
+  categories: string[];
+  colors: string[];
+  valueFormatter?: (value: number) => string;
+  showLegend?: boolean;
+  showYAxis?: boolean;
+  yAxisWidth?: number;
+  startAtZero?: boolean;
 }
 
-export function BarChart({ data }: BarChartProps) {
-  // Convert the data format to what Recharts expects
-  const formattedData = data.labels.map((label, index) => {
-    const dataPoint: Record<string, any> = { name: label };
+export function BarChart({ 
+  data, 
+  index, 
+  categories, 
+  colors,
+  valueFormatter = (value) => String(value),
+  showLegend = true,
+  showYAxis = true,
+  yAxisWidth = 40,
+  startAtZero = true
+}: BarChartProps) {
+  // Process data to make it compatible with Recharts
+  const processedData = data.labels?.map((label: string, i: number) => {
+    const item: Record<string, any> = { name: label };
     
-    data.datasets.forEach((dataset) => {
-      dataPoint[dataset.label] = dataset.data[index];
+    // Add each dataset's data point to this item
+    data.datasets.forEach((dataset: any, datasetIndex: number) => {
+      item[dataset.label] = dataset.data[i];
     });
     
-    return dataPoint;
+    return item;
   });
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RechartsBarChart
-        data={formattedData}
+        data={processedData}
         margin={{
           top: 5,
           right: 30,
@@ -47,14 +59,16 @@ export function BarChart({ data }: BarChartProps) {
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        {data.datasets.map((dataset, index) => (
+        {showYAxis && <YAxis width={yAxisWidth} domain={startAtZero ? [0, 'auto'] : undefined} />}
+        <Tooltip formatter={valueFormatter} />
+        {showLegend && <Legend />}
+        {data.datasets.map((dataset: any, index: number) => (
           <Bar
             key={index}
             dataKey={dataset.label}
-            fill={dataset.backgroundColor}
+            fill={colors?.[index % colors.length] ? 
+                  `rgb(${colors[index % colors.length]})` : 
+                  dataset.backgroundColor || '#8884d8'}
           />
         ))}
       </RechartsBarChart>

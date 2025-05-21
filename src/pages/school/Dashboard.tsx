@@ -27,6 +27,27 @@ interface SchoolDashboardStats {
 // Time periods for data visualization
 type TimePeriod = 'week' | 'month' | 'quarter' | 'year';
 
+// Updated chart data interfaces to match expected format
+interface LineChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    borderColor: string;
+    backgroundColor: string;
+    tension?: number;
+  }[];
+}
+
+interface BarChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string;
+  }[];
+}
+
 const Dashboard = () => {
   const [stats, setStats] = useState<SchoolDashboardStats>({
     total_students: 0,
@@ -70,9 +91,9 @@ const Dashboard = () => {
     fetchDashboardStats();
   }, []);
   
-  // Mock data for charts
-  const generateInquiriesData = (period: TimePeriod) => {
-    const data = [];
+  // Mock data for charts - Updated to match the expected format
+  const generateInquiriesData = (period: TimePeriod): LineChartData => {
+    const data: { name: string; new: number; closed: number }[] = [];
     const now = new Date();
     let points = 0;
     
@@ -113,11 +134,28 @@ const Dashboard = () => {
       }
     }
     
-    return data;
+    // Convert the data to the format expected by LineChart
+    return {
+      labels: data.map(item => item.name),
+      datasets: [
+        {
+          label: 'New',
+          data: data.map(item => item.new),
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)'
+        },
+        {
+          label: 'Closed',
+          data: data.map(item => item.closed),
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)'
+        }
+      ]
+    };
   };
   
-  const generateAttendanceData = (period: TimePeriod) => {
-    const data = [];
+  const generateAttendanceData = (period: TimePeriod): LineChartData => {
+    const data: { name: string; attendance: number }[] = [];
     const now = new Date();
     let points = 0;
     
@@ -156,18 +194,42 @@ const Dashboard = () => {
       }
     }
     
-    return data;
+    // Convert the data to the format expected by LineChart
+    return {
+      labels: data.map(item => item.name),
+      datasets: [
+        {
+          label: 'Attendance',
+          data: data.map(item => item.attendance),
+          borderColor: 'rgb(139, 92, 246)',
+          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+          tension: 0.3
+        }
+      ]
+    };
   };
   
   // Generate enrollment data by class
-  const generateEnrollmentData = () => {
+  const generateEnrollmentData = (): BarChartData => {
     const classNames = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 
                         'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
     
-    return classNames.map(className => ({
+    const data = classNames.map(className => ({
       name: className,
       students: Math.floor(Math.random() * 30) + 20 // 20-50 students per class
     }));
+    
+    // Convert the data to the format expected by BarChart
+    return {
+      labels: data.map(item => item.name),
+      datasets: [
+        {
+          label: 'Students',
+          data: data.map(item => item.students),
+          backgroundColor: 'rgba(99, 102, 241, 0.8)'
+        }
+      ]
+    };
   };
   
   // Get chart data based on selected time period

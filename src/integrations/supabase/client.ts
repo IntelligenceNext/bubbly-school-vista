@@ -13,9 +13,5 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-  },
-  global: {
-    // Add retries to handle temporary service issues
-    fetch: (...args) => fetch(...args)
   }
 });

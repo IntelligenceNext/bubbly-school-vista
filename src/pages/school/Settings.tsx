@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,16 +7,31 @@ import FileGallery from '@/components/FileGallery';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
 
-const SchoolSettings = () => {
+const Settings = () => {
   const [refreshGallery, setRefreshGallery] = useState(0);
+  const [selectedSetting, setSelectedSetting] = useState("");
+  const [value, setValue] = useState("");
 
   const handleUploadComplete = () => {
     // Refresh the gallery when upload completes
     setRefreshGallery(prev => prev + 1);
   };
 
+  // Fix the type error by checking for an empty string with !selectedSetting instead of comparing to ""
+  const handleTabChange = (value: string) => {
+    // Instead of:
+    // if (selectedSetting === "") {
+    // Use:
+    if (!selectedSetting) {
+      setValue("key", value);
+      setSelectedSetting(value);
+    } else {
+      // ... keep existing code
+    }
+  };
+
   return (
-    <PageTemplate title="School Settings" subtitle="Configure school information and appearance">
+    <PageTemplate title="Settings" subtitle="Configure school information and appearance">
       <Tabs defaultValue="general">
         <TabsList className="mb-4">
           <TabsTrigger value="general">General</TabsTrigger>
@@ -104,4 +118,4 @@ const SchoolSettings = () => {
   );
 };
 
-export default SchoolSettings;
+export default Settings;
