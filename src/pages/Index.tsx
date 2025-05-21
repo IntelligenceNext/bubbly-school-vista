@@ -1,14 +1,15 @@
 
-import React from 'react';
-import Layout from '../components/Layout';
-import Dashboard from './Dashboard';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
-  return (
-    <Layout>
-      <Dashboard />
-    </Layout>
-  );
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate('/school-management/dashboard');
+  }, [navigate]);
+
+  return null;
 };
 
 export default Index;
