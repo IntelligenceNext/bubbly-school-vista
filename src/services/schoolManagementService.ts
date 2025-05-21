@@ -53,7 +53,7 @@ export interface PaginatedResponse<T> {
   count: number;
 }
 
-interface GetSchoolsParams {
+export interface GetSchoolsParams {
   page?: number;
   pageSize?: number;
   name?: string;
@@ -61,7 +61,7 @@ interface GetSchoolsParams {
   status?: "active" | "inactive";
 }
 
-interface GetClassesParams {
+export interface GetClassesParams {
   page?: number;
   pageSize?: number;
   name?: string;
@@ -69,7 +69,7 @@ interface GetClassesParams {
   is_active?: boolean;
 }
 
-interface GetSessionsParams {
+export interface GetSessionsParams {
   page?: number;
   pageSize?: number;
   name?: string;
@@ -120,8 +120,14 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
       throw new Error(error.message);
     }
 
+    // Cast the status to the expected type
+    const typedData = data?.map(school => ({
+      ...school,
+      status: school.status as "active" | "inactive"
+    })) || [];
+
     return {
-      data: data || [],
+      data: typedData,
       count: count || 0,
     };
   } catch (error: any) {
@@ -143,7 +149,11 @@ export const getSchoolById = async (id: string): Promise<School> => {
       throw new Error(error.message);
     }
 
-    return data;
+    // Cast the status to the expected type
+    return {
+      ...data,
+      status: data.status as "active" | "inactive"
+    };
   } catch (error: any) {
     console.error('Error in getSchoolById:', error);
     throw new Error(error.message);
@@ -157,9 +167,21 @@ export const createSchool = async (school: Partial<School>): Promise<School> => 
       throw new Error('School name and code are required');
     }
     
+    // Ensure we're working with a valid school object with required fields
+    const validSchool = {
+      name: school.name,
+      code: school.code,
+      status: school.status || 'active' as "active" | "inactive",
+      // Add other optional fields
+      email: school.email,
+      phone: school.phone,
+      address: school.address,
+      logo_url: school.logo_url
+    };
+    
     const { data, error } = await supabase
       .from('schools')
-      .insert([school])
+      .insert([validSchool])
       .select()
       .single();
 
@@ -168,7 +190,11 @@ export const createSchool = async (school: Partial<School>): Promise<School> => 
       throw new Error(error.message);
     }
 
-    return data;
+    // Cast the status to the expected type
+    return {
+      ...data,
+      status: data.status as "active" | "inactive"
+    };
   } catch (error: any) {
     console.error('Error in createSchool:', error);
     throw new Error(error.message);
@@ -189,7 +215,11 @@ export const updateSchool = async (id: string, school: Partial<School>): Promise
       throw new Error(error.message);
     }
 
-    return data;
+    // Cast the status to the expected type
+    return {
+      ...data,
+      status: data.status as "active" | "inactive"
+    };
   } catch (error: any) {
     console.error('Error in updateSchool:', error);
     throw new Error(error.message);
@@ -275,8 +305,17 @@ export const getClasses = async (params: GetClassesParams = {}): Promise<Paginat
       throw new Error(error.message);
     }
 
+    // Cast the schools.status to the expected type
+    const typedData = data?.map(classItem => ({
+      ...classItem,
+      schools: classItem.schools ? {
+        ...classItem.schools,
+        status: classItem.schools.status as "active" | "inactive"
+      } : undefined
+    })) || [];
+
     return {
-      data: data || [],
+      data: typedData,
       count: count || 0,
     };
   } catch (error: any) {
@@ -298,7 +337,14 @@ export const getClassById = async (id: string): Promise<Class> => {
       throw new Error(error.message);
     }
 
-    return data;
+    // Cast the schools.status to the expected type
+    return {
+      ...data,
+      schools: data.schools ? {
+        ...data.schools,
+        status: data.schools.status as "active" | "inactive"
+      } : undefined
+    };
   } catch (error: any) {
     console.error('Error in getClassById:', error);
     throw new Error(error.message);
@@ -312,9 +358,18 @@ export const createClass = async (classData: Partial<Class>): Promise<Class> => 
       throw new Error('Class name, code, and school_id are required');
     }
     
+    // Ensure we're working with a valid class object with required fields
+    const validClass = {
+      name: classData.name,
+      code: classData.code,
+      school_id: classData.school_id,
+      description: classData.description,
+      is_active: classData.is_active !== undefined ? classData.is_active : true
+    };
+    
     const { data, error } = await supabase
       .from('classes')
-      .insert([classData])
+      .insert([validClass])
       .select()
       .single();
 
@@ -413,8 +468,17 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
       throw new Error(error.message);
     }
 
+    // Cast the schools.status to the expected type
+    const typedData = data?.map(session => ({
+      ...session,
+      schools: session.schools ? {
+        ...session.schools,
+        status: session.schools.status as "active" | "inactive"
+      } : undefined
+    })) || [];
+
     return {
-      data: data || [],
+      data: typedData,
       count: count || 0,
     };
   } catch (error: any) {
@@ -437,7 +501,14 @@ export const getSessionById = async (id: string): Promise<Session> => {
       throw new Error(error.message);
     }
 
-    return data;
+    // Cast the schools.status to the expected type
+    return {
+      ...data,
+      schools: data.schools ? {
+        ...data.schools,
+        status: data.schools.status as "active" | "inactive"
+      } : undefined
+    };
   } catch (error: any) {
     console.error('Error in getSessionById:', error);
     throw new Error(error.message);
@@ -451,9 +522,19 @@ export const createSession = async (session: Partial<Session>): Promise<Session>
       throw new Error('Session name, school_id, start_date, and end_date are required');
     }
     
+    // Ensure we're working with a valid session object with required fields
+    const validSession = {
+      name: session.name,
+      school_id: session.school_id,
+      start_date: session.start_date,
+      end_date: session.end_date,
+      is_current: session.is_current !== undefined ? session.is_current : false,
+      is_active: session.is_active !== undefined ? session.is_active : true
+    };
+    
     const { data, error } = await supabase
       .from('sessions')
-      .insert([session])
+      .insert([validSession])
       .select()
       .single();
 
