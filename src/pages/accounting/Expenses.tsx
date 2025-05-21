@@ -138,7 +138,7 @@ const Expenses = () => {
       header: "Description",
       cell: (item) => <span className="truncate max-w-[250px]">{item.description}</span>,
       isSortable: false,
-      size: "lg"
+      size: "lg" // Changed from string to "lg" literal
     }
   ];
   

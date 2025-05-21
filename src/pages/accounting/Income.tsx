@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -138,7 +137,7 @@ const Income = () => {
       header: "Description",
       cell: (item) => <span className="truncate max-w-[250px]">{item.description}</span>,
       isSortable: false,
-      size: "lg"
+      size: "lg" // Changed from string to "lg" literal
     }
   ];
   

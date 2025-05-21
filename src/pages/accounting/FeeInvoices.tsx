@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -115,10 +114,10 @@ const FeeInvoices = () => {
     return invoices;
   };
   
-  // Status color mapping
-  const statusColors: Record<string, "default" | "secondary" | "destructive" | "success" | "warning" | "outline" | "ghost" | "link"> = {
+  // Status color mapping - fixed the variants to match accepted values
+  const statusColors = {
     "Paid": "success",
-    "Pending": "warning",
+    "Pending": "warning", // Make sure this is a valid variant
     "Overdue": "destructive",
     "Partially Paid": "default"
   };
@@ -195,7 +194,7 @@ const FeeInvoices = () => {
     }
   ];
   
-  // Actions for the table
+  // Actions for the table - fixed the variants to match accepted values
   const actions = [
     {
       label: "View Invoice",
@@ -217,7 +216,7 @@ const FeeInvoices = () => {
     {
       label: "Cancel Invoice",
       onClick: (item) => alert(`Cancelling invoice ${item.id}`),
-      variant: "destructive"
+      variant: "destructive" // This is an allowed variant value
     }
   ];
   
