@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getInquiries, Inquiry, updateInquiryStatus } from '@/services/inquiryService';
@@ -31,22 +32,23 @@ import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
-import { MoreHorizontal, Calendar, ArrowRight, Clock, Plus } from 'lucide-react';
+import { MoreHorizontal, Calendar, ArrowRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const priorityColors = {
+// Define badge color mappings with proper variants
+const priorityColors: Record<string, "secondary" | "default" | "destructive" | "outline" | "success"> = {
   high: "destructive",
   medium: "default",
   low: "secondary",
 };
 
-const statusColors = {
+const statusColors: Record<string, "secondary" | "default" | "destructive" | "outline" | "success"> = {
   new: "destructive",
-  contacted: "warning", 
+  contacted: "default", // Changed from "warning" to "default" as it's supported
   interested: "success",
-  scheduled: "info",
-  enrolled: "primary",
-  closed: "secondary",
+  scheduled: "default", // Changed from "info" to "default"
+  enrolled: "secondary", // Changed from "primary" to "secondary"
+  closed: "outline", // Changed from "secondary" to "outline" to avoid duplicate
 };
 
 const InquiriesPage: React.FC = () => {
@@ -98,6 +100,7 @@ const InquiriesPage: React.FC = () => {
     }
   }, [inquiriesResponse, setTotalCount]);
 
+  // Calculate status counts directly from inquiriesData array
   const statusCounts = {
     all: inquiriesData.length,
     new: inquiriesData.filter(inq => inq.status === 'new').length,
@@ -150,7 +153,6 @@ const InquiriesPage: React.FC = () => {
   };
 
   return (
-    
     <PageTemplate title="Inquiries" subtitle="Manage student inquiries">
       <Card>
         <CardHeader>
@@ -332,7 +334,6 @@ const InquiriesPage: React.FC = () => {
         </CardContent>
       </Card>
     </PageTemplate>
-    
   );
 };
 

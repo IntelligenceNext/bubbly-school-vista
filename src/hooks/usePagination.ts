@@ -8,35 +8,53 @@ interface UsePaginationProps {
 }
 
 const usePagination = ({
-  initialPage = 1,
+  initialPage = 0, // Changed from 1 to 0 to match the usage in Inquiries.tsx
   initialPageSize = 10,
   initialTotal = 0,
 }: UsePaginationProps = {}) => {
-  const [page, setPage] = useState(initialPage);
+  const [pageIndex, setPageIndex] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [total, setTotal] = useState(initialTotal);
 
-  const totalPages = Math.ceil(total / pageSize);
+  // Calculate page count based on total and page size
+  const pageCount = Math.ceil(total / pageSize);
+
+  // Function to set the total count
+  const setTotalCount = (count: number) => {
+    setTotal(count);
+  };
 
   const nextPage = () => {
-    if (page < totalPages) {
-      setPage(page + 1);
+    if (pageIndex < pageCount - 1) {
+      setPageIndex(pageIndex + 1);
     }
   };
 
   const prevPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
+    if (pageIndex > 0) {
+      setPageIndex(pageIndex - 1);
     }
   };
 
   const goToPage = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage);
+    if (newPage >= 0 && newPage < pageCount) {
+      setPageIndex(newPage);
     }
   };
 
+  // For backward compatibility with existing code
+  const page = pageIndex + 1;
+  const setPage = (newPage: number) => setPageIndex(newPage - 1);
+  const totalPages = pageCount;
+
   return {
+    // New properties
+    pageIndex,
+    setPageIndex,
+    pageCount,
+    setTotalCount,
+    
+    // Original properties
     page,
     setPage,
     pageSize,
