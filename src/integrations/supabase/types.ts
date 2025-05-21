@@ -50,6 +50,77 @@ export type Database = {
           },
         ]
       }
+      inquiries: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          email: string
+          follow_up_date: string | null
+          id: string
+          inquiry_type: string
+          internal_notes: string | null
+          message: string
+          name: string
+          phone: string
+          preferred_contact: string
+          priority: string
+          school_id: string
+          source: string
+          status: string
+          student_age: number | null
+          student_grade: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          email: string
+          follow_up_date?: string | null
+          id?: string
+          inquiry_type: string
+          internal_notes?: string | null
+          message: string
+          name: string
+          phone: string
+          preferred_contact: string
+          priority?: string
+          school_id: string
+          source: string
+          status?: string
+          student_age?: number | null
+          student_grade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string
+          follow_up_date?: string | null
+          id?: string
+          inquiry_type?: string
+          internal_notes?: string | null
+          message?: string
+          name?: string
+          phone?: string
+          preferred_contact?: string
+          priority?: string
+          school_id?: string
+          source?: string
+          status?: string
+          student_age?: number | null
+          student_grade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

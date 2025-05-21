@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { CalendarDays, FileText, Info, Mail, MessageSquare, Phone, Plus, User } from 'lucide-react';
 import FilterDropdown from '@/components/FilterDropdown';
+import { getInquiries, createInquiry, updateInquiryStatus, Inquiry } from '@/services/inquiryService';
 
 // Define status colors
 const statusColors = {
@@ -49,29 +50,6 @@ const sourceBadges = {
   referral: <Badge variant="outline" className="border-cyan-300 text-cyan-600">Referral</Badge>
 };
 
-// Interface for Inquiry
-interface Inquiry {
-  id: string;
-  school_id: string;
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-  status: 'new' | 'in_progress' | 'closed' | 'follow_up';
-  source: 'website' | 'walk_in' | 'phone' | 'social_media' | 'email_campaign' | 'referral';
-  preferred_contact: 'email' | 'phone' | 'whatsapp' | 'none';
-  student_age?: number;
-  student_grade?: string;
-  inquiry_type: 'admission' | 'general' | 'tour_request' | 'fee_structure' | 'complaint';
-  follow_up_date?: string;
-  assigned_to?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  internal_notes?: string;
-  attachments?: string[];
-  created_at: string;
-  updated_at?: string;
-}
-
 // Priority options with corresponding badges
 const priorityOptions = [
   { value: 'low', label: 'Low', badge: <Badge variant="outline" className="text-gray-600">Low</Badge> },
@@ -79,75 +57,6 @@ const priorityOptions = [
   { value: 'high', label: 'High', badge: <Badge variant="outline" className="text-amber-600">High</Badge> },
   { value: 'urgent', label: 'Urgent', badge: <Badge variant="outline" className="text-red-600">Urgent</Badge> }
 ];
-
-// Mock inquiries - We'll use this since the inquiries table doesn't exist yet
-const generateMockInquiries = (): Inquiry[] => {
-  const mockInquiries: Inquiry[] = [
-    {
-      id: "inq-1",
-      school_id: "school-1",
-      name: "John Smith",
-      email: "john.smith@example.com",
-      phone: "555-123-4567",
-      message: "I'd like information about the admission process for my child.",
-      status: "new",
-      source: "website",
-      preferred_contact: "email",
-      student_age: 9,
-      student_grade: "4th Grade",
-      inquiry_type: "admission",
-      priority: "medium",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "inq-2",
-      school_id: "school-1",
-      name: "Sarah Johnson",
-      email: "sarah.j@example.com",
-      phone: "555-987-6543",
-      message: "When are the school tours scheduled?",
-      status: "in_progress",
-      source: "phone",
-      preferred_contact: "phone",
-      inquiry_type: "tour_request",
-      priority: "low",
-      created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    },
-    {
-      id: "inq-3",
-      school_id: "school-1",
-      name: "Michael Williams",
-      email: "michael.w@example.com",
-      phone: "555-456-7890",
-      message: "Could you provide details about the school fees?",
-      status: "closed",
-      source: "walk_in",
-      preferred_contact: "email",
-      inquiry_type: "fee_structure",
-      priority: "high",
-      created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: "inq-4",
-      school_id: "school-1",
-      name: "Emily Davis",
-      email: "emily.d@example.com",
-      phone: "555-789-0123",
-      message: "I have concerns about the new curriculum.",
-      status: "follow_up",
-      source: "email_campaign",
-      preferred_contact: "email",
-      inquiry_type: "complaint",
-      follow_up_date: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-      priority: "urgent",
-      created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-      internal_notes: "Need to follow up with the academic team.",
-    }
-  ];
-  
-  return mockInquiries;
-};
 
 const Inquiries = () => {
   // State variables
@@ -158,16 +67,17 @@ const Inquiries = () => {
   const { toast } = useToast();
   
   // Form state for new inquiry
-  const [formData, setFormData] = useState<Partial<Inquiry>>({
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     message: '',
-    status: 'new',
     source: 'website',
     preferred_contact: 'email',
     inquiry_type: 'general',
-    priority: 'medium'
+    priority: 'medium',
+    student_age: '' as string | number,
+    student_grade: ''
   });
 
   // Filter states
@@ -193,48 +103,33 @@ const Inquiries = () => {
   const fetchInquiries = async () => {
     setLoading(true);
     try {
-      // Since the 'inquiries' table doesn't exist yet, we'll use mock data
-      // In a real implementation, we would query the database
-      let mockInquiries = generateMockInquiries();
+      // Using a temporary school ID - in a real app, this would come from context or state
+      const schoolId = "school-1";
       
-      // Apply filters
-      if (filters.status) {
-        mockInquiries = mockInquiries.filter(inq => inq.status === filters.status);
-      }
+      const filterParams = {
+        status: filters.status || undefined,
+        source: filters.source || undefined,
+        priority: filters.priority || undefined,
+        dateFrom: filters.dateRange.from || undefined,
+        dateTo: filters.dateRange.to || undefined
+      };
       
-      if (filters.source) {
-        mockInquiries = mockInquiries.filter(inq => inq.source === filters.source);
-      }
+      let fetchedInquiries = await getInquiries(schoolId, filterParams);
       
-      if (filters.priority) {
-        mockInquiries = mockInquiries.filter(inq => inq.priority === filters.priority);
-      }
-      
-      if (filters.dateRange.from) {
-        const fromDate = new Date(filters.dateRange.from);
-        mockInquiries = mockInquiries.filter(inq => new Date(inq.created_at) >= fromDate);
-      }
-      
-      if (filters.dateRange.to) {
-        const toDate = new Date(filters.dateRange.to);
-        toDate.setDate(toDate.getDate() + 1); // Include the end date
-        mockInquiries = mockInquiries.filter(inq => new Date(inq.created_at) <= toDate);
-      }
-      
-      // Apply view mode filters
+      // Apply view mode filters (these are client-side filters)
       if (viewMode === 'today') {
         const today = new Date().toISOString().split('T')[0];
-        mockInquiries = mockInquiries.filter(inq => inq.created_at.startsWith(today));
+        fetchedInquiries = fetchedInquiries.filter(inq => inq.created_at.startsWith(today));
       } else if (viewMode === 'follow_up') {
         const today = new Date().toISOString().split('T')[0];
-        mockInquiries = mockInquiries.filter(inq => 
+        fetchedInquiries = fetchedInquiries.filter(inq => 
           inq.status === 'follow_up' && 
           inq.follow_up_date && 
           inq.follow_up_date.split('T')[0] <= today
         );
       }
       
-      setInquiries(mockInquiries);
+      setInquiries(fetchedInquiries);
     } catch (error) {
       console.error('Error fetching inquiries:', error);
       toast({
@@ -270,11 +165,12 @@ const Inquiries = () => {
       email: '',
       phone: '',
       message: '',
-      status: 'new',
       source: 'website',
       preferred_contact: 'email',
       inquiry_type: 'general',
-      priority: 'medium'
+      priority: 'medium',
+      student_age: '',
+      student_grade: ''
     });
   };
 
@@ -282,13 +178,20 @@ const Inquiries = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Mock creating a new inquiry
-      const newInquiry: Inquiry = {
-        ...formData as Inquiry,
-        id: `inq-${Date.now()}`,
-        school_id: "school-1",
-        created_at: new Date().toISOString()
-      };
+      // Using a temporary school ID - in a real app, this would come from context or state
+      const schoolId = "school-1";
+      
+      // Convert student_age to number if it's provided
+      const studentAge = formData.student_age 
+        ? Number(formData.student_age) 
+        : undefined;
+      
+      // Create new inquiry
+      const newInquiry = await createInquiry({
+        ...formData,
+        student_age: studentAge,
+        school_id: schoolId
+      });
       
       // Add the new inquiry to the list
       setInquiries(prev => [newInquiry, ...prev]);
@@ -326,9 +229,11 @@ const Inquiries = () => {
   };
 
   // Update inquiry status
-  const updateInquiryStatus = async (id: string, status: Inquiry['status']) => {
+  const handleUpdateInquiryStatus = async (id: string, status: string) => {
     try {
-      // Mock status update
+      await updateInquiryStatus(id, status);
+      
+      // Update UI
       setInquiries(prev => 
         prev.map(inquiry => 
           inquiry.id === id 
@@ -401,7 +306,7 @@ const Inquiries = () => {
       header: 'Status',
       cell: (row: Inquiry) => (
         <div>
-          {statusBadges[row.status]}
+          {statusBadges[row.status as keyof typeof statusBadges]}
         </div>
       )
     },
@@ -410,7 +315,7 @@ const Inquiries = () => {
       header: 'Source',
       cell: (row: Inquiry) => (
         <div>
-          {sourceBadges[row.source]}
+          {sourceBadges[row.source as keyof typeof sourceBadges]}
         </div>
       )
     },
@@ -441,7 +346,7 @@ const Inquiries = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => updateInquiryStatus(row.id, 'in_progress')}
+              onClick={() => handleUpdateInquiryStatus(row.id, 'in_progress')}
             >
               Mark In Progress
             </Button>
@@ -450,7 +355,7 @@ const Inquiries = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => updateInquiryStatus(row.id, 'closed')}
+              onClick={() => handleUpdateInquiryStatus(row.id, 'closed')}
             >
               Close
             </Button>
@@ -459,7 +364,7 @@ const Inquiries = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => updateInquiryStatus(row.id, 'follow_up')}
+              onClick={() => handleUpdateInquiryStatus(row.id, 'follow_up')}
             >
               Mark For Follow-up
             </Button>
@@ -670,7 +575,7 @@ const Inquiries = () => {
                 <Label htmlFor="source">Source *</Label>
                 <Select 
                   value={formData.source} 
-                  onValueChange={(value: any) => handleSelectChange('source', value)}
+                  onValueChange={(value) => handleSelectChange('source', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select source" />
@@ -690,7 +595,7 @@ const Inquiries = () => {
                 <Label htmlFor="preferred_contact">Preferred Contact Method *</Label>
                 <Select 
                   value={formData.preferred_contact} 
-                  onValueChange={(value: any) => handleSelectChange('preferred_contact', value)}
+                  onValueChange={(value) => handleSelectChange('preferred_contact', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select preferred contact" />
@@ -708,7 +613,7 @@ const Inquiries = () => {
                 <Label htmlFor="inquiry_type">Inquiry Type *</Label>
                 <Select 
                   value={formData.inquiry_type} 
-                  onValueChange={(value: any) => handleSelectChange('inquiry_type', value)}
+                  onValueChange={(value) => handleSelectChange('inquiry_type', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select inquiry type" />
@@ -727,7 +632,7 @@ const Inquiries = () => {
                 <Label htmlFor="priority">Priority *</Label>
                 <Select 
                   value={formData.priority} 
-                  onValueChange={(value: any) => handleSelectChange('priority', value)}
+                  onValueChange={(value) => handleSelectChange('priority', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
@@ -751,7 +656,7 @@ const Inquiries = () => {
                       type="number"
                       min="1"
                       max="30"
-                      value={formData.student_age || ''}
+                      value={formData.student_age}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -761,7 +666,7 @@ const Inquiries = () => {
                     <Input
                       id="student_grade"
                       name="student_grade"
-                      value={formData.student_grade || ''}
+                      value={formData.student_grade}
                       onChange={handleInputChange}
                     />
                   </div>
