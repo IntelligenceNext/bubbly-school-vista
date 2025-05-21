@@ -148,6 +148,7 @@ const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState<string>("general");
   const [currentEditSetting, setCurrentEditSetting] = useState<Setting | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [schools, setSchools] = useState<School[]>([]);
   const queryClient = useQueryClient();
 
   const settingTypeForm = useForm<SettingTypeFormValues>({
@@ -176,16 +177,17 @@ const SettingsPage = () => {
     }
   }, [settingType, currentEditSetting]);
 
-  const { data: schools = [] } = useQuery({
+  const { data: schoolsData } = useQuery({
     queryKey: ['schools-settings'],
     queryFn: async () => {
       const result = await getSchools();
       
-      if (result && result.length > 0 && !selectedSchool) {
-        setSelectedSchool(result[0].id);
+      if (result && result.data.length > 0 && !selectedSchool) {
+        setSelectedSchool(result.data[0].id);
       }
       
-      return result || [];
+      setSchools(result.data);
+      return result;
     },
   });
 
@@ -364,7 +366,7 @@ const SettingsPage = () => {
 
   // Dynamic form rendering based on setting type
   const renderDynamicForm = () => {
-    if (!settingType || settingType === "") return null;
+    if (!settingType) return null;
     
     const config = settingConfigs[settingType as keyof typeof settingConfigs];
     

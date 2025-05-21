@@ -133,7 +133,7 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
   const typedData = data?.map(school => ({
     ...school,
     status: school.status as 'active' | 'inactive'
-  })) as School[] || [];
+  })) || [];
   
   return { 
     data: typedData,
@@ -177,7 +177,7 @@ export const getClasses = async (params: GetClassesParams = {}): Promise<Paginat
   }
   
   return {
-    data: data as Class[] || [],
+    data: data || [],
     count: count || 0
   };
 };
@@ -218,7 +218,7 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
   }
   
   return {
-    data: data as Session[] || [],
+    data: data || [],
     count: count || 0
   };
 };
@@ -299,7 +299,7 @@ export const getSettings = async (params: GetSettingsParams): Promise<Setting[]>
     throw error;
   }
   
-  return data as Setting[] || [];
+  return data || [];
 };
 
 export const createOrUpdateSetting = async (
@@ -335,7 +335,7 @@ export const createOrUpdateSetting = async (
       throw error;
     }
     
-    return data as Setting;
+    return data;
   } else {
     // Create
     const { data, error } = await supabase
@@ -355,7 +355,7 @@ export const createOrUpdateSetting = async (
       throw error;
     }
     
-    return data as Setting;
+    return data;
   }
 };
 
