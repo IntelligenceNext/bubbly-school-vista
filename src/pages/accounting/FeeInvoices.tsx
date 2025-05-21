@@ -116,7 +116,7 @@ const FeeInvoices = () => {
   };
   
   // Status color mapping
-  const statusColors = {
+  const statusColors: Record<string, "default" | "secondary" | "destructive" | "success" | "warning" | "outline" | "ghost" | "link"> = {
     "Paid": "success",
     "Pending": "warning",
     "Overdue": "destructive",
@@ -165,7 +165,7 @@ const FeeInvoices = () => {
       id: "status",
       header: "Status",
       cell: (item) => (
-        <Badge variant={statusColors[item.status] as any}>
+        <Badge variant={statusColors[item.status]}>
           {item.status}
         </Badge>
       ),

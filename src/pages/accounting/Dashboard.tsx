@@ -125,10 +125,14 @@ const Dashboard = () => {
               <CardDescription>Monthly financial comparison</CardDescription>
             </CardHeader>
             <CardContent>
-              <BarChart 
-                data={monthlyData}
-                height={300}
-              />
+              <div style={{ height: 300 }}>
+                <BarChart 
+                  data={monthlyData}
+                  index="name"
+                  categories={['Income', 'Expenses']}
+                  colors={['22, 197, 94', '239, 68, 68']}
+                />
+              </div>
             </CardContent>
           </Card>
           
@@ -138,10 +142,14 @@ const Dashboard = () => {
               <CardDescription>Monthly fee collection analysis</CardDescription>
             </CardHeader>
             <CardContent>
-              <LineChart 
-                data={feeCollectionData}
-                height={300}
-              />
+              <div style={{ height: 300 }}>
+                <LineChart 
+                  data={feeCollectionData}
+                  index="name"
+                  categories={['Fee Collection']}
+                  colors={['59, 130, 246']}
+                />
+              </div>
             </CardContent>
           </Card>
         </div>
