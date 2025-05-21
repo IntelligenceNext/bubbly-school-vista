@@ -15,9 +15,11 @@ export interface FileGalleryProps {
   showDownload?: boolean;
   className?: string;
   maxHeight?: string;
+  refreshKey?: number; // Added refreshKey prop
   // Aliases for backward compatibility
   bucket?: string; // Alias for bucketName
   folder?: string; // Alias for filePath
+  onFileDeleted?: () => void; // Alias for onFileDelete
 }
 
 const FileGallery: React.FC<FileGalleryProps> = ({
@@ -26,14 +28,17 @@ const FileGallery: React.FC<FileGalleryProps> = ({
   bucket, // Alias support
   folder, // Alias support
   onFileDelete,
+  onFileDeleted, // Alias support
   showDelete = true,
   showDownload = true,
   className = '',
-  maxHeight = '400px'
+  maxHeight = '400px',
+  refreshKey = 0
 }) => {
   // Use aliases if primary props aren't provided
   const actualBucketName = bucketName || bucket || '';
   const actualFilePath = filePath || folder || '';
+  const fileDeleteCallback = onFileDelete || onFileDeleted;
   
   const [files, setFiles] = useState<{ name: string; url: string; type: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,15 +77,15 @@ const FileGallery: React.FC<FileGalleryProps> = ({
     };
 
     fetchFiles();
-  }, [actualBucketName, actualFilePath, toast]);
+  }, [actualBucketName, actualFilePath, toast, refreshKey]); // Added refreshKey dependency
 
   const handleDeleteFile = async (fileName: string) => {
     try {
       // Update this to match the expected type for deleteFile
       await deleteFile(actualBucketName as any, `${actualFilePath}/${fileName}`);
       setFiles(files.filter(file => file.name !== fileName));
-      if (onFileDelete) {
-        onFileDelete();
+      if (fileDeleteCallback) {
+        fileDeleteCallback();
       }
       toast({
         title: "Success",

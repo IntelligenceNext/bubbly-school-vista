@@ -33,6 +33,7 @@ export interface Session {
   start_date: string;
   end_date: string;
   is_current: boolean;
+  is_active: boolean;
   created_at: string;
   updated_at: string | null;
   schools?: School;
@@ -75,6 +76,7 @@ interface GetSessionsParams {
   name?: string;
   school_id?: string;
   is_current?: boolean;
+  is_active?: boolean;
 }
 
 interface GetSettingsParams {
@@ -190,6 +192,7 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
       name,
       school_id,
       is_current,
+      is_active,
     } = params;
 
     let query = supabase
@@ -206,6 +209,10 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
 
     if (is_current !== undefined) {
       query = query.eq('is_current', is_current);
+    }
+    
+    if (is_active !== undefined) {
+      query = query.eq('is_active', is_active);
     }
 
     const from = (page - 1) * pageSize;
