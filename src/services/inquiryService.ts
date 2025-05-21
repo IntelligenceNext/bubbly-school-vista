@@ -18,6 +18,7 @@ export interface CreateInquiryParams {
   student_grade?: string;
   internal_notes?: string;
   school_id: string;
+  class_id?: string; // Add class_id as optional
 }
 
 interface GetInquiriesFilters {
@@ -28,7 +29,7 @@ interface GetInquiriesFilters {
   dateTo?: string;
 }
 
-interface GetInquiriesResponse {
+export interface GetInquiriesResponse {
   data: Inquiry[];
   count: number;
 }

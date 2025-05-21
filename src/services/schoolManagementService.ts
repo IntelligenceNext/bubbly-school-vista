@@ -40,6 +40,16 @@ export interface Session {
   schools?: { name: string };
 }
 
+// Setting interface
+export interface Setting {
+  id?: string;
+  school_id: string;
+  key: string;
+  value: any;
+  created_at: string;
+  updated_at: string;
+}
+
 // Response interfaces
 export interface PaginatedResponse<T> {
   data: T[];
@@ -70,6 +80,11 @@ export interface GetSessionsParams {
   is_active?: boolean;
   page?: number;
   pageSize?: number;
+}
+
+export interface GetSettingsParams {
+  schoolId: string;
+  key?: string;
 }
 
 // School management APIs
@@ -114,8 +129,14 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
     throw error;
   }
   
+  // Ensure status is cast to the correct type
+  const typedData = data?.map(school => ({
+    ...school,
+    status: school.status as 'active' | 'inactive'
+  })) as School[] || [];
+  
   return { 
-    data: data || [],
+    data: typedData,
     count: count || 0
   };
 };
@@ -156,7 +177,7 @@ export const getClasses = async (params: GetClassesParams = {}): Promise<Paginat
   }
   
   return {
-    data: data || [],
+    data: data as Class[] || [],
     count: count || 0
   };
 };
@@ -197,7 +218,7 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
   }
   
   return {
-    data: data || [],
+    data: data as Session[] || [],
     count: count || 0
   };
 };
@@ -258,5 +279,96 @@ export const bulkUpdateSchoolStatus = async (ids: string[], status: 'active' | '
   return true;
 };
 
-// Add other functions here as needed
+// Settings management functions
+export const getSettings = async (params: GetSettingsParams): Promise<Setting[]> => {
+  const { schoolId, key } = params;
+  
+  let query = supabase
+    .from('settings')
+    .select('*')
+    .eq('school_id', schoolId);
+  
+  if (key) {
+    query = query.eq('key', key);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching settings:', error);
+    throw error;
+  }
+  
+  return data as Setting[] || [];
+};
 
+export const createOrUpdateSetting = async (
+  schoolId: string,
+  key: string,
+  value: any
+): Promise<Setting> => {
+  // Check if setting exists
+  const { data: existingSettings } = await supabase
+    .from('settings')
+    .select('*')
+    .eq('school_id', schoolId)
+    .eq('key', key);
+  
+  const exists = existingSettings && existingSettings.length > 0;
+  const now = new Date().toISOString();
+  
+  if (exists) {
+    // Update
+    const { data, error } = await supabase
+      .from('settings')
+      .update({ 
+        value,
+        updated_at: now
+      })
+      .eq('school_id', schoolId)
+      .eq('key', key)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating setting:', error);
+      throw error;
+    }
+    
+    return data as Setting;
+  } else {
+    // Create
+    const { data, error } = await supabase
+      .from('settings')
+      .insert([{ 
+        school_id: schoolId,
+        key,
+        value,
+        created_at: now,
+        updated_at: now
+      }])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating setting:', error);
+      throw error;
+    }
+    
+    return data as Setting;
+  }
+};
+
+export const deleteSetting = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('settings')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error deleting setting:', error);
+    return false;
+  }
+  
+  return true;
+};
