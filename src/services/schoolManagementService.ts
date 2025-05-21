@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface School {
@@ -21,6 +22,7 @@ export interface Class {
   is_active: boolean;
   created_at: string;
   updated_at: string | null;
+  description: string | null;
   schools?: School;
 }
 
@@ -34,6 +36,15 @@ export interface Session {
   created_at: string;
   updated_at: string | null;
   schools?: School;
+}
+
+export interface Setting {
+  id: string;
+  key: string;
+  value: any;
+  school_id: string;
+  created_at: string;
+  updated_at: string | null;
 }
 
 interface PaginatedResponse<T> {
@@ -64,6 +75,13 @@ interface GetSessionsParams {
   name?: string;
   school_id?: string;
   is_current?: boolean;
+}
+
+interface GetSettingsParams {
+  page?: number;
+  pageSize?: number;
+  key?: string;
+  school_id?: string;
 }
 
 export const getSchools = async (params: GetSchoolsParams = {}): Promise<PaginatedResponse<School>> => {
@@ -175,7 +193,7 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
     } = params;
 
     let query = supabase
-      .from('academic_sessions')
+      .from('sessions')
       .select('*, schools(*)', { count: 'exact' });
 
     if (name) {
@@ -209,6 +227,47 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
   }
 };
 
+export const getSettings = async (params: GetSettingsParams = {}): Promise<PaginatedResponse<Setting>> => {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const {
+      page = 1,
+      pageSize = 10,
+      key,
+      school_id,
+    } = params;
+
+    let query = supabase
+      .from('settings')
+      .select('*', { count: 'exact' });
+
+    if (key) {
+      query = query.eq('key', key);
+    }
+
+    if (school_id) {
+      query = query.eq('school_id', school_id);
+    }
+
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    return {
+      data: data as Setting[],
+      count: count || 0,
+    };
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    return { data: [], count: 0 };
+  }
+};
+
 export const deleteSchool = async (schoolId: string): Promise<boolean> => {
   try {
     const { supabase } = await import('@/integrations/supabase/client');
@@ -221,6 +280,54 @@ export const deleteSchool = async (schoolId: string): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error('Error deleting school:', error);
+    return false;
+  }
+};
+
+export const deleteClass = async (classId: string): Promise<boolean> => {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { error } = await supabase
+      .from('classes')
+      .delete()
+      .eq('id', classId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting class:', error);
+    return false;
+  }
+};
+
+export const deleteSession = async (sessionId: string): Promise<boolean> => {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', sessionId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    return false;
+  }
+};
+
+export const deleteSetting = async (settingId: string): Promise<boolean> => {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { error } = await supabase
+      .from('settings')
+      .delete()
+      .eq('id', settingId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting setting:', error);
     return false;
   }
 };
@@ -239,5 +346,45 @@ export const bulkUpdateSchoolStatus = async (schoolIds: string[], status: 'activ
   } catch (error) {
     console.error('Error updating school status:', error);
     return false;
+  }
+};
+
+export const createOrUpdateSetting = async (settingData: Partial<Setting>): Promise<Setting | null> => {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    if (settingData.id) {
+      // Update existing setting
+      const { data, error } = await supabase
+        .from('settings')
+        .update({
+          key: settingData.key,
+          value: settingData.value,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', settingData.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Setting;
+    } else {
+      // Create new setting
+      const { data, error } = await supabase
+        .from('settings')
+        .insert({
+          key: settingData.key,
+          value: settingData.value,
+          school_id: settingData.school_id,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as Setting;
+    }
+  } catch (error) {
+    console.error('Error creating/updating setting:', error);
+    return null;
   }
 };

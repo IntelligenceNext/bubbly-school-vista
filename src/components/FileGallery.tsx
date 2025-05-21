@@ -7,25 +7,34 @@ import { getFileUrl, deleteFile } from '@/utils/storageUtils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
-interface FileGalleryProps {
-  bucketName: string; // Changed from bucketName to match other references
+export interface FileGalleryProps {
+  bucketName: string;
   filePath: string;
   onFileDelete?: () => void;
   showDelete?: boolean;
   showDownload?: boolean;
   className?: string;
   maxHeight?: string;
+  // Aliases for backward compatibility
+  bucket?: string; // Alias for bucketName
+  folder?: string; // Alias for filePath
 }
 
 const FileGallery: React.FC<FileGalleryProps> = ({
   bucketName,
   filePath,
+  bucket, // Alias support
+  folder, // Alias support
   onFileDelete,
   showDelete = true,
   showDownload = true,
   className = '',
   maxHeight = '400px'
 }) => {
+  // Use aliases if primary props aren't provided
+  const actualBucketName = bucketName || bucket || '';
+  const actualFilePath = filePath || folder || '';
+  
   const [files, setFiles] = useState<{ name: string; url: string; type: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -35,13 +44,13 @@ const FileGallery: React.FC<FileGalleryProps> = ({
       setLoading(true);
       try {
         // Update this to match the expected type for getFileUrl
-        const fileList = await getFileUrl(bucketName as any, filePath);
+        const fileList = await getFileUrl(actualBucketName as any, actualFilePath);
         if (fileList && Array.isArray(fileList)) {
           const filesData = fileList.map(file => {
             const type = file.name.split('.').pop() || '';
             return {
               name: file.name,
-              url: `/api/storage/file?bucketName=${bucketName}&filePath=${filePath}/${file.name}`,
+              url: `/api/storage/file?bucketName=${actualBucketName}&filePath=${actualFilePath}/${file.name}`,
               type: type,
             };
           });
@@ -63,12 +72,12 @@ const FileGallery: React.FC<FileGalleryProps> = ({
     };
 
     fetchFiles();
-  }, [bucketName, filePath, toast]);
+  }, [actualBucketName, actualFilePath, toast]);
 
   const handleDeleteFile = async (fileName: string) => {
     try {
       // Update this to match the expected type for deleteFile
-      await deleteFile(bucketName as any, `${filePath}/${fileName}`);
+      await deleteFile(actualBucketName as any, `${actualFilePath}/${fileName}`);
       setFiles(files.filter(file => file.name !== fileName));
       if (onFileDelete) {
         onFileDelete();
