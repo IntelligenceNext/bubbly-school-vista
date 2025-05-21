@@ -1,426 +1,262 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Export the interfaces that were causing "locally declared but not exported" errors
+// Interfaces for tables
+export interface School {
+  id: string;
+  name: string;
+  code: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  status: 'active' | 'inactive';
+  logo_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Class {
-  id?: string;
+  id: string;
   school_id: string;
   name: string;
   code: string;
-  description?: string;
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  schools?: { name: string };
 }
 
 export interface Session {
-  id?: string;
+  id: string;
   school_id: string;
   name: string;
   start_date: string;
   end_date: string;
-  is_active?: boolean;
-  is_current?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  is_current: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  schools?: { name: string };
 }
 
-export interface School {
-  id?: string;
-  name: string;
-  code: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  logo_url?: string;
-  status?: 'active' | 'inactive'; // Fixed the string type to accept only valid values
-  created_at?: string;
-  updated_at?: string;
+// Response interfaces
+export interface PaginatedResponse<T> {
+  data: T[];
+  count: number;
 }
 
-export interface Setting {
-  id?: string;
-  school_id: string;
-  key: string;
-  value: any;
-  created_at?: string;
-  updated_at?: string;
-}
-
-// Parameters interfaces to use for function parameters
-export interface GetSettingsParams {
-  schoolId: string;
-  key?: string;
+// Parameter interfaces
+export interface GetSchoolsParams {
+  name?: string;
+  status?: 'active' | 'inactive';
+  created_at_start?: string;
+  created_at_end?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface GetClassesParams {
-  schoolId: string;
-  isActive?: boolean;
+  school_id?: string;
+  name?: string;
+  is_active?: boolean;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface GetSessionsParams {
-  schoolId: string;
-  isActive?: boolean;
-  isCurrent?: boolean;
+  school_id?: string;
+  is_current?: boolean;
+  is_active?: boolean;
+  page?: number;
+  pageSize?: number;
 }
 
-// Function to get all schools
-export const getSchools = async () => {
-  const { data, error } = await supabase.from('schools').select('*');
+// School management APIs
+export const getSchools = async (params: GetSchoolsParams = {}): Promise<PaginatedResponse<School>> => {
+  const { name, status, created_at_start, created_at_end, page, pageSize } = params;
 
-  if (error) throw error;
-  return data;
-};
-
-// Get a single school by ID
-export const getSchool = async (id: string) => {
-  const { data, error } = await supabase
+  let query = supabase
     .from('schools')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-// Create a new school
-export const createSchool = async (school: School) => {
-  const { data, error } = await supabase
-    .from('schools')
-    .insert([school])
-    .select();
-
-  if (error) throw error;
-  return data[0];
-};
-
-// Update a school
-export const updateSchool = async (id: string, school: Partial<School>) => {
-  const { data, error } = await supabase
-    .from('schools')
-    .update(school)
-    .eq('id', id)
-    .select();
-
-  if (error) throw error;
-  return data[0];
-};
-
-// Delete a school
-export const deleteSchool = async (id: string) => {
-  const { error } = await supabase.from('schools').delete().eq('id', id);
-
-  if (error) throw error;
-  return true;
-};
-
-// Bulk update school status
-export const bulkUpdateSchoolStatus = async (schoolIds: string[], status: 'active' | 'inactive') => {
-  // Fix the bulk update - process items one by one to avoid array issue
-  const results = [];
+    .select('*', { count: 'exact' });
   
-  for (const id of schoolIds) {
-    const { data, error } = await supabase
-      .from('schools')
-      .update({ 
-        status, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', id)
-      .select();
-      
-    if (error) throw error;
-    if (data && data.length > 0) {
-      results.push(data[0]);
-    }
+  if (name) {
+    query = query.ilike('name', `%${name}%`);
   }
   
-  return results;
+  if (status) {
+    query = query.eq('status', status);
+  }
+  
+  if (created_at_start) {
+    query = query.gte('created_at', created_at_start);
+  }
+  
+  if (created_at_end) {
+    const endDate = new Date(created_at_end);
+    endDate.setDate(endDate.getDate() + 1);
+    query = query.lt('created_at', endDate.toISOString());
+  }
+
+  // Apply pagination if provided
+  if (page !== undefined && pageSize !== undefined) {
+    const start = (page - 1) * pageSize;
+    query = query.range(start, start + pageSize - 1);
+  }
+  
+  // Sort by created_at date, newest first
+  query = query.order('created_at', { ascending: false });
+  
+  const { data, error, count } = await query;
+  
+  if (error) {
+    console.error('Error fetching schools:', error);
+    throw error;
+  }
+  
+  return { 
+    data: data || [],
+    count: count || 0
+  };
 };
 
-// Get all classes for a school
-export const getClasses = async ({ schoolId, isActive }: GetClassesParams) => {
+export const getClasses = async (params: GetClassesParams = {}): Promise<PaginatedResponse<Class>> => {
+  const { school_id, name, is_active, page, pageSize } = params;
+  
   let query = supabase
     .from('classes')
-    .select('*')
-    .eq('school_id', schoolId);
-
-  if (isActive !== undefined) {
-    query = query.eq('is_active', isActive);
-  }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data;
-};
-
-// Get a single class by ID
-export const getClass = async (id: string) => {
-  const { data, error } = await supabase
-    .from('classes')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-// Create a new class
-export const createClass = async (classData: Class) => {
-  const { data, error } = await supabase
-    .from('classes')
-    .insert([classData])
-    .select();
-
-  if (error) throw error;
-  return data[0];
-};
-
-// Update a class
-export const updateClass = async (id: string, classData: Partial<Class>) => {
-  const { data, error } = await supabase
-    .from('classes')
-    .update(classData)
-    .eq('id', id)
-    .select();
-
-  if (error) throw error;
-  return data[0];
-};
-
-// Delete a class
-export const deleteClass = async (id: string) => {
-  const { error } = await supabase.from('classes').delete().eq('id', id);
-
-  if (error) throw error;
-  return true;
-};
-
-// Bulk update class status
-export const bulkUpdateClassStatus = async (classIds: string[], isActive: boolean) => {
-  // Fix the bulk update - process items one by one to avoid array issue
-  const results = [];
+    .select('*, schools(name)', { count: 'exact' });
   
-  for (const id of classIds) {
-    const { data, error } = await supabase
-      .from('classes')
-      .update({ 
-        is_active: isActive, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', id)
-      .select();
-      
-    if (error) throw error;
-    if (data && data.length > 0) {
-      results.push(data[0]);
-    }
+  if (school_id) {
+    query = query.eq('school_id', school_id);
   }
   
-  return results;
+  if (name) {
+    query = query.ilike('name', `%${name}%`);
+  }
+  
+  if (is_active !== undefined) {
+    query = query.eq('is_active', is_active);
+  }
+  
+  // Apply pagination if provided
+  if (page !== undefined && pageSize !== undefined) {
+    const start = (page - 1) * pageSize;
+    query = query.range(start, start + pageSize - 1);
+  }
+  
+  // Sort by created_at date, newest first
+  query = query.order('created_at', { ascending: false });
+  
+  const { data, error, count } = await query;
+  
+  if (error) {
+    console.error('Error fetching classes:', error);
+    throw error;
+  }
+  
+  return {
+    data: data || [],
+    count: count || 0
+  };
 };
 
-// Get all sessions for a school
-export const getSessions = async ({ schoolId, isActive, isCurrent }: GetSessionsParams) => {
+export const getSessions = async (params: GetSessionsParams = {}): Promise<PaginatedResponse<Session>> => {
+  const { school_id, is_current, is_active, page, pageSize } = params;
+  
   let query = supabase
     .from('sessions')
-    .select('*')
-    .eq('school_id', schoolId);
-
-  if (isActive !== undefined) {
-    query = query.eq('is_active', isActive);
+    .select('*, schools(name)', { count: 'exact' });
+  
+  if (school_id) {
+    query = query.eq('school_id', school_id);
   }
-
-  if (isCurrent !== undefined) {
-    query = query.eq('is_current', isCurrent);
+  
+  if (is_current !== undefined) {
+    query = query.eq('is_current', is_current);
   }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data;
+  
+  if (is_active !== undefined) {
+    query = query.eq('is_active', is_active);
+  }
+  
+  // Apply pagination if provided
+  if (page !== undefined && pageSize !== undefined) {
+    const start = (page - 1) * pageSize;
+    query = query.range(start, start + pageSize - 1);
+  }
+  
+  // Sort by start_date date, newest first
+  query = query.order('start_date', { ascending: false });
+  
+  const { data, error, count } = await query;
+  
+  if (error) {
+    console.error('Error fetching sessions:', error);
+    throw error;
+  }
+  
+  return {
+    data: data || [],
+    count: count || 0
+  };
 };
 
-// Get a single session by ID
-export const getSession = async (id: string) => {
-  const { data, error } = await supabase
-    .from('sessions')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-// Create a new session
-export const createSession = async (session: Session) => {
-  const { data, error } = await supabase
-    .from('sessions')
-    .insert([session])
-    .select();
-
-  if (error) throw error;
-  return data[0];
-};
-
-// Update a session
-export const updateSession = async (id: string, session: Partial<Session>) => {
-  const { data, error } = await supabase
-    .from('sessions')
-    .update(session)
-    .eq('id', id)
-    .select();
-
-  if (error) throw error;
-  return data[0];
-};
-
-// Delete a session
-export const deleteSession = async (id: string) => {
-  const { error } = await supabase.from('sessions').delete().eq('id', id);
-
-  if (error) throw error;
+export const deleteSchool = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('schools')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error deleting school:', error);
+    return false;
+  }
+  
   return true;
 };
 
-// Set a session as current
-export const setCurrentSession = async (id: string, schoolId: string) => {
-  // First, update all sessions for this school to not be current
-  const resetQuery = await supabase
-    .from('sessions')
-    .update({ is_current: false })
-    .eq('school_id', schoolId);
-
-  if (resetQuery.error) throw resetQuery.error;
-
-  // Then set the specified session as current
-  const { data, error } = await supabase
-    .from('sessions')
-    .update({ is_current: true })
-    .eq('id', id)
-    .select();
-
-  if (error) throw error;
-  return data[0];
-};
-
-// Get settings for a school
-export const getSettings = async ({ schoolId, key }: GetSettingsParams) => {
-  let query = supabase
-    .from('settings')
-    .select('*')
-    .eq('school_id', schoolId);
-
-  if (key) {
-    query = query.eq('key', key);
+export const deleteClass = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('classes')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error deleting class:', error);
+    return false;
   }
-
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data;
-};
-
-// Get a single setting by ID
-export const getSetting = async (id: string) => {
-  const { data, error } = await supabase
-    .from('settings')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-// Create or update a setting
-export const saveSetting = async (setting: Setting) => {
-  // Check if setting exists
-  const { data: existing, error: findError } = await supabase
-    .from('settings')
-    .select('id')
-    .eq('school_id', setting.school_id)
-    .eq('key', setting.key);
-
-  if (findError) throw findError;
-
-  if (existing && existing.length > 0) {
-    // Update
-    const { data, error } = await supabase
-      .from('settings')
-      .update({ value: setting.value, updated_at: new Date().toISOString() })
-      .eq('id', existing[0].id)
-      .select();
-
-    if (error) throw error;
-    return data[0];
-  } else {
-    // Insert
-    const { data, error } = await supabase
-      .from('settings')
-      .insert([setting])
-      .select();
-
-    if (error) throw error;
-    return data[0];
-  }
-};
-
-// Delete a setting
-export const deleteSetting = async (id: string) => {
-  const { error } = await supabase.from('settings').delete().eq('id', id);
-
-  if (error) throw error;
+  
   return true;
 };
 
-// Add the missing createOrUpdateSetting function
-export const createOrUpdateSetting = async (
-  schoolId: string,
-  key: string,
-  value: any
-) => {
-  // Try to find existing setting
-  const { data: existingSettings, error: findError } = await supabase
-    .from('settings')
-    .select('*')
-    .eq('school_id', schoolId)
-    .eq('key', key);
-
-  if (findError) throw findError;
-
-  if (existingSettings && existingSettings.length > 0) {
-    // Update existing setting
-    const { data, error } = await supabase
-      .from('settings')
-      .update({ 
-        value, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', existingSettings[0].id)
-      .select();
-
-    if (error) throw error;
-    return data[0];
-  } else {
-    // Create new setting
-    const setting: Setting = {
-      school_id: schoolId,
-      key,
-      value,
-      created_at: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-      .from('settings')
-      .insert([setting])
-      .select();
-
-    if (error) throw error;
-    return data[0];
+export const deleteSession = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('sessions')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error deleting session:', error);
+    return false;
   }
+  
+  return true;
 };
+
+export const bulkUpdateSchoolStatus = async (ids: string[], status: 'active' | 'inactive'): Promise<boolean> => {
+  const { error } = await supabase
+    .from('schools')
+    .update({ status, updated_at: new Date().toISOString() })
+    .in('id', ids);
+  
+  if (error) {
+    console.error('Error updating schools status:', error);
+    return false;
+  }
+  
+  return true;
+};
+
+// Add other functions here as needed
+

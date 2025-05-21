@@ -20,17 +20,29 @@ export interface CreateInquiryParams {
   school_id: string;
 }
 
-// Get all inquiries for a school
-export const getInquiries = async (schoolId: string, filters?: {
+interface GetInquiriesFilters {
   status?: string;
   source?: string;
   priority?: string;
   dateFrom?: string;
   dateTo?: string;
-}) => {
+}
+
+interface GetInquiriesResponse {
+  data: Inquiry[];
+  count: number;
+}
+
+// Get all inquiries for a school
+export const getInquiries = async (
+  schoolId: string, 
+  filters?: GetInquiriesFilters, 
+  page: number = 1, 
+  pageSize: number = 20
+): Promise<GetInquiriesResponse> => {
   let query = supabase
     .from('inquiries')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('school_id', schoolId);
   
   // Apply filters
@@ -59,17 +71,26 @@ export const getInquiries = async (schoolId: string, filters?: {
     }
   }
   
+  // Apply pagination
+  if (page && pageSize) {
+    const start = (page - 1) * pageSize;
+    query = query.range(start, start + pageSize - 1);
+  }
+  
   // Sort by created_at date, newest first
   query = query.order('created_at', { ascending: false });
   
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   
   if (error) {
     console.error('Error fetching inquiries:', error);
     throw error;
   }
   
-  return data || [];
+  return {
+    data: data || [],
+    count: count || 0
+  };
 };
 
 // Create a new inquiry

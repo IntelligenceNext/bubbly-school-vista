@@ -42,7 +42,12 @@ const QuickStats: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="h-[200px]">
-            <BarChart data={attendanceData} />
+            <BarChart 
+              data={attendanceData} 
+              index="name"
+              categories={['Students', 'Staff']}
+              colors={['rgba(155, 135, 245, 0.8)', 'rgba(51, 195, 240, 0.8)']}
+            />
           </div>
         </CardContent>
       </Card>
@@ -53,7 +58,12 @@ const QuickStats: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="h-[200px]">
-            <LineChart data={feesData} />
+            <LineChart 
+              data={feesData} 
+              index="name"
+              categories={['Collected']}
+              colors={['rgba(155, 135, 245, 1)']}
+            />
           </div>
         </CardContent>
       </Card>
