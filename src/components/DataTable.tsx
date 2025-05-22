@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Table,
@@ -57,7 +56,8 @@ interface DataTableProps<T> {
   emptyState?: React.ReactNode;
 }
 
-const DataTable = <T extends {}>({
+// Change from default export to named export to match the imports
+export const DataTable = <T extends {}>({
   data,
   columns: initialColumns,
   keyField,
@@ -315,4 +315,5 @@ const DataTable = <T extends {}>({
   );
 };
 
+// Keep the default export for backward compatibility
 export default DataTable;

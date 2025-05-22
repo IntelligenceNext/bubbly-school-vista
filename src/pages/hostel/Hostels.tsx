@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import PageTemplate from '@/components/PageTemplate';
@@ -8,12 +7,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DataTable } from '@/components/DataTable';
+import DataTable, { Column } from '@/components/DataTable';
 import { Hostel, getHostels, createHostel, updateHostel, deleteHostel } from '@/services/hostelService';
 import { PlusCircle, Building, Phone, Pencil, Trash2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { Column } from '@/components/DataTable';
-import { RowAction } from '@/components/DataTable';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 
