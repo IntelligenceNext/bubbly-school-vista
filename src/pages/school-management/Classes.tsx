@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
@@ -33,6 +32,8 @@ import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from "@/components/ui/switch";
+import { FormDescription } from "@/components/ui/form";
 
 const classSchema = z.object({
   school_id: z.string().min(1, "School is required"),
@@ -129,7 +130,7 @@ const ClassesPage = () => {
       cell: (classItem) => (
         <div className="max-w-[200px] truncate">{classItem.description || '—'}</div>
       ),
-      visible: false,
+      isVisible: false, // Changed 'visible' to 'isVisible'
     },
   ];
 

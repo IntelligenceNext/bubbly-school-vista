@@ -112,7 +112,7 @@ const SchoolsPage = () => {
       id: 'phone',
       header: 'Phone',
       cell: (school) => <div>{school.phone || '-'}</div>,
-      visible: false,
+      isVisible: false, // Changed 'visible' to 'isVisible'
     },
     {
       id: 'status',

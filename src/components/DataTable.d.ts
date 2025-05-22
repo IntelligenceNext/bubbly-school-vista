@@ -11,6 +11,7 @@ export interface Column<T> {
   isSortable?: boolean;
   sortKey?: string;
   size?: ColumnSize;
+  isVisible?: boolean; // Changed from 'visible' to 'isVisible' to be consistent with naming
 }
 
 export interface Action<T> {
@@ -18,7 +19,7 @@ export interface Action<T> {
   onClick: (item: T) => void;
   variant?: ButtonVariant;
   icon?: ReactNode;
-  isVisible?: (item: T) => boolean;
+  isVisible?: (item: T) => boolean; // This is the correct property name to replace 'condition'
 }
 
 export interface BulkAction<T> {

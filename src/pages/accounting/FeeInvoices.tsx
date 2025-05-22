@@ -211,7 +211,7 @@ const FeeInvoices = () => {
     {
       label: "Collect Payment",
       onClick: (item) => alert(`Collecting payment for invoice ${item.id}`),
-      condition: (item) => item.status !== "Paid"
+      isVisible: (item) => item.status !== "Paid"
     },
     {
       label: "Cancel Invoice",

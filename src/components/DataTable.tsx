@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -104,6 +103,9 @@ const DataTable = <T extends Record<string, any>>({
       (selectedItem) => selectedItem[keyField] === item[keyField]
     );
   };
+
+  // Filter out columns that are not visible
+  const visibleColumns = columns.filter(column => column.isVisible !== false);
 
   const handleSort = (key: string) => {
     const direction = sortKey === key && sortDirection === 'asc' ? 'desc' : 'asc';
@@ -222,7 +224,7 @@ const DataTable = <T extends Record<string, any>>({
                 </TableHead>
               )}
               
-              {columns.map((column) => (
+              {visibleColumns.map((column) => (
                 <TableHead 
                   key={column.id}
                   className={cn(
@@ -264,7 +266,7 @@ const DataTable = <T extends Record<string, any>>({
                   </TableCell>
                 )}
                 
-                {columns.map((column) => (
+                {visibleColumns.map((column) => (
                   <TableCell key={column.id} className="px-4 py-2">
                     {column.cell(item)}
                   </TableCell>
@@ -280,18 +282,20 @@ const DataTable = <T extends Record<string, any>>({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {actions.filter(action => action.isVisible ? action.isVisible(item) : true).map((action, i) => (
-                          <DropdownMenuItem
-                            key={i}
-                            onClick={() => action.onClick(item)}
-                            className={cn(
-                              action.variant === 'destructive' && "text-destructive"
-                            )}
-                          >
-                            {action.icon}
-                            {action.label}
-                          </DropdownMenuItem>
-                        ))}
+                        {actions
+                          .filter(action => action.isVisible ? action.isVisible(item) : true)
+                          .map((action, i) => (
+                            <DropdownMenuItem
+                              key={i}
+                              onClick={() => action.onClick(item)}
+                              className={cn(
+                                action.variant === 'destructive' && "text-destructive"
+                              )}
+                            >
+                              {action.icon}
+                              {action.label}
+                            </DropdownMenuItem>
+                          ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
