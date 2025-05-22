@@ -599,6 +599,10 @@ export type Database = {
         Args: { school_uuid: string; roles: string[] }
         Returns: boolean
       }
+      user_has_school_access: {
+        Args: { school_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       school_status: "active" | "inactive" | "archived"

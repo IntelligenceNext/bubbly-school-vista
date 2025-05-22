@@ -78,7 +78,7 @@ const RoutesPage: React.FC = () => {
       header: 'Description',
       cell: (route) => <div>{route.description || '-'}</div>,
       isSortable: false,
-      size: 'lg',
+      size: 'lg' as const,
     },
     {
       id: 'status',
@@ -218,7 +218,7 @@ const RoutesPage: React.FC = () => {
                       <SelectValue placeholder="All statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
+                      <SelectItem value="all-statuses">All</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
@@ -302,7 +302,7 @@ const RoutesPage: React.FC = () => {
         selectable={true}
         actions={actions}
         bulkActions={bulkActions}
-        pagination={pagination}
+        paginationState={pagination}
         emptyState={
           <div className="text-center py-10">
             <h3 className="text-lg font-medium">No routes found</h3>

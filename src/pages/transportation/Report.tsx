@@ -170,7 +170,7 @@ const Report = () => {
             header: 'Vehicle',
             cell: (report) => <div>{report.vehicle_details}</div>,
             isSortable: true,
-            size: "md",
+            size: "md" as const,
           },
           {
             id: 'driver',
@@ -193,7 +193,7 @@ const Report = () => {
         ]}
         keyField="id"
         isLoading={isLoading}
-        pagination={pagination}
+        paginationState={pagination}
       />
     </PageTemplate>
   );
