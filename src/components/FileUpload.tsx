@@ -13,6 +13,7 @@ interface FileUploadProps {
   acceptedFileTypes?: string[];
   maxFiles?: number;
   buttonText?: string;
+  maxSizeInMB?: number; // Adding this property to match the usage in the app
 }
 
 const FileUpload = ({
@@ -20,6 +21,7 @@ const FileUpload = ({
   folder,
   onUploadComplete,
   maxSize = 5, // Default 5MB
+  maxSizeInMB, // Adding this property
   acceptedFileTypes,
   maxFiles = 1,
   buttonText = "Upload File"
@@ -31,11 +33,12 @@ const FileUpload = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Check file size
-      if (file.size > maxSize * 1024 * 1024) {
+      // Check file size - use maxSizeInMB if provided, otherwise fall back to maxSize
+      const effectiveMaxSize = maxSizeInMB || maxSize;
+      if (file.size > effectiveMaxSize * 1024 * 1024) {
         toast({
           title: "File too large",
-          description: `Maximum file size is ${maxSize}MB`,
+          description: `Maximum file size is ${effectiveMaxSize}MB`,
           variant: "destructive"
         });
         return;

@@ -6,10 +6,24 @@ interface FileUploadProps {
   bucket: 'school_logos' | 'student_photos' | 'attachments' | 'book-covers';
   
   /**
-   * Callback function triggered after successful upload
-   * Returns an array of file URLs or paths
+   * Optional folder path within the bucket
    */
-  onUploadComplete: (urls: string[]) => void;
+  folder?: string;
+  
+  /**
+   * Callback function triggered after successful upload
+   */
+  onUploadComplete?: (filePath: string) => void;
+  
+  /**
+   * Maximum size of each file in MB (legacy prop)
+   */
+  maxSize?: number;
+
+  /**
+   * Maximum size of each file in MB
+   */
+  maxSizeInMB?: number;
   
   /**
    * Accepted file types
@@ -22,9 +36,9 @@ interface FileUploadProps {
   maxFiles?: number;
   
   /**
-   * Maximum size of each file in MB
+   * Text to display on the upload button
    */
-  maxSizeInMB?: number;
+  buttonText?: string;
 }
 
 export default FileUploadProps;

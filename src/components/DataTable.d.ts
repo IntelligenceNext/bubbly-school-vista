@@ -5,8 +5,10 @@ interface Column<T = any> {
   cell: (item: T) => React.ReactNode;
   isSortable?: boolean; 
   sortKey?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
 }
+
+export type ColumnSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
 
 export type ButtonVariant = 
   | 'default'

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -64,7 +63,7 @@ export function ChapterForm({
     },
   });
 
-  // Updated to handle multiple file uploads
+  // Updated to handle file uploads
   const handleFileUpload = (url: string) => {
     const currentUrls = form.getValues('resources') || [];
     form.setValue('resources', [...currentUrls, url], { shouldValidate: true });
@@ -164,7 +163,7 @@ export function ChapterForm({
             onUploadComplete={handleFileUpload}
             acceptedFileTypes={['pdf', 'doc', 'mp4', 'mp3']}
             maxFiles={5}
-            maxSizeInMB={50}
+            maxSize={50}
           />
         </div>
 
