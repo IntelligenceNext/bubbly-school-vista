@@ -550,7 +550,7 @@ const SchoolsPage = () => {
                     <FileUpload 
                       bucket="school_logos"
                       maxSize={1}
-                      acceptedFileTypes="image/*"
+                      acceptedFileTypes={["image/*"]}
                       buttonText="Upload Logo"
                       onUploadComplete={(path) => handleLogoUpload(editingSchool.id, path)}
                     />

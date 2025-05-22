@@ -23,6 +23,10 @@ const Students = () => {
     setRefreshGallery(prev => prev + 1);
   };
 
+  const handlePhotoUpload = () => {
+    // Handle photo upload logic
+  };
+
   // Sample student data for demonstration
   const students = [
     {
@@ -199,10 +203,9 @@ const Students = () => {
                 <h3 className="font-medium mb-2">Upload New Photo</h3>
                 <FileUpload 
                   bucket="student_photos" 
-                  maxSize={2}
-                  acceptedFileTypes="image/*"
-                  buttonText="Select Photo"
-                  onUploadComplete={handleUploadComplete}
+                  maxSize={1}
+                  acceptedFileTypes={["image/*"]}
+                  onUploadComplete={handlePhotoUpload}
                 />
               </div>
               

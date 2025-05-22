@@ -1,472 +1,554 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import PageTemplate from '@/components/PageTemplate';
+import DataTable, { Column } from '@/components/DataTable';
 import PageHeader from '@/components/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
-import DataTable from '@/components/DataTable';
+import { Vehicle, getVehicles, deleteVehicle } from '@/services/transportationService';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue 
+  SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Bus, Plus, Settings } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
+import { Plus, Trash2 } from 'lucide-react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import FilterDropdown from '@/components/FilterDropdown';
+import usePagination from '@/hooks/usePagination';
 
-// Mock data for vehicles
-const mockVehicles = [
-  {
-    id: '1',
-    registration_number: 'KA-01-AB-1234',
-    vehicle_type: 'Bus',
-    capacity: 40,
-    driver_name: 'John Doe',
-    status: 'active',
-    gps_tracking_enabled: true,
-    remarks: 'School bus for north route'
-  },
-  {
-    id: '2',
-    registration_number: 'KA-01-CD-5678',
-    vehicle_type: 'Van',
-    capacity: 15,
-    driver_name: 'Jane Smith',
-    status: 'inactive',
-    gps_tracking_enabled: false,
-    remarks: 'Staff transportation'
-  },
-  {
-    id: '3',
-    registration_number: 'KA-01-EF-9012',
-    vehicle_type: 'Bus',
-    capacity: 35,
-    driver_name: 'Robert Johnson',
-    status: 'maintenance',
-    gps_tracking_enabled: true,
-    remarks: 'Under maintenance for brake issues'
-  },
-];
+const vehicleSchema = z.object({
+  registration_number: z.string().min(2, "Registration number must be at least 2 characters"),
+  vehicle_type: z.string().min(2, "Vehicle type must be at least 2 characters"),
+  make: z.string().optional().nullable(),
+  model: z.string().optional().nullable(),
+  year: z.number().optional().nullable(),
+  capacity: z.number().optional().nullable(),
+  status: z.enum(["active", "inactive"]).default("active"),
+});
 
-const Vehicles = () => {
-  const [vehicles, setVehicles] = useState(mockVehicles);
-  const [showAddVehicleDialog, setShowAddVehicleDialog] = useState(false);
-  const [showEditVehicleDialog, setShowEditVehicleDialog] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  
-  // Form state for new/edit vehicle
-  const [formData, setFormData] = useState({
+type VehicleFormValues = z.infer<typeof vehicleSchema>;
+
+const VehiclesPage = () => {
+  const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [filters, setFilters] = useState({
     registration_number: '',
-    vehicle_type: 'Bus',
-    capacity: 0,
-    driver_name: '',
-    status: 'active',
-    gps_tracking_enabled: false,
-    remarks: ''
+    vehicle_type: '',
+    status: '',
+  });
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const pagination = usePagination();
+  const { page, pageSize, setTotal } = pagination;
+
+  const form = useForm<VehicleFormValues>({
+    resolver: zodResolver(vehicleSchema),
+    defaultValues: {
+      registration_number: '',
+      vehicle_type: '',
+      make: '',
+      model: '',
+      year: undefined,
+      capacity: undefined,
+      status: 'active',
+    },
   });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const { data: vehicles, isLoading, refetch } = useQuery({
+    queryKey: ['vehicles', filters, page, pageSize],
+    queryFn: async () => {
+      const result = await getVehicles({
+        ...filters,
+        page,
+        pageSize,
+        status: filters.status as "active" | "inactive" | undefined,
+      });
+      setTotal(result.count);
+      return result.data;
+    },
+  });
 
-  const handleSelectChange = (name, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleAddVehicle = () => {
-    const newVehicle = {
-      id: Date.now().toString(),
-      ...formData
-    };
-    
-    setVehicles(prev => [...prev, newVehicle]);
-    setShowAddVehicleDialog(false);
-    resetForm();
-  };
-
-  const handleEditVehicle = () => {
-    const updatedVehicles = vehicles.map(vehicle => 
-      vehicle.id === selectedVehicle.id ? { ...vehicle, ...formData } : vehicle
-    );
-    
-    setVehicles(updatedVehicles);
-    setShowEditVehicleDialog(false);
-    setSelectedVehicle(null);
-    resetForm();
-  };
-
-  const openEditDialog = (vehicle) => {
-    setSelectedVehicle(vehicle);
-    setFormData({
-      registration_number: vehicle.registration_number,
-      vehicle_type: vehicle.vehicle_type,
-      capacity: vehicle.capacity,
-      driver_name: vehicle.driver_name,
-      status: vehicle.status,
-      gps_tracking_enabled: vehicle.gps_tracking_enabled,
-      remarks: vehicle.remarks
-    });
-    setShowEditVehicleDialog(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      registration_number: '',
-      vehicle_type: 'Bus',
-      capacity: 0,
-      driver_name: '',
-      status: 'active',
-      gps_tracking_enabled: false,
-      remarks: ''
-    });
-  };
-
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'active':
-        return <Badge variant="success">Active</Badge>;
-      case 'inactive':
-        return <Badge variant="secondary">Inactive</Badge>;
-      case 'maintenance':
-        return <Badge variant="warning">Maintenance</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-
-  const columns = [
+  const columns: Column<Vehicle>[] = [
     {
-      id: 'registration_number',
-      header: 'Registration No.',
-      cell: (item) => <span className="font-medium">{item.registration_number}</span>,
+      id: 'registration',
+      header: 'Registration',
+      cell: (vehicle) => <div className="font-medium">{vehicle.registration_number}</div>,
       isSortable: true,
-      sortKey: 'registration_number'
+      sortKey: 'registration_number',
     },
     {
-      id: 'vehicle_type',
+      id: 'type',
       header: 'Type',
-      cell: (item) => <span>{item.vehicle_type}</span>,
+      cell: (vehicle) => <div>{vehicle.vehicle_type}</div>,
       isSortable: true,
-      sortKey: 'vehicle_type'
+      size: "md" as const,
+    },
+    {
+      id: 'make',
+      header: 'Make',
+      cell: (vehicle) => <div>{vehicle.make || '-'}</div>,
+      visible: false,
+    },
+    {
+      id: 'model',
+      header: 'Model',
+      cell: (vehicle) => <div>{vehicle.model || '-'}</div>,
+      visible: false,
+    },
+    {
+      id: 'year',
+      header: 'Year',
+      cell: (vehicle) => <div>{vehicle.year || '-'}</div>,
+      visible: false,
     },
     {
       id: 'capacity',
       header: 'Capacity',
-      cell: (item) => <span>{item.capacity}</span>,
-      isSortable: true,
-      sortKey: 'capacity'
-    },
-    {
-      id: 'driver_name',
-      header: 'Driver',
-      cell: (item) => <span>{item.driver_name}</span>,
-      isSortable: true,
-      sortKey: 'driver_name'
+      cell: (vehicle) => <div>{vehicle.capacity || '-'}</div>,
+      visible: false,
     },
     {
       id: 'status',
       header: 'Status',
-      cell: (item) => getStatusBadge(item.status),
-      isSortable: true,
-      sortKey: 'status'
-    },
-    {
-      id: 'gps_tracking',
-      header: 'GPS Tracking',
-      cell: (item) => (
-        <span>{item.gps_tracking_enabled ? 'Enabled' : 'Disabled'}</span>
+      cell: (vehicle) => (
+        <Label className='capitalize' variant={vehicle.status === 'active' ? 'success' : 'secondary'}>
+          {vehicle.status}
+        </Label>
       ),
-      isSortable: true,
-      sortKey: 'gps_tracking_enabled'
-    },
-    {
-      id: 'remarks',
-      header: 'Remarks',
-      cell: (item) => <span className="truncate max-w-xs">{item.remarks}</span>,
-      isSortable: false,
-      size: "lg" // Changed from 'lg' string to "lg" enum value
     },
   ];
 
   const actions = [
     {
-      label: 'Edit Vehicle',
-      onClick: (item) => openEditDialog(item),
+      label: 'Edit',
+      onClick: (vehicle: Vehicle) => handleEditVehicle(vehicle),
     },
     {
-      label: 'View Details',
-      onClick: (item) => console.log('View details for:', item),
-    },
-    {
-      label: 'Toggle GPS',
-      onClick: (item) => {
-        const updatedVehicles = vehicles.map(vehicle => 
-          vehicle.id === item.id 
-            ? { ...vehicle, gps_tracking_enabled: !vehicle.gps_tracking_enabled } 
-            : vehicle
-        );
-        setVehicles(updatedVehicles);
+      label: 'Delete',
+      onClick: (vehicle: Vehicle) => {
+        setSelectedVehicle(vehicle);
+        setIsDeleteDialogOpen(true);
       },
+      variant: 'destructive' as const,
     },
   ];
 
+  const bulkActions = [
+    // {
+    //   label: 'Activate',
+    //   onClick: (vehicles: Vehicle[]) => handleBulkStatusChange(vehicles, 'active'),
+    // },
+    // {
+    //   label: 'Deactivate',
+    //   onClick: (vehicles: Vehicle[]) => handleBulkStatusChange(vehicles, 'inactive'),
+    // },
+  ];
+
+  const applyFilters = () => {
+    const active: string[] = [];
+    if (filters.registration_number) active.push('registration_number');
+    if (filters.vehicle_type) active.push('vehicle_type');
+    if (filters.status) active.push('status');
+    
+    setActiveFilters(active);
+    refetch();
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      registration_number: '',
+      vehicle_type: '',
+      status: '',
+    });
+    setActiveFilters([]);
+    refetch();
+  };
+
+  const handleCreateVehicle = () => {
+    setEditingVehicle(null);
+    form.reset({
+      registration_number: '',
+      vehicle_type: '',
+      make: '',
+      model: '',
+      year: undefined,
+      capacity: undefined,
+      status: 'active',
+    });
+    setIsVehicleDialogOpen(true);
+  };
+
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    form.reset({
+      registration_number: vehicle.registration_number,
+      vehicle_type: vehicle.vehicle_type,
+      make: vehicle.make || '',
+      model: vehicle.model || '',
+      year: vehicle.year || undefined,
+      capacity: vehicle.capacity || undefined,
+      status: vehicle.status,
+    });
+    setIsVehicleDialogOpen(true);
+  };
+
+  const handleDeleteVehicle = async () => {
+    if (!selectedVehicle) return;
+    
+    const success = await deleteVehicle(selectedVehicle.id);
+    if (success) {
+      refetch();
+      setIsDeleteDialogOpen(false);
+      setSelectedVehicle(null);
+    }
+  };
+
+  // const handleBulkStatusChange = async (vehicles: Vehicle[], status: 'active' | 'inactive') => {
+  //   const vehicleIds = vehicles.map(vehicle => vehicle.id);
+  //   const success = await bulkUpdateVehicleStatus(vehicleIds, status);
+  //   if (success) {
+  //     refetch();
+  //   }
+  // };
+
+  const onSubmit = async (data: VehicleFormValues) => {
+    try {
+      if (editingVehicle) {
+        // Update existing vehicle
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { error } = await supabase
+          .from('transportation_vehicles')
+          .update({
+            registration_number: data.registration_number,
+            vehicle_type: data.vehicle_type,
+            make: data.make,
+            model: data.model,
+            year: data.year,
+            capacity: data.capacity,
+            status: data.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingVehicle.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: 'Vehicle updated',
+          description: `${data.registration_number} has been updated successfully.`,
+        });
+      } else {
+        // Create new vehicle
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { error } = await supabase
+          .from('transportation_vehicles')
+          .insert({
+            registration_number: data.registration_number,
+            vehicle_type: data.vehicle_type,
+            make: data.make,
+            model: data.model,
+            year: data.year,
+            capacity: data.capacity,
+            status: data.status,
+          });
+
+        if (error) throw error;
+        
+        toast({
+          title: 'Vehicle created',
+          description: `${data.registration_number} has been created successfully.`,
+        });
+      }
+      
+      setIsVehicleDialogOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
-    <PageTemplate title="Transportation Management" subtitle="Manage school transportation fleet">
-      <PageHeader 
-        title="Vehicles" 
-        description="Manage school transportation vehicles"
+    <PageTemplate title="Vehicles" subtitle="Manage all transportation vehicles">
+      <PageHeader
+        title="Vehicles"
+        description="Create and manage vehicles for transportation"
         primaryAction={{
           label: "Add Vehicle",
-          onClick: () => setShowAddVehicleDialog(true),
-          icon: <Plus size={16} />
+          onClick: handleCreateVehicle,
+          icon: <Plus className="h-4 w-4 mr-2" />,
         }}
+        actions={[
+          <FilterDropdown
+            key="filter"
+            filters={
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="registration-filter">Registration Number</Label>
+                  <Input
+                    id="registration-filter"
+                    placeholder="Search by registration"
+                    value={filters.registration_number}
+                    onChange={(e) => setFilters({ ...filters, registration_number: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vehicle_type-filter">Vehicle Type</Label>
+                  <Input
+                    id="vehicle_type-filter"
+                    placeholder="Search by vehicle type"
+                    value={filters.vehicle_type}
+                    onChange={(e) => setFilters({ ...filters, vehicle_type: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="status-filter">Status</Label>
+                  <Select
+                    value={filters.status}
+                    onValueChange={(value) => setFilters({ ...filters, status: value })}
+                  >
+                    <SelectTrigger id="status-filter">
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            }
+            onClear={clearFilters}
+            onApply={applyFilters}
+            activeFiltersCount={activeFilters.length}
+          />,
+        ]}
       />
 
-      <Card className="mt-6">
-        <CardContent className="pt-6">
-          <DataTable
-            data={vehicles}
-            columns={columns}
-            keyField="id"
-            actions={actions}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Add Vehicle Dialog */}
-      <Dialog open={showAddVehicleDialog} onOpenChange={setShowAddVehicleDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add New Vehicle</DialogTitle>
-            <DialogDescription>
-              Enter the details for the new vehicle.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="registration_number">Registration Number</Label>
-              <Input
-                id="registration_number"
-                name="registration_number"
-                value={formData.registration_number}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="vehicle_type">Vehicle Type</Label>
-              <Select 
-                value={formData.vehicle_type} 
-                onValueChange={(value) => handleSelectChange('vehicle_type', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vehicle type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bus">Bus</SelectItem>
-                  <SelectItem value="Van">Van</SelectItem>
-                  <SelectItem value="Car">Car</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="capacity">Capacity</Label>
-              <Input
-                id="capacity"
-                name="capacity"
-                type="number"
-                value={formData.capacity}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="driver_name">Driver Name</Label>
-              <Input
-                id="driver_name"
-                name="driver_name"
-                value={formData.driver_name}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select 
-                value={formData.status}
-                onValueChange={(value) => handleSelectChange('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="maintenance">Under Maintenance</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="gps_tracking_enabled">GPS Tracking</Label>
-              <Select 
-                value={formData.gps_tracking_enabled ? "true" : "false"}
-                onValueChange={(value) => handleSelectChange('gps_tracking_enabled', value === "true")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="GPS Tracking" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Enabled</SelectItem>
-                  <SelectItem value="false">Disabled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="remarks">Remarks</Label>
-              <Textarea
-                id="remarks"
-                name="remarks"
-                value={formData.remarks}
-                onChange={handleInputChange}
-              />
-            </div>
+      <DataTable
+        data={vehicles || []}
+        columns={columns}
+        keyField="id"
+        isLoading={isLoading}
+        selectable={false}
+        actions={actions}
+        bulkActions={bulkActions}
+        emptyState={
+          <div className="text-center py-10">
+            <h3 className="text-lg font-medium">No vehicles found</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Add a new vehicle to get started.
+            </p>
+            <Button className="mt-4" onClick={handleCreateVehicle}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Vehicle
+            </Button>
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddVehicleDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddVehicle}>Save Vehicle</Button>
-          </DialogFooter>
+        }
+      />
+
+      {/* Vehicle Dialog */}
+      <Dialog open={isVehicleDialogOpen} onOpenChange={setIsVehicleDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingVehicle ? "Edit Vehicle" : "Add New Vehicle"}
+            </DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="registration_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Registration Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter registration number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="vehicle_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vehicle Type</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter vehicle type" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="make"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Make</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter make" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="model"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Model</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter model" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number"
+                          placeholder="Enter year"
+                          {...field}
+                          value={field.value === undefined ? '' : field.value}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : Number(e.target.value);
+                            field.onChange(value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Capacity</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number"
+                          placeholder="Enter capacity"
+                          {...field}
+                          value={field.value === undefined ? '' : field.value}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? undefined : Number(e.target.value);
+                            field.onChange(value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsVehicleDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingVehicle ? "Update Vehicle" : "Create Vehicle"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Vehicle Dialog */}
-      <Dialog open={showEditVehicleDialog} onOpenChange={setShowEditVehicleDialog}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Vehicle</DialogTitle>
-            <DialogDescription>
-              Update the details for this vehicle.
-            </DialogDescription>
+            <DialogTitle>Confirm Deletion</DialogTitle>
           </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit_registration_number">Registration Number</Label>
-              <Input
-                id="edit_registration_number"
-                name="registration_number"
-                value={formData.registration_number}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_vehicle_type">Vehicle Type</Label>
-              <Select 
-                value={formData.vehicle_type} 
-                onValueChange={(value) => handleSelectChange('vehicle_type', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vehicle type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bus">Bus</SelectItem>
-                  <SelectItem value="Van">Van</SelectItem>
-                  <SelectItem value="Car">Car</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_capacity">Capacity</Label>
-              <Input
-                id="edit_capacity"
-                name="capacity"
-                type="number"
-                value={formData.capacity}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_driver_name">Driver Name</Label>
-              <Input
-                id="edit_driver_name"
-                name="driver_name"
-                value={formData.driver_name}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_status">Status</Label>
-              <Select 
-                value={formData.status}
-                onValueChange={(value) => handleSelectChange('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="maintenance">Under Maintenance</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_gps_tracking_enabled">GPS Tracking</Label>
-              <Select 
-                value={formData.gps_tracking_enabled ? "true" : "false"}
-                onValueChange={(value) => handleSelectChange('gps_tracking_enabled', value === "true")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="GPS Tracking" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Enabled</SelectItem>
-                  <SelectItem value="false">Disabled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="edit_remarks">Remarks</Label>
-              <Textarea
-                id="edit_remarks"
-                name="remarks"
-                value={formData.remarks}
-                onChange={handleInputChange}
-              />
-            </div>
+          <div className="py-4">
+            <p>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">{selectedVehicle?.registration_number}</span>?
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              This action cannot be undone. This will permanently delete the
+              vehicle and all associated data.
+            </p>
           </div>
-          
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditVehicleDialog(false)}>Cancel</Button>
-            <Button onClick={handleEditVehicle}>Update Vehicle</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteVehicle}
+            >
+              Delete Vehicle
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -474,4 +556,4 @@ const Vehicles = () => {
   );
 };
 
-export default Vehicles;
+export default VehiclesPage;
