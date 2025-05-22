@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -188,6 +187,9 @@ const Admins = () => {
         throw new Error('User creation failed');
       }
       
+      // Determine if school_id should be null (for all schools access)
+      const schoolId = data.school_id === 'all_schools' ? null : data.school_id || null;
+      
       // Then create the administrator record
       const { error: adminError } = await supabase
         .from('administrators')
@@ -198,19 +200,19 @@ const Admins = () => {
           email: data.email,
           phone: data.phone || null,
           role: data.role,
-          school_id: data.school_id || null,
+          school_id: schoolId,
           status: 'Active',
         });
       
       if (adminError) throw adminError;
       
       // If admin should be connected to a school, create the relationship
-      if (data.school_id) {
+      if (schoolId) {
         const { error: relationError } = await supabase
           .from('users_to_schools')
           .insert({
             user_id: authData.user.id,
-            school_id: data.school_id,
+            school_id: schoolId,
             role: data.role,
           });
           
@@ -548,7 +550,8 @@ const Admins = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">-- Access to All Schools --</SelectItem>
+                              {/* Fixed: Changed empty string value to "all_schools" */}
+                              <SelectItem value="all_schools">-- Access to All Schools --</SelectItem>
                               {schoolOptions.map(school => (
                                 <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>
                               ))}
