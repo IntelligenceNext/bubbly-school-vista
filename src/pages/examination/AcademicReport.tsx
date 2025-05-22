@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
@@ -325,7 +324,7 @@ const AcademicReport = () => {
                       <SelectValue placeholder="All Sections" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Sections</SelectItem>
+                      <SelectItem value="all">All Sections</SelectItem>
                       {sections.map((section) => (
                         <SelectItem key={section.id} value={section.id}>
                           {section.name}
