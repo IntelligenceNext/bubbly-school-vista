@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,9 +15,11 @@ import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
+export type AttendanceStatus = "present" | "absent" | "late" | "half-day" | "leave" | "weekend";
+
 interface AttendanceRecord {
   date: Date;
-  status: 'present' | 'absent' | 'late' | 'half-day' | 'leave';
+  status: AttendanceStatus;
   checkIn?: string;
   checkOut?: string;
 }

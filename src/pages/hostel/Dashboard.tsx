@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart } from '@/components/ui/BarChart';
 import { LineChart } from '@/components/ui/LineChart';
 import { getHostelStatistics, Hostel } from '@/services/hostelService';
-import { Building, Users, UserCheck, Utensils } from 'lucide-react';
+import { Building, Users, UserCheck } from 'lucide-react';
 
 const HostelDashboard = () => {
   const { schoolId } = useParams<{ schoolId: string }>();
@@ -38,9 +38,14 @@ const HostelDashboard = () => {
     const fetchStatistics = async () => {
       if (schoolId) {
         setLoading(true);
-        const data = await getHostelStatistics(schoolId);
-        setStats(data);
-        setLoading(false);
+        try {
+          const data = await getHostelStatistics(schoolId);
+          setStats(data);
+        } catch (error) {
+          console.error("Failed to fetch hostel statistics:", error);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 

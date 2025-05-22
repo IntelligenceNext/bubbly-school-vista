@@ -3,13 +3,13 @@ import { useParams } from 'react-router-dom';
 import PageTemplate from '@/components/PageTemplate';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DataTable, { Column, RowAction } from '@/components/DataTable';
 import { Hostel, getHostels, createHostel, updateHostel, deleteHostel } from '@/services/hostelService';
-import { PlusCircle, Building, Phone, Pencil, Trash2, Eye } from 'lucide-react';
+import { Building, Phone, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -40,9 +40,15 @@ const HostelsPage = () => {
   const fetchHostels = async () => {
     if (!schoolId) return;
     setLoading(true);
-    const data = await getHostels(schoolId);
-    setHostels(data);
-    setLoading(false);
+    try {
+      const data = await getHostels(schoolId);
+      setHostels(data);
+    } catch (error) {
+      console.error("Failed to fetch hostels:", error);
+      toast.error("Failed to load hostels");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
