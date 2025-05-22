@@ -1,5 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,63 +13,258 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Eye, MoreVertical, Pencil, Plus, Search, Shield, Trash, UserPlus } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import usePagination from '@/hooks/usePagination';
+
+// Admin schema for form validation
+const adminSchema = z.object({
+  full_name: z.string().min(2, 'Full name is required'),
+  email: z.string().email('Invalid email address'),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  phone: z.string().optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string(),
+  role: z.string().min(1, 'Role is required'),
+  school_id: z.string().optional(),
+  send_invitation: z.boolean().default(false),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type AdminFormValues = z.infer<typeof adminSchema>;
+
+type Administrator = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  username: string;
+  status: string;
+  lastLogin: string | null;
+  school: string | null;
+}
 
 const Admins = () => {
   const [activeTab, setActiveTab] = useState("all-admins");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [administrators, setAdministrators] = useState<Administrator[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [schoolOptions, setSchoolOptions] = useState<{id: string, name: string}[]>([]);
   
-  // Sample admin users data
-  const adminUsers = [
-    {
-      id: "1",
-      name: "John Smith",
-      email: "john.smith@school.edu",
-      role: "Super Admin",
-      username: "johnsmith",
-      status: "Active",
-      lastLogin: "2023-05-15 08:30 AM",
-      school: null
+  const { user } = useAuth();
+  const pagination = usePagination();
+  const { page, pageSize, total, setTotal, setPage, setPageSize } = pagination;
+
+  // Initialize the form
+  const form = useForm<AdminFormValues>({
+    resolver: zodResolver(adminSchema),
+    defaultValues: {
+      full_name: '',
+      email: '',
+      username: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      role: '',
+      school_id: '',
+      send_invitation: false
     },
-    {
-      id: "2",
-      name: "Sarah Johnson",
-      email: "sarah.j@school.edu",
-      role: "Principal",
-      username: "sarahj",
-      status: "Active",
-      lastLogin: "2023-05-14 09:15 AM",
-      school: "Main Campus"
-    },
-    {
-      id: "3",
-      name: "Michael Wong",
-      email: "michael.w@school.edu",
-      role: "Registrar",
-      username: "michaelw",
-      status: "Inactive",
-      lastLogin: "2023-05-10 10:22 AM",
-      school: "Branch Campus"
-    },
-    {
-      id: "4",
-      name: "Lisa Chen",
-      email: "lisa.chen@school.edu",
-      role: "Admin Clerk",
-      username: "lisac",
-      status: "Active",
-      lastLogin: "2023-05-15 09:45 AM",
-      school: "Main Campus"
-    },
-    {
-      id: "5",
-      name: "Robert Garcia",
-      email: "robert.g@school.edu",
-      role: "IT Admin",
-      username: "robertg",
-      status: "Active",
-      lastLogin: "2023-05-14 02:30 PM",
-      school: "Main Campus"
+  });
+
+  // Fetch schools for dropdown
+  useEffect(() => {
+    async function fetchSchools() {
+      try {
+        const { data, error } = await supabase
+          .from('schools')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name');
+        
+        if (error) throw error;
+        setSchoolOptions(data || []);
+      } catch (error: any) {
+        console.error('Error fetching schools:', error.message);
+      }
     }
-  ];
+
+    fetchSchools();
+  }, []);
+
+  // Fetch administrators with pagination and search
+  useEffect(() => {
+    async function fetchAdministrators() {
+      setIsLoading(true);
+      try {
+        // Create query
+        let query = supabase
+          .from('administrators')
+          .select(`
+            id, 
+            full_name, 
+            email, 
+            username, 
+            role, 
+            status, 
+            last_login,
+            school_id
+          `, { count: 'exact' });
+        
+        // Add search condition if searchQuery exists
+        if (searchQuery) {
+          query = query
+            .or(`full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%`);
+        }
+        
+        // Add pagination
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data, error, count } = await query
+          .order('created_at', { ascending: false })
+          .range(from, to);
+        
+        if (error) throw error;
+        
+        if (count !== null) {
+          setTotal(count);
+        }
+        
+        // Transform to our Administrator type
+        const formattedData: Administrator[] = (data || []).map(admin => ({
+          id: admin.id,
+          name: admin.full_name,
+          email: admin.email,
+          role: admin.role,
+          username: admin.username,
+          status: admin.status || 'Inactive',
+          lastLogin: admin.last_login,
+          school: admin.school_id || null
+        }));
+        
+        setAdministrators(formattedData);
+      } catch (error: any) {
+        console.error('Error fetching administrators:', error.message);
+        toast({
+          title: 'Error',
+          description: 'Failed to load administrators',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchAdministrators();
+  }, [searchQuery, page, pageSize]);
+
+  // Handle search input change
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setPage(1); // Reset to first page when searching
+  };
+
+  // Handle form submission to create new admin
+  const onSubmit = async (data: AdminFormValues) => {
+    setIsSubmitting(true);
+    try {
+      // First create the user in Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: data.email,
+        password: data.password,
+        email_confirm: true,
+      });
+      
+      if (authError) throw authError;
+      
+      if (!authData.user) {
+        throw new Error('User creation failed');
+      }
+      
+      // Then create the administrator record
+      const { error: adminError } = await supabase
+        .from('administrators')
+        .insert({
+          user_id: authData.user.id,
+          full_name: data.full_name,
+          username: data.username,
+          email: data.email,
+          phone: data.phone || null,
+          role: data.role,
+          school_id: data.school_id || null,
+          status: 'Active',
+        });
+      
+      if (adminError) throw adminError;
+      
+      // If admin should be connected to a school, create the relationship
+      if (data.school_id) {
+        const { error: relationError } = await supabase
+          .from('users_to_schools')
+          .insert({
+            user_id: authData.user.id,
+            school_id: data.school_id,
+            role: data.role,
+          });
+          
+        if (relationError) throw relationError;
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Administrator has been created successfully',
+      });
+      
+      form.reset();
+      setActiveTab('all-admins');
+      // Refetch the administrators list
+      setPage(1);
+    } catch (error: any) {
+      console.error('Error creating administrator:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create administrator',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle deleting an admin
+  const handleDeleteAdmin = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this administrator?')) {
+      try {
+        const { error } = await supabase
+          .from('administrators')
+          .delete()
+          .eq('id', id);
+          
+        if (error) throw error;
+        
+        toast({
+          title: 'Success',
+          description: 'Administrator deleted successfully',
+        });
+        
+        // Refresh the list
+        setAdministrators(admins => admins.filter(admin => admin.id !== id));
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to delete administrator',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
 
   return (
     <PageTemplate title="Administrators" subtitle="Manage system administrators and their permissions">
@@ -84,9 +282,11 @@ const Admins = () => {
                 type="search"
                 placeholder="Search administrators"
                 className="pl-8 w-[250px]"
+                value={searchQuery}
+                onChange={handleSearch}
               />
             </div>
-            <Button>
+            <Button onClick={() => setActiveTab('add-admin')}>
               <UserPlus className="mr-2 h-4 w-4" /> New Admin
             </Button>
           </div>
@@ -99,69 +299,113 @@ const Admins = () => {
               <CardDescription>Manage users with administrative access to the system</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>School</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {adminUsers.map((admin) => (
-                    <TableRow key={admin.id}>
-                      <TableCell className="font-medium">{admin.name}</TableCell>
-                      <TableCell>{admin.username}</TableCell>
-                      <TableCell>{admin.email}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{admin.role}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{admin.school || "All Schools"}</TableCell>
-                      <TableCell>
-                        <Badge variant={admin.status === "Active" ? "success" : "destructive"}>
-                          {admin.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{admin.lastLogin}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              <span>View Details</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              <span>Edit Admin</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Shield className="mr-2 h-4 w-4" />
-                              <span>Change Role</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash className="mr-2 h-4 w-4" />
-                              <span>Delete</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : administrators.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No administrators found</p>
+                  <Button className="mt-4" onClick={() => setActiveTab('add-admin')}>
+                    <UserPlus className="mr-2 h-4 w-4" /> Add Administrator
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Username</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>School</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Last Login</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {administrators.map((admin) => (
+                        <TableRow key={admin.id}>
+                          <TableCell className="font-medium">{admin.name}</TableCell>
+                          <TableCell>{admin.username}</TableCell>
+                          <TableCell>{admin.email}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span>{admin.role}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{admin.school || "All Schools"}</TableCell>
+                          <TableCell>
+                            <Badge variant={admin.status === "Active" ? "success" : "destructive"}>
+                              {admin.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{admin.lastLogin || "Never"}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  <span>View Details</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  <span>Edit Admin</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  <span>Change Role</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-red-600" 
+                                  onClick={() => handleDeleteAdmin(admin.id)}
+                                >
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  <span>Delete</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {Math.min((page - 1) * pageSize + 1, total)} to{" "}
+                      {Math.min(page * pageSize, total)} of {total} entries
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setPage(page - 1)}
+                        disabled={page <= 1}
+                      >
+                        Previous
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setPage(page + 1)}
+                        disabled={page >= Math.ceil(total / pageSize)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -173,74 +417,189 @@ const Admins = () => {
               <CardDescription>Create a new administrator account</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" placeholder="Enter full name" />
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="full_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter full name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="Enter email address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="Enter email address" />
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter username for login" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter phone number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="username">Username</Label>
-                    <Input id="username" placeholder="Enter username for login" />
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Enter strong password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Confirm password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" placeholder="Enter phone number" />
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Role</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="-- Select Role --" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="super_admin">Super Admin</SelectItem>
+                              <SelectItem value="principal">Principal</SelectItem>
+                              <SelectItem value="registrar">Registrar</SelectItem>
+                              <SelectItem value="admin_clerk">Admin Clerk</SelectItem>
+                              <SelectItem value="it_admin">IT Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="school_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>School (Leave empty for all schools)</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="-- Access to All Schools --" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="">-- Access to All Schools --</SelectItem>
+                              {schoolOptions.map(school => (
+                                <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" placeholder="Enter strong password" />
+                  
+                  <FormField
+                    control={form.control}
+                    name="send_invitation"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox 
+                            checked={field.value} 
+                            onCheckedChange={field.onChange} 
+                            id="sendInvitation" 
+                          />
+                        </FormControl>
+                        <FormLabel htmlFor="sendInvitation" className="text-sm font-normal">
+                          Send account invitation email to the new administrator
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setActiveTab('all-admins')}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <span className="animate-spin mr-2 h-4 w-4 border-2 border-t-transparent border-white rounded-full" />
+                          Creating...
+                        </>
+                      ) : (
+                        'Create Administrator'
+                      )}
+                    </Button>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <Input id="confirmPassword" type="password" placeholder="Confirm password" />
-                  </div>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="role">Role</Label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                      <option value="">-- Select Role --</option>
-                      <option value="super_admin">Super Admin</option>
-                      <option value="principal">Principal</option>
-                      <option value="registrar">Registrar</option>
-                      <option value="admin_clerk">Admin Clerk</option>
-                      <option value="it_admin">IT Admin</option>
-                    </select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="school">School (Leave empty for all schools)</Label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                      <option value="">-- Access to All Schools --</option>
-                      <option value="main_campus">Main Campus</option>
-                      <option value="branch_campus">Branch Campus</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="sendInvitation" className="h-4 w-4 rounded border-gray-300" />
-                  <Label htmlFor="sendInvitation" className="text-sm font-normal">
-                    Send account invitation email to the new administrator
-                  </Label>
-                </div>
-                
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline">Cancel</Button>
-                  <Button>Create Administrator</Button>
-                </div>
-              </div>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </TabsContent>
