@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +69,31 @@ const InvoicesReport = () => {
         ]
       }
     ]
+  };
+
+  // Create chart props in the format expected by the components
+  const monthlyCollectionProps = {
+    index: 'labels',
+    categories: monthlyCollectionData.labels,
+    colors: ['rgba(59, 130, 246, 0.5)', 'rgba(34, 197, 94, 0.5)'],
+    data: [
+      monthlyCollectionData.datasets[0].data,
+      monthlyCollectionData.datasets[1].data,
+    ],
+  };
+
+  const feeDistributionProps = {
+    index: 'labels',
+    categories: feeDistributionData.labels,
+    colors: [
+      'rgba(59, 130, 246, 0.7)',
+      'rgba(34, 197, 94, 0.7)',
+      'rgba(245, 158, 11, 0.7)',
+      'rgba(139, 92, 246, 0.7)',
+      'rgba(236, 72, 153, 0.7)',
+      'rgba(75, 85, 99, 0.7)'
+    ],
+    data: feeDistributionData.datasets[0].data,
   };
   
   // Sample report data for data table
@@ -403,8 +427,8 @@ const InvoicesReport = () => {
                   <CardTitle>Monthly Collection Trend</CardTitle>
                   <CardDescription>Comparison of invoiced vs collected amounts</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <BarChart data={monthlyCollectionData} height={300} />
+                <CardContent className="h-[300px]">
+                  <BarChart {...monthlyCollectionProps} />
                 </CardContent>
               </Card>
               
@@ -413,8 +437,8 @@ const InvoicesReport = () => {
                   <CardTitle>Fee Type Distribution</CardTitle>
                   <CardDescription>Breakdown of collected fees by category</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <BarChart data={feeDistributionData} height={300} />
+                <CardContent className="h-[300px]">
+                  <BarChart {...feeDistributionProps} />
                 </CardContent>
               </Card>
             </div>
@@ -446,7 +470,9 @@ const InvoicesReport = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6">
-                  <BarChart data={feeDistributionData} height={300} />
+                  <div className="h-[300px]">
+                    <BarChart {...feeDistributionProps} />
+                  </div>
                   
                   <div className="overflow-auto">
                     <table className="w-full border-collapse">

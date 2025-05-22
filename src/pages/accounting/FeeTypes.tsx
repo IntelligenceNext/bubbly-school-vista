@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -151,7 +150,7 @@ const FeeTypes = () => {
     {
       label: "Delete",
       onClick: (item) => alert(`Deleting ${item.title}`),
-      variant: "destructive" as const
+      variant: "destructive"
     }
   ];
   

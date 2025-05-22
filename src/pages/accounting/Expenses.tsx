@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -205,7 +204,7 @@ const Expenses = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">{category}</p>
-                    <h3 className="text-2xl font-bold">₹{amount.toLocaleString()}</h3>
+                    <h3 className="text-2xl font-bold">₹{(amount as number).toLocaleString()}</h3>
                   </div>
                   <div className="p-2 bg-slate-100 rounded-full">
                     <FileText className="h-5 w-5 text-slate-600" />

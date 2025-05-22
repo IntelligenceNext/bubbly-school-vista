@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -434,28 +433,12 @@ const FeeInvoices = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="flex items-center justify-between mb-4">
-                <TabsList>
-                  <TabsTrigger value="all">All Invoices</TabsTrigger>
-                  <TabsTrigger value="paid">Paid</TabsTrigger>
-                  <TabsTrigger value="pending">Pending</TabsTrigger>
-                  <TabsTrigger value="overdue">Overdue</TabsTrigger>
-                </TabsList>
-                
-                <div className="flex gap-2">
-                  <div className="relative w-[250px]">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search invoices..."
-                      className="pl-8"
-                    />
-                  </div>
-                  <Button variant="outline">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Filter
-                  </Button>
-                </div>
-              </div>
+              <TabsList>
+                <TabsTrigger value="all">All Invoices</TabsTrigger>
+                <TabsTrigger value="paid">Paid</TabsTrigger>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="overdue">Overdue</TabsTrigger>
+              </TabsList>
               
               <TabsContent value="all" className="mt-0">
                 <DataTable 

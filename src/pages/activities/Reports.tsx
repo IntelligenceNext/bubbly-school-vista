@@ -149,6 +149,49 @@ const Reports = () => {
 
   const filteredStats = getFilteredStats();
 
+  // Create the props in the format expected by the components
+  const participationTrendChartProps = {
+    index: 'labels',
+    categories: participationTrendData.labels,
+    colors: ['#3b82f6'],
+    data: participationTrendData.datasets[0].data,
+  };
+
+  const categoryDistributionProps = {
+    index: 'labels',
+    categories: categoryDistributionData.labels,
+    colors: [
+      '#3b82f6', // Blue
+      '#10b981', // Green
+      '#f59e0b', // Yellow
+      '#ef4444', // Red
+      '#8b5cf6', // Purple
+      '#ec4899'  // Pink
+    ],
+    data: categoryDistributionData.datasets[0].data,
+  };
+
+  const classParticipationProps = {
+    index: 'labels',
+    categories: classParticipationData.labels,
+    colors: ['#10b981', '#d1d5db'],
+    data: [
+      classParticipationData.datasets[0].data,
+      classParticipationData.datasets[1].data,
+    ],
+  };
+
+  const activityResultsProps = {
+    index: 'labels',
+    categories: activityResultsData.labels,
+    colors: ['#f59e0b', '#8b5cf6', '#64748b'],
+    data: [
+      activityResultsData.datasets[0].data,
+      activityResultsData.datasets[1].data,
+      activityResultsData.datasets[2].data,
+    ],
+  };
+
   return (
     <PageTemplate title="Activities Management" subtitle="Analyze activity performance and participation">
       <PageHeader 
@@ -239,7 +282,7 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <LineChart data={participationTrendData} />
+                <LineChart {...participationTrendChartProps} />
               </div>
             </CardContent>
           </Card>
@@ -250,7 +293,7 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <BarChart data={categoryDistributionData} />
+                <BarChart {...categoryDistributionProps} />
               </div>
             </CardContent>
           </Card>
@@ -264,7 +307,7 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <BarChart data={classParticipationData} />
+                <BarChart {...classParticipationProps} />
               </div>
             </CardContent>
           </Card>
@@ -275,7 +318,7 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <BarChart data={activityResultsData} />
+                <BarChart {...activityResultsProps} />
               </div>
             </CardContent>
           </Card>
