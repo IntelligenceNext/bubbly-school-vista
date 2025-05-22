@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -463,12 +462,38 @@ const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigatio
               />
             </NavItem>
             
+            {/* Activities with submenu */}
             <NavItem 
               title="Activities" 
               icon={<Activity size={18} />} 
-              isActive={currentPath === '/activities'}
-              to="/activities"
-            />
+              isActive={currentPath.startsWith('/activities')}
+            >
+              <SubNavItem 
+                title="Dashboard" 
+                isActive={currentPath === '/activities/dashboard'} 
+                to="/activities/dashboard" 
+              />
+              <SubNavItem 
+                title="Activities" 
+                isActive={currentPath === '/activities'} 
+                to="/activities" 
+              />
+              <SubNavItem 
+                title="Categories" 
+                isActive={currentPath === '/activities/categories'} 
+                to="/activities/categories" 
+              />
+              <SubNavItem 
+                title="Participation" 
+                isActive={currentPath === '/activities/participation'} 
+                to="/activities/participation" 
+              />
+              <SubNavItem 
+                title="Reports" 
+                isActive={currentPath === '/activities/reports'} 
+                to="/activities/reports" 
+              />
+            </NavItem>
             
             <NavItem 
               title="Hostel" 
