@@ -21,75 +21,30 @@ const Reports = () => {
   const [activityTypeFilter, setActivityTypeFilter] = useState("all");
   
   // Mock data for participation trend
-  const participationTrendData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-    datasets: [
-      {
-        label: 'Student Participation',
-        data: [120, 145, 160, 185, 210, 245, 180, 160, 220, 250, 270, 290],
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      }
-    ],
-  };
-
+  const participationTrendData = [120, 145, 160, 185, 210, 245, 180, 160, 220, 250, 270, 290];
+  const participationLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
   // Mock data for category distribution
-  const categoryDistributionData = {
-    labels: ['Sports', 'Arts', 'Cultural', 'Academic', 'Clubs', 'Social'],
-    datasets: [
-      {
-        label: 'Activities Count',
-        data: [8, 5, 6, 4, 3, 2],
-        backgroundColor: [
-          '#3b82f6', // Blue
-          '#10b981', // Green
-          '#f59e0b', // Yellow
-          '#ef4444', // Red
-          '#8b5cf6', // Purple
-          '#ec4899'  // Pink
-        ],
-      }
-    ],
-  };
+  const categoryDistributionData = [8, 5, 6, 4, 3, 2];
+  const categoryLabels = ['Sports', 'Arts', 'Cultural', 'Academic', 'Clubs', 'Social'];
+  const categoryColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   // Mock data for class participation
-  const classParticipationData = {
-    labels: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-    datasets: [
-      {
-        label: 'Students Participating',
-        data: [45, 65, 85, 70, 55],
-        backgroundColor: '#10b981',
-      },
-      {
-        label: 'Total Students',
-        data: [60, 75, 90, 85, 65],
-        backgroundColor: '#d1d5db',
-      }
-    ],
-  };
+  const classParticipationLabels = ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+  const classParticipationData = [
+    [45, 65, 85, 70, 55], // Participating students
+    [60, 75, 90, 85, 65]  // Total students
+  ];
+  const classParticipationColors = ['#10b981', '#d1d5db'];
 
   // Mock data for activity results
-  const activityResultsData = {
-    labels: ['Annual Sports Day', 'Chess Tournament', 'Science Exhibition', 'Dance Competition', 'Debate Club'],
-    datasets: [
-      {
-        label: 'Winners',
-        data: [12, 1, 3, 2, 2],
-        backgroundColor: '#f59e0b',
-      },
-      {
-        label: 'Runners-up',
-        data: [12, 1, 3, 2, 2],
-        backgroundColor: '#8b5cf6',
-      },
-      {
-        label: 'Participants',
-        data: [96, 30, 59, 44, 20],
-        backgroundColor: '#64748b',
-      }
-    ],
-  };
+  const activityResultsLabels = ['Annual Sports Day', 'Chess Tournament', 'Science Exhibition', 'Dance Competition', 'Debate Club'];
+  const activityResultsData = [
+    [12, 1, 3, 2, 2],  // Winners
+    [12, 1, 3, 2, 2],  // Runners-up
+    [96, 30, 59, 44, 20]  // Participants
+  ];
+  const activityResultsColors = ['#f59e0b', '#8b5cf6', '#64748b'];
 
   // Summary stats
   const summaryStats = {
@@ -151,45 +106,70 @@ const Reports = () => {
 
   // Create the props in the format expected by the components
   const participationTrendChartProps = {
-    index: 'labels',
-    categories: participationTrendData.labels,
-    colors: ['#3b82f6'],
-    data: participationTrendData.datasets[0].data,
+    index: 'name',
+    categories: ['Student Participation'],
+    colors: ['59, 130, 246'],
+    data: participationLabels.map((label, i) => ({
+      name: label,
+      'Student Participation': participationTrendData[i]
+    }))
   };
 
   const categoryDistributionProps = {
-    index: 'labels',
-    categories: categoryDistributionData.labels,
-    colors: [
-      '#3b82f6', // Blue
-      '#10b981', // Green
-      '#f59e0b', // Yellow
-      '#ef4444', // Red
-      '#8b5cf6', // Purple
-      '#ec4899'  // Pink
-    ],
-    data: categoryDistributionData.datasets[0].data,
+    index: 'name',
+    categories: ['Activities Count'],
+    colors: categoryColors.map(color => {
+      // Convert hex to rgb format as expected by the component
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      return `${r}, ${g}, ${b}`;
+    }),
+    data: categoryLabels.map((label, i) => ({
+      name: label,
+      'Activities Count': categoryDistributionData[i]
+    }))
   };
 
   const classParticipationProps = {
-    index: 'labels',
-    categories: classParticipationData.labels,
-    colors: ['#10b981', '#d1d5db'],
-    data: [
-      classParticipationData.datasets[0].data,
-      classParticipationData.datasets[1].data,
-    ],
+    index: 'name',
+    categories: ['Students Participating', 'Total Students'],
+    colors: classParticipationColors.map(color => {
+      // Convert hex to rgb format if needed
+      if (color.startsWith('#')) {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        return `${r}, ${g}, ${b}`;
+      }
+      return color;
+    }),
+    data: classParticipationLabels.map((label, i) => ({
+      name: label,
+      'Students Participating': classParticipationData[0][i],
+      'Total Students': classParticipationData[1][i]
+    }))
   };
 
   const activityResultsProps = {
-    index: 'labels',
-    categories: activityResultsData.labels,
-    colors: ['#f59e0b', '#8b5cf6', '#64748b'],
-    data: [
-      activityResultsData.datasets[0].data,
-      activityResultsData.datasets[1].data,
-      activityResultsData.datasets[2].data,
-    ],
+    index: 'name',
+    categories: ['Winners', 'Runners-up', 'Participants'],
+    colors: activityResultsColors.map(color => {
+      // Convert hex to rgb format if needed
+      if (color.startsWith('#')) {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        return `${r}, ${g}, ${b}`;
+      }
+      return color;
+    }),
+    data: activityResultsLabels.map((label, i) => ({
+      name: label,
+      'Winners': activityResultsData[0][i],
+      'Runners-up': activityResultsData[1][i],
+      'Participants': activityResultsData[2][i]
+    }))
   };
 
   return (
