@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { CheckCircle, Plus, School2 } from 'lucide-react';
@@ -33,7 +33,6 @@ import usePagination from '@/hooks/usePagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from "@/components/ui/switch";
-import { FormDescription } from "@/components/ui/form";
 
 const classSchema = z.object({
   school_id: z.string().min(1, "School is required"),
@@ -337,6 +336,7 @@ const ClassesPage = () => {
         isLoading={isLoading}
         selectable={true}
         actions={actions}
+        paginationState={pagination}
         emptyState={
           <div className="text-center py-10">
             <h3 className="text-lg font-medium">No classes found</h3>
@@ -515,9 +515,5 @@ const ClassesPage = () => {
     </PageTemplate>
   );
 };
-
-// Add missing imports
-import { Switch } from "@/components/ui/switch";
-import { FormDescription } from "@/components/ui/form";
 
 export default ClassesPage;
