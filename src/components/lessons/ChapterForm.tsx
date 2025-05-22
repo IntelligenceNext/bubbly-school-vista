@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileUpload } from '@/components/FileUpload';
+import FileUpload from '@/components/FileUpload';
 
 const chapterFormSchema = z.object({
   lesson_id: z.string().min(1, 'Lesson is required'),

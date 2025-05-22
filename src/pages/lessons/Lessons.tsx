@@ -164,7 +164,7 @@ const Lessons = () => {
                 <SelectValue placeholder="All Classes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Classes</SelectItem>
+                <SelectItem value="all-classes">All Classes</SelectItem>
                 {mockClasses.map((cls) => (
                   <SelectItem key={cls.id} value={cls.id}>
                     {cls.name}
@@ -178,7 +178,7 @@ const Lessons = () => {
                 <SelectValue placeholder="All Subjects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Subjects</SelectItem>
+                <SelectItem value="all-subjects">All Subjects</SelectItem>
                 {mockSubjects.map((subject) => (
                   <SelectItem key={subject.id} value={subject.id}>
                     {subject.name}
