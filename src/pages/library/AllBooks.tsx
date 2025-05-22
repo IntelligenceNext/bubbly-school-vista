@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
@@ -38,6 +37,7 @@ import { toast } from '@/hooks/use-toast';
 import FileUpload from '@/components/FileUpload';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Define schema for book form
 const bookFormSchema = z.object({
@@ -566,14 +566,14 @@ const AllBooks = () => {
                   )}
                 />
                 
-                <div>
-                  <FormLabel>Book Cover (Optional)</FormLabel>
-                  <FileUpload 
+                <div className="grid gap-2">
+                  <Label htmlFor="book_cover">Book Cover (Optional)</Label>
+                  <FileUpload
                     bucket="book-covers"
-                    onUploadComplete={handleCoverUpload}
-                    acceptedFileTypes={['image']}
+                    onUploadComplete={(urls) => handleCoverUpload(urls)}
+                    acceptedFileTypes={['image/jpeg', 'image/png']}
                     maxFiles={1}
-                    maxSizeInMB={5}
+                    maxSizeInMB={2}
                   />
                 </div>
                 

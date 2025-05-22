@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-export type StorageBucket = 'school_logos' | 'student_photos' | 'attachments';
+export type StorageBucket = 'school_logos' | 'student_photos' | 'attachments' | 'book-covers';
 
 /**
  * Upload a file to a Supabase storage bucket

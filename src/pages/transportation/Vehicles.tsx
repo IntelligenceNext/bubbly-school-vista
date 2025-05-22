@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
@@ -203,7 +202,7 @@ const Vehicles = () => {
       header: 'Remarks',
       cell: (item) => <span className="truncate max-w-xs">{item.remarks}</span>,
       isSortable: false,
-      size: "lg"
+      size: 'lg'
     },
   ];
 

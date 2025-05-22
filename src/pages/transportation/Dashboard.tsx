@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
@@ -134,7 +133,12 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <LineChart data={monthlyDistanceData} />
+                <LineChart 
+                  data={monthlyDistanceData} 
+                  index={0}
+                  categories={["Distance"]}
+                  colors={["#3b82f6"]}
+                />
               </div>
             </CardContent>
           </Card>
@@ -145,7 +149,12 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <BarChart data={vehicleMaintenanceData} />
+                <BarChart 
+                  data={vehicleMaintenanceData}
+                  index={0}
+                  categories={["Maintenance"]}
+                  colors={["#10b981"]}
+                />
               </div>
             </CardContent>
           </Card>
@@ -160,7 +169,12 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <BarChart data={routeOccupancyData} />
+                <BarChart 
+                  data={routeOccupancyData}
+                  index={0}
+                  categories={["Occupancy"]}
+                  colors={["#f59e0b", "#a3a3a3"]}
+                />
               </div>
             </CardContent>
           </Card>

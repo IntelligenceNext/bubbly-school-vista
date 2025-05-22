@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
@@ -207,7 +206,7 @@ const Tickets = () => {
     form.reset();
   };
 
-  // Modified handleFileUpload to work with FileUpload component
+  // Function to handle file uploads
   const handleFileUpload = (urls: string[]) => {
     console.log("Files uploaded:", urls);
     form.setValue('attachments', urls);
@@ -487,7 +486,6 @@ const Tickets = () => {
                 
                 <div>
                   <FormLabel>Attachments (Optional)</FormLabel>
-                  {/* Fixed FileUpload component usage */}
                   <FileUpload 
                     bucket="attachments"
                     onUploadComplete={handleFileUpload}
