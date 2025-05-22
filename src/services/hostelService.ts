@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -56,6 +55,22 @@ export interface GetRoomsParams {
   floor?: number;
   page?: number;
   pageSize?: number;
+}
+
+// Hostel Statistics Interface
+export interface HostelStatistics {
+  hostels: Array<{
+    id: string;
+    name: string;
+    capacity: number;
+    occupied: number;
+    available: number;
+    occupancyRate: number;
+  }>;
+  totalCapacity: number;
+  totalOccupied: number;
+  totalAvailable: number;
+  overallOccupancyRate: number;
 }
 
 // Hostel management APIs
@@ -199,5 +214,78 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
   } catch (error) {
     console.error('Error in getRoomById:', error);
     return null;
+  }
+};
+
+// New function for hostel statistics
+export const getHostelStatistics = async (schoolId: string): Promise<HostelStatistics> => {
+  try {
+    // Get all hostels for the school
+    const { data: hostels } = await supabase
+      .from('hostels')
+      .select('*')
+      .eq('school_id', schoolId);
+    
+    if (!hostels || hostels.length === 0) {
+      return {
+        hostels: [],
+        totalCapacity: 0,
+        totalOccupied: 0,
+        totalAvailable: 0,
+        overallOccupancyRate: 0
+      };
+    }
+
+    // Get room occupancy stats for each hostel
+    const hostelStats = await Promise.all(hostels.map(async (hostel: Hostel) => {
+      // Get all rooms for this hostel
+      const { data: rooms } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('hostel_id', hostel.id);
+      
+      const occupied = rooms?.filter(room => room.status === 'occupied').length || 0;
+      const capacity = hostel.capacity;
+      const available = capacity - occupied;
+      const occupancyRate = capacity > 0 ? Math.round((occupied / capacity) * 100) : 0;
+      
+      return {
+        id: hostel.id,
+        name: hostel.name,
+        capacity,
+        occupied,
+        available,
+        occupancyRate
+      };
+    }));
+    
+    // Calculate overall statistics
+    const totalCapacity = hostelStats.reduce((sum, hostel) => sum + hostel.capacity, 0);
+    const totalOccupied = hostelStats.reduce((sum, hostel) => sum + hostel.occupied, 0);
+    const totalAvailable = totalCapacity - totalOccupied;
+    const overallOccupancyRate = totalCapacity > 0 ? Math.round((totalOccupied / totalCapacity) * 100) : 0;
+    
+    return {
+      hostels: hostelStats,
+      totalCapacity,
+      totalOccupied,
+      totalAvailable,
+      overallOccupancyRate
+    };
+  } catch (error) {
+    console.error('Error fetching hostel statistics:', error);
+    toast({
+      title: "Failed to fetch hostel statistics",
+      description: "An unexpected error occurred",
+      variant: "destructive",
+    });
+    
+    return {
+      hostels: [],
+      totalCapacity: 0,
+      totalOccupied: 0,
+      totalAvailable: 0,
+      overallOccupancyRate: 0
+    };
   }
 };
