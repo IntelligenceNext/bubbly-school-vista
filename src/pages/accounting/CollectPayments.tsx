@@ -138,10 +138,10 @@ const CollectPayments = () => {
   
   // Status color mapping
   const statusColors = {
-    "Paid": "success",
-    "Pending": "warning",
+    "Paid": "default",
+    "Pending": "secondary",
     "Overdue": "destructive",
-    "Partially Paid": "default"
+    "Partially Paid": "outline"
   };
   
   // Table column definitions for pending invoices
@@ -186,7 +186,7 @@ const CollectPayments = () => {
       id: "status",
       header: "Status",
       cell: (item) => (
-        <Badge variant={statusColors[item.status] as any}>
+        <Badge variant={statusColors[item.status]}>
           {item.status}
         </Badge>
       ),

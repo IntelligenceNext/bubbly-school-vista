@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,10 +125,10 @@ const BulkInvoicePrints = () => {
   
   // Status color mapping
   const statusColors = {
-    "Paid": "success",
-    "Pending": "warning",
+    "Paid": "default",
+    "Pending": "secondary",
     "Overdue": "destructive",
-    "Partially Paid": "default"
+    "Partially Paid": "outline"
   };
   
   // Toggle class selection
