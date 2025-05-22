@@ -24,7 +24,28 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Column, Action, BulkAction, DataTableProps, PaginationState } from './DataTable.d';
+
+// Export all types from the .d.ts file
+import { 
+  Column, 
+  Action, 
+  BulkAction, 
+  DataTableProps, 
+  PaginationState,
+  ColumnSize,
+  ButtonVariant
+} from './DataTable.d';
+
+// Re-export the types so they can be imported from DataTable
+export type { 
+  Column, 
+  Action as RowAction, 
+  BulkAction, 
+  DataTableProps, 
+  PaginationState,
+  ColumnSize,
+  ButtonVariant
+};
 
 const DataTable = <T extends Record<string, any>>({
   data,

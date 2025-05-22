@@ -296,7 +296,7 @@ const Vehicles = () => {
         keyField="id"
         isLoading={isLoading}
         actions={actions}
-        pagination={pagination}
+        paginationState={pagination}
         emptyState={
           <div className="text-center py-10">
             <h3 className="text-lg font-medium">No vehicles found</h3>
