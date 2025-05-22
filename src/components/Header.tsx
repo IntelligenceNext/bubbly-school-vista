@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HeaderProps {
   setIsSidebarOpen: (open: boolean) => void;
@@ -21,9 +22,29 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const { user, logout } = useAuth();
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
+  const handleLogout = async () => {
+    const { success } = await logout();
+    if (success) {
+      // Will be handled by auth state change in useAuth
+    }
+  };
+
+  // Extract initials for avatar fallback
+  const getInitials = () => {
+    if (!user || !user.full_name) return 'U';
+    
+    const names = user.full_name.split(' ');
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    
+    return user.full_name.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -60,16 +81,16 @@ const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-9 w-9 rounded-full p-0 relative">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src="/profile-placeholder.jpg" alt="User profile" />
-                  <AvatarFallback className="bg-gradient-bubble text-white">JS</AvatarFallback>
+                  <AvatarImage src="/profile-placeholder.jpg" alt={user?.full_name || 'User profile'} />
+                  <AvatarFallback className="bg-gradient-bubble text-white">{getInitials()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">John Smith</p>
-                  <p className="text-xs leading-none text-muted-foreground">admin@school.edu</p>
+                  <p className="text-sm font-medium leading-none">{user?.full_name || 'User'}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user?.email || 'user@example.com'}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -129,7 +150,7 @@ const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
