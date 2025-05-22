@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -225,7 +224,6 @@ const Admins = () => {
       }
       
       // If send invitation is checked, we should handle that here
-      // For now, we'll just show a success message
       if (data.send_invitation) {
         // In a real app, you would send an email here
         toast({
