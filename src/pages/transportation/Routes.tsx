@@ -81,6 +81,7 @@ const RoutesPage = () => {
     },
   });
 
+  // Let's fix the columns type to match the expected Column type
   const columns: Column<Route>[] = [
     {
       id: 'name',
@@ -94,7 +95,7 @@ const RoutesPage = () => {
       header: 'Description',
       cell: (route) => <div>{route.description || '-'}</div>,
       isSortable: false,
-      size: "lg" as const,
+      size: "lg",
     },
     {
       id: 'status',
@@ -374,7 +375,7 @@ const RoutesPage = () => {
             header: 'Description',
             cell: (route) => <div>{route.description}</div>,
             isSortable: false,
-            size: "lg" as const,
+            size: "lg",
           },
           {
             id: 'status',
