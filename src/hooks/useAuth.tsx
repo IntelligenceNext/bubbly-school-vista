@@ -29,6 +29,7 @@ export const useAuth = () => {
         setUserSession(session);
         
         if (session?.user) {
+          console.log('User data from session:', session.user);
           setUser({
             id: session.user.id,
             email: session.user.email || '',
@@ -46,11 +47,16 @@ export const useAuth = () => {
         (_event, session) => {
           setUserSession(session);
           
-          setUser(session?.user ? {
-            id: session.user.id,
-            email: session.user.email || '',
-            full_name: session.user.user_metadata?.full_name,
-          } : null);
+          if (session?.user) {
+            console.log('Auth state changed, new user data:', session.user);
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              full_name: session.user.user_metadata?.full_name,
+            });
+          } else {
+            setUser(null);
+          }
         }
       );
       
