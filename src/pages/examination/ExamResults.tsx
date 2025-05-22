@@ -2,446 +2,475 @@
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
-import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import DataTable, { ColumnSize, ButtonVariant } from '@/components/DataTable';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { 
-  Dialog, 
-  DialogTrigger, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
-import { 
-  Form, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormControl, 
-  FormMessage 
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import {
-  FileText, 
-  Search, 
-  Edit, 
-  FilePlus, 
-  FileUp, 
-  UserCheck, 
-  Book, 
-  Award
-} from "lucide-react";
+} from '@/components/ui/select';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { Badge } from '@/components/ui/badge';
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { Download, Filter, FileText, UploadCloud } from 'lucide-react';
+
+// Mock data for exams
+const exams = [
+  { id: '1', name: 'Final Term Examination' },
+  { id: '2', name: 'Mid Term Assessment' },
+  { id: '3', name: 'First Unit Test' },
+  { id: '4', name: 'Pre-Board Examination' },
+];
+
+// Mock data for classes
+const classes = [
+  { id: '1', name: 'Grade 1' },
+  { id: '2', name: 'Grade 2' },
+  { id: '3', name: 'Grade 3' },
+  { id: '4', name: 'Grade 4' },
+  { id: '5', name: 'Grade 5' },
+];
+
+// Mock data for subjects
+const subjects = [
+  { id: '1', name: 'Mathematics', code: 'MATH' },
+  { id: '2', name: 'Science', code: 'SCI' },
+  { id: '3', name: 'English', code: 'ENG' },
+  { id: '4', name: 'Social Studies', code: 'SOC' },
+  { id: '5', name: 'Computer', code: 'COMP' },
+];
+
+// Mock data for students with results
+const studentResults = [
+  {
+    id: '1',
+    student_id: 'ST001',
+    student_name: 'Aiden Carter',
+    class_name: 'Grade 3',
+    exam_name: 'Final Term Examination',
+    subject_name: 'Mathematics',
+    marks_obtained: 85,
+    max_marks: 100,
+    percentage: 85,
+    grade: 'A',
+    result: 'Pass',
+    remarks: 'Excellent work',
+    date_published: '2023-12-20',
+  },
+  {
+    id: '2',
+    student_id: 'ST002',
+    student_name: 'Emma Johnson',
+    class_name: 'Grade 3',
+    exam_name: 'Final Term Examination',
+    subject_name: 'Mathematics',
+    marks_obtained: 92,
+    max_marks: 100,
+    percentage: 92,
+    grade: 'A+',
+    result: 'Pass',
+    remarks: 'Outstanding performance',
+    date_published: '2023-12-20',
+  },
+  {
+    id: '3',
+    student_id: 'ST003',
+    student_name: 'Noah Williams',
+    class_name: 'Grade 3',
+    exam_name: 'Final Term Examination',
+    subject_name: 'Mathematics',
+    marks_obtained: 35,
+    max_marks: 100,
+    percentage: 35,
+    grade: 'F',
+    result: 'Fail',
+    remarks: 'Needs significant improvement',
+    date_published: '2023-12-20',
+  },
+  {
+    id: '4',
+    student_id: 'ST004',
+    student_name: 'Olivia Brown',
+    class_name: 'Grade 2',
+    exam_name: 'Mid Term Assessment',
+    subject_name: 'Science',
+    marks_obtained: 42,
+    max_marks: 50,
+    percentage: 84,
+    grade: 'A',
+    result: 'Pass',
+    remarks: 'Good understanding of concepts',
+    date_published: '2023-09-01',
+  },
+  {
+    id: '5',
+    student_id: 'ST005',
+    student_name: 'Liam Davis',
+    class_name: 'Grade 2',
+    exam_name: 'Mid Term Assessment',
+    subject_name: 'Science',
+    marks_obtained: 38,
+    max_marks: 50,
+    percentage: 76,
+    grade: 'B',
+    result: 'Pass',
+    remarks: 'Good effort',
+    date_published: '2023-09-01',
+  },
+  {
+    id: '6',
+    student_id: 'ST006',
+    student_name: 'Sophia Miller',
+    class_name: 'Grade 4',
+    exam_name: 'First Unit Test',
+    subject_name: 'English',
+    marks_obtained: 27,
+    max_marks: 30,
+    percentage: 90,
+    grade: 'A+',
+    result: 'Pass',
+    remarks: 'Excellent language skills',
+    date_published: '2023-07-20',
+  },
+  {
+    id: '7',
+    student_id: 'ST007',
+    student_name: 'Jackson Wilson',
+    class_name: 'Grade 4',
+    exam_name: 'First Unit Test',
+    subject_name: 'English',
+    marks_obtained: 18,
+    max_marks: 30,
+    percentage: 60,
+    grade: 'C',
+    result: 'Pass',
+    remarks: 'Needs to work on grammar',
+    date_published: '2023-07-20',
+  },
+  {
+    id: '8',
+    student_id: 'ST008',
+    student_name: 'Isabella Moore',
+    class_name: 'Grade 5',
+    exam_name: 'Pre-Board Examination',
+    subject_name: 'Mathematics',
+    marks_obtained: 88,
+    max_marks: 100,
+    percentage: 88,
+    grade: 'A',
+    result: 'Pass',
+    remarks: 'Very good performance',
+    date_published: '2023-11-25',
+  },
+  {
+    id: '9',
+    student_id: 'ST009',
+    student_name: 'Lucas Taylor',
+    class_name: 'Grade 5',
+    exam_name: 'Pre-Board Examination',
+    subject_name: 'Mathematics',
+    marks_obtained: 31,
+    max_marks: 100,
+    percentage: 31,
+    grade: 'F',
+    result: 'Fail',
+    remarks: 'Needs to focus more on practice',
+    date_published: '2023-11-25',
+  },
+  {
+    id: '10',
+    student_id: 'ST010',
+    student_name: 'Mia Anderson',
+    class_name: 'Grade 5',
+    exam_name: 'Pre-Board Examination',
+    subject_name: 'Mathematics',
+    marks_obtained: 65,
+    max_marks: 100,
+    percentage: 65,
+    grade: 'C',
+    result: 'Pass',
+    remarks: 'Average performance',
+    date_published: '2023-11-25',
+  },
+];
+
+// Form schema for uploading results
+const uploadFormSchema = z.object({
+  exam_id: z.string().min(1, 'Please select an exam'),
+  class_id: z.string().min(1, 'Please select a class'),
+  subject_id: z.string().min(1, 'Please select a subject'),
+  result_file: z.any().optional(),
+});
 
 const ExamResults = () => {
-  const [isIndividualEntryOpen, setIsIndividualEntryOpen] = useState(false);
-  const [isGroupEntryOpen, setIsGroupEntryOpen] = useState(false);
-  
-  // Mock data for students
-  const students = [
-    {
-      id: "1",
-      rollNo: "A001",
-      name: "Aryan Sharma",
-      class: "Class 10",
-      section: "A",
-      subjects: {
-        "Mathematics": { marks: 85, grade: "A", status: "Pass" },
-        "Science": { marks: 78, grade: "B", status: "Pass" },
-        "English": { marks: 92, grade: "A", status: "Pass" },
-        "Hindi": { marks: 80, grade: "A", status: "Pass" },
-        "Social Science": { marks: 75, grade: "B", status: "Pass" }
-      },
-      totalMarks: 410,
-      percentage: 82,
-      grade: "A",
-      position: 2,
-      status: "Pass"
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedExam, setSelectedExam] = useState<string | null>(null);
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+
+  // Initialize form
+  const form = useForm<z.infer<typeof uploadFormSchema>>({
+    resolver: zodResolver(uploadFormSchema),
+    defaultValues: {
+      exam_id: '',
+      class_id: '',
+      subject_id: '',
     },
-    {
-      id: "2",
-      rollNo: "A002",
-      name: "Priya Patel",
-      class: "Class 10",
-      section: "A",
-      subjects: {
-        "Mathematics": { marks: 95, grade: "A+", status: "Pass" },
-        "Science": { marks: 88, grade: "A", status: "Pass" },
-        "English": { marks: 90, grade: "A", status: "Pass" },
-        "Hindi": { marks: 85, grade: "A", status: "Pass" },
-        "Social Science": { marks: 92, grade: "A+", status: "Pass" }
-      },
-      totalMarks: 450,
-      percentage: 90,
-      grade: "A+",
-      position: 1,
-      status: "Pass"
-    },
-    {
-      id: "3",
-      rollNo: "A003",
-      name: "Rahul Yadav",
-      class: "Class 10",
-      section: "A",
-      subjects: {
-        "Mathematics": { marks: 65, grade: "C", status: "Pass" },
-        "Science": { marks: 72, grade: "B", status: "Pass" },
-        "English": { marks: 68, grade: "C", status: "Pass" },
-        "Hindi": { marks: 75, grade: "B", status: "Pass" },
-        "Social Science": { marks: 70, grade: "B", status: "Pass" }
-      },
-      totalMarks: 350,
-      percentage: 70,
-      grade: "B",
-      position: 5,
-      status: "Pass"
-    },
-    {
-      id: "4",
-      rollNo: "A004",
-      name: "Anjali Singh",
-      class: "Class 10",
-      section: "A",
-      subjects: {
-        "Mathematics": { marks: 82, grade: "A", status: "Pass" },
-        "Science": { marks: 78, grade: "B", status: "Pass" },
-        "English": { marks: 85, grade: "A", status: "Pass" },
-        "Hindi": { marks: 80, grade: "A", status: "Pass" },
-        "Social Science": { marks: 76, grade: "B", status: "Pass" }
-      },
-      totalMarks: 401,
-      percentage: 80.2,
-      grade: "A",
-      position: 3,
-      status: "Pass"
-    },
-    {
-      id: "5",
-      rollNo: "A005",
-      name: "Mohammed Rizwan",
-      class: "Class 10",
-      section: "A",
-      subjects: {
-        "Mathematics": { marks: 75, grade: "B", status: "Pass" },
-        "Science": { marks: 80, grade: "A", status: "Pass" },
-        "English": { marks: 72, grade: "B", status: "Pass" },
-        "Hindi": { marks: 68, grade: "C", status: "Pass" },
-        "Social Science": { marks: 82, grade: "A", status: "Pass" }
-      },
-      totalMarks: 377,
-      percentage: 75.4,
-      grade: "B",
-      position: 4,
-      status: "Pass"
-    }
-  ];
-  
-  // Mock data for exams, classes, subjects
-  const exams = [
-    { id: "1", name: "Final Term Examination 2023-24" },
-    { id: "2", name: "Mid Term Assessment 2023-24" },
-    { id: "3", name: "First Unit Test 2023-24" }
-  ];
-  
-  const classes = [
-    { id: "1", name: "Class 10" },
-    { id: "2", name: "Class 9" },
-    { id: "3", name: "Class 8" }
-  ];
-  
-  const sections = [
-    { id: "A", name: "Section A" },
-    { id: "B", name: "Section B" },
-    { id: "C", name: "Section C" }
-  ];
-  
-  const subjects = [
-    { id: "1", name: "Mathematics" },
-    { id: "2", name: "Science" },
-    { id: "3", name: "English" },
-    { id: "4", name: "Hindi" },
-    { id: "5", name: "Social Science" }
-  ];
-  
-  // Table columns
+  });
+
+  const onSubmit = (values: z.infer<typeof uploadFormSchema>) => {
+    console.log('Form submitted:', values);
+    setIsDialogOpen(false);
+    form.reset();
+  };
+
+  // Filter results based on selection
+  const filteredResults = studentResults.filter((result) => {
+    if (selectedExam && result.exam_name !== exams.find(e => e.id === selectedExam)?.name) return false;
+    if (selectedClass && result.class_name !== classes.find(c => c.id === selectedClass)?.name) return false;
+    if (selectedSubject && result.subject_name !== subjects.find(s => s.id === selectedSubject)?.name) return false;
+    return true;
+  });
+
+  // Define columns for the DataTable with proper typing for column size
   const columns = [
     {
-      id: "rollNo",
-      header: "Roll No",
-      cell: (row: any) => row.rollNo,
+      id: 'student_id',
+      header: 'Student ID',
+      cell: (row: any) => row.student_id,
       isSortable: true,
-      sortKey: "rollNo",
-      size: "sm"
+      sortKey: 'student_id',
+      size: 'sm' as ColumnSize,
     },
     {
-      id: "name",
-      header: "Student Name",
-      cell: (row: any) => <span className="font-medium">{row.name}</span>,
+      id: 'student_name',
+      header: 'Student Name',
+      cell: (row: any) => <span className="font-medium">{row.student_name}</span>,
       isSortable: true,
-      sortKey: "name"
+      sortKey: 'student_name',
     },
     {
-      id: "class",
-      header: "Class",
-      cell: (row: any) => (
-        <span>{row.class} - {row.section}</span>
-      ),
+      id: 'class',
+      header: 'Class',
+      cell: (row: any) => row.class_name,
       isSortable: true,
-      sortKey: "class",
-      size: "sm"
+      sortKey: 'class_name',
     },
     {
-      id: "marks",
-      header: "Marks",
+      id: 'exam',
+      header: 'Exam',
+      cell: (row: any) => row.exam_name,
+      isSortable: true,
+      sortKey: 'exam_name',
+    },
+    {
+      id: 'subject',
+      header: 'Subject',
+      cell: (row: any) => row.subject_name,
+      isSortable: true,
+      sortKey: 'subject_name',
+    },
+    {
+      id: 'marks',
+      header: 'Marks',
       cell: (row: any) => (
         <div>
-          <div><strong>{row.totalMarks}/500</strong></div>
-          <div className="text-sm text-muted-foreground">{row.percentage}%</div>
+          {row.marks_obtained}/{row.max_marks} ({row.percentage}%)
         </div>
       ),
       isSortable: true,
-      sortKey: "totalMarks",
-      size: "sm"
+      sortKey: 'percentage',
     },
     {
-      id: "grade",
-      header: "Grade",
+      id: 'grade',
+      header: 'Grade',
       cell: (row: any) => (
-        <Badge variant="outline" className="text-lg font-bold">
-          {row.grade}
+        <span className="font-medium">{row.grade}</span>
+      ),
+      isSortable: true,
+      sortKey: 'grade',
+      size: 'sm' as ColumnSize,
+    },
+    {
+      id: 'result',
+      header: 'Result',
+      cell: (row: any) => (
+        <Badge variant={row.result === 'Pass' ? 'default' : 'destructive'}>
+          {row.result}
         </Badge>
       ),
       isSortable: true,
-      sortKey: "grade",
-      size: "sm"
+      sortKey: 'result',
+      size: 'sm' as ColumnSize,
     },
-    {
-      id: "position",
-      header: "Rank",
-      cell: (row: any) => (
-        <div className="text-center">
-          <span className="font-bold text-lg">{row.position}</span>
-        </div>
-      ),
-      isSortable: true,
-      sortKey: "position",
-      size: "sm"
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: (row: any) => (
-        <Badge variant={row.status === "Pass" ? "outline" : "destructive"}>
-          {row.status}
-        </Badge>
-      ),
-      isSortable: true,
-      sortKey: "status",
-      size: "sm"
-    }
   ];
-  
-  // Individual result entry form schema
-  const individualFormSchema = z.object({
-    examId: z.string({
-      required_error: "Please select an examination",
-    }),
-    studentId: z.string({
-      required_error: "Please enter student ID or roll number",
-    }),
-    subject: z.string({
-      required_error: "Please select a subject",
-    }),
-    marks: z.string().transform((val) => parseFloat(val)),
-    grade: z.string({
-      required_error: "Please select a grade",
-    }),
-    remarks: z.string().optional(),
-  });
-  
-  // Group result entry form schema
-  const groupFormSchema = z.object({
-    examId: z.string({
-      required_error: "Please select an examination",
-    }),
-    classId: z.string({
-      required_error: "Please select a class",
-    }),
-    sectionId: z.string({
-      required_error: "Please select a section",
-    }),
-    subjectId: z.string({
-      required_error: "Please select a subject",
-    })
-  });
-  
-  // Initialize forms
-  const individualForm = useForm<z.infer<typeof individualFormSchema>>({
-    resolver: zodResolver(individualFormSchema),
-    defaultValues: {
-      remarks: ""
-    }
-  });
-  
-  const groupForm = useForm<z.infer<typeof groupFormSchema>>({
-    resolver: zodResolver(groupFormSchema)
-  });
-  
-  const onIndividualSubmit = (values: z.infer<typeof individualFormSchema>) => {
-    console.log("Individual form submitted:", values);
-    setIsIndividualEntryOpen(false);
-    individualForm.reset();
-  };
-  
-  const onGroupSubmit = (values: z.infer<typeof groupFormSchema>) => {
-    console.log("Group form submitted:", values);
-    setIsGroupEntryOpen(false);
-    groupForm.reset();
-  };
-  
-  // Table actions
+
+  // Define actions for the DataTable with proper typing for variants
   const actions = [
     {
-      label: "View Details",
-      onClick: (student: any) => {
-        console.log("View student details:", student);
+      label: 'View Detail',
+      onClick: (result: any) => {
+        console.log('View result:', result);
       },
     },
     {
-      label: "Edit Results",
-      onClick: (student: any) => {
-        console.log("Edit results:", student);
+      label: 'Download',
+      onClick: (result: any) => {
+        console.log('Download result:', result);
       },
+      variant: 'secondary' as ButtonVariant,
     },
-    {
-      label: "Print Report Card",
-      onClick: (student: any) => {
-        console.log("Print report card:", student);
-      },
-    }
   ];
-  
+
   return (
-    <PageTemplate title="Exam Results" subtitle="Enter and manage exam results">
+    <PageTemplate
+      title="Exam Results"
+      subtitle="View and manage examination results"
+    >
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Individual Entry</CardTitle>
-              <CardDescription>Enter results for one student</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                className="w-full" 
-                onClick={() => setIsIndividualEntryOpen(true)}
-              >
-                <UserCheck className="mr-2 h-4 w-4" /> Record Individual Result
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Group Entry</CardTitle>
-              <CardDescription>Enter results for a class/section</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                className="w-full" 
-                onClick={() => setIsGroupEntryOpen(true)}
-              >
-                <FilePlus className="mr-2 h-4 w-4" /> Record Group Results
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Import Results</CardTitle>
-              <CardDescription>Upload from CSV/Excel format</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="outline">
-                <FileUp className="mr-2 h-4 w-4" /> Import From File
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-        
         <PageHeader
-          title="Final Term Examination 2023-24"
-          description="Class 10 - Section A"
-          actions={[
-            <Button key="filter" variant="outline">
-              <Search className="mr-2 h-4 w-4" /> Filter
-            </Button>,
-            <Button key="print" variant="outline">
-              <FileText className="mr-2 h-4 w-4" /> Print Results
-            </Button>
-          ]}
+          title="Exam Results"
+          description="View, filter, and download student examination results"
+          primaryAction={{
+            label: 'Upload Results',
+            onClick: () => setIsDialogOpen(true),
+            icon: <UploadCloud className="h-4 w-4" />,
+          }}
         />
-        
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <DataTable
-            data={students}
-            columns={columns}
-            keyField="id"
-            selectable={true}
-            actions={actions}
-            onRowClick={(student) => console.log("Row clicked:", student)}
-          />
-        </div>
-        
-        {/* Individual Result Entry Dialog */}
-        <Dialog open={isIndividualEntryOpen} onOpenChange={setIsIndividualEntryOpen}>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-wrap gap-4 mb-6">
+              <div className="w-full sm:w-auto">
+                <Select
+                  value={selectedExam || ''}
+                  onValueChange={(value) =>
+                    setSelectedExam(value === 'all' ? null : value)
+                  }
+                >
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Filter by Exam" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Exams</SelectItem>
+                    {exams.map((exam) => (
+                      <SelectItem key={exam.id} value={exam.id}>
+                        {exam.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full sm:w-auto">
+                <Select
+                  value={selectedClass || ''}
+                  onValueChange={(value) =>
+                    setSelectedClass(value === 'all' ? null : value)
+                  }
+                >
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filter by Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {classes.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full sm:w-auto">
+                <Select
+                  value={selectedSubject || ''}
+                  onValueChange={(value) =>
+                    setSelectedSubject(value === 'all' ? null : value)
+                  }
+                >
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filter by Subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Subjects</SelectItem>
+                    {subjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="ml-auto">
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Results
+                </Button>
+              </div>
+            </div>
+
+            <DataTable
+              data={filteredResults}
+              columns={columns}
+              keyField="id"
+              selectable={true}
+              actions={actions}
+              bulkActions={[
+                {
+                  label: 'Download Selected',
+                  onClick: (selectedResults) =>
+                    console.log('Download selected:', selectedResults),
+                  variant: 'secondary' as ButtonVariant,
+                },
+              ]}
+            />
+          </CardContent>
+        </Card>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Record Individual Result</DialogTitle>
-              <DialogDescription>
-                Enter exam result details for an individual student
-              </DialogDescription>
+              <DialogTitle>Upload Exam Results</DialogTitle>
             </DialogHeader>
-            
-            <Form {...individualForm}>
-              <form onSubmit={individualForm.handleSubmit(onIndividualSubmit)} className="space-y-4 pt-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
                 <FormField
-                  control={individualForm.control}
-                  name="examId"
+                  control={form.control}
+                  name="exam_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Examination</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormLabel>Exam</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select examination" />
+                            <SelectValue placeholder="Select exam" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -456,28 +485,45 @@ const ExamResults = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
-                  control={individualForm.control}
-                  name="studentId"
+                  control={form.control}
+                  name="class_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Student ID / Roll Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter student ID or roll number" {...field} />
-                      </FormControl>
+                      <FormLabel>Class</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select class" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {classes.map((cls) => (
+                            <SelectItem key={cls.id} value={cls.id}>
+                              {cls.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
-                  control={individualForm.control}
-                  name="subject"
+                  control={form.control}
+                  name="subject_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Subject</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select subject" />
@@ -495,302 +541,38 @@ const ExamResults = () => {
                     </FormItem>
                   )}
                 />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={individualForm.control}
-                    name="marks"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Marks</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={individualForm.control}
-                    name="grade"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Grade</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select grade" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="A+">A+</SelectItem>
-                            <SelectItem value="A">A</SelectItem>
-                            <SelectItem value="B+">B+</SelectItem>
-                            <SelectItem value="B">B</SelectItem>
-                            <SelectItem value="C+">C+</SelectItem>
-                            <SelectItem value="C">C</SelectItem>
-                            <SelectItem value="D">D</SelectItem>
-                            <SelectItem value="F">F (Fail)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
+
                 <FormField
-                  control={individualForm.control}
-                  name="remarks"
+                  control={form.control}
+                  name="result_file"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Remarks (Optional)</FormLabel>
+                      <FormLabel>Upload Result File</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Add any remarks or notes about the student's performance"
-                          {...field}
-                          rows={3}
-                        />
+                        <Input type="file" accept=".csv,.xlsx,.xls" />
                       </FormControl>
+                      <FormDescription>
+                        Upload a CSV or Excel file with student results. 
+                        <Button variant="link" className="p-0 h-auto" asChild>
+                          <a href="#" className="ml-1">
+                            Download template
+                          </a>
+                        </Button>
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsIndividualEntryOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit">Save Result</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-        
-        {/* Group Result Entry Dialog */}
-        <Dialog open={isGroupEntryOpen} onOpenChange={setIsGroupEntryOpen}>
-          <DialogContent className="sm:max-w-[700px]">
-            <DialogHeader>
-              <DialogTitle>Group Result Entry</DialogTitle>
-              <DialogDescription>
-                Record results for an entire class or section
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...groupForm}>
-              <form onSubmit={groupForm.handleSubmit(onGroupSubmit)} className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={groupForm.control}
-                    name="examId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Examination</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select examination" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {exams.map((exam) => (
-                              <SelectItem key={exam.id} value={exam.id}>
-                                {exam.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={groupForm.control}
-                    name="subjectId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Subject</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select subject" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {subjects.map((subject) => (
-                              <SelectItem key={subject.id} value={subject.id}>
-                                {subject.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={groupForm.control}
-                    name="classId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Class</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select class" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {classes.map((cls) => (
-                              <SelectItem key={cls.id} value={cls.id}>
-                                {cls.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={groupForm.control}
-                    name="sectionId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Section</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select section" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {sections.map((section) => (
-                              <SelectItem key={section.id} value={section.id}>
-                                {section.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="bg-slate-50 p-3 rounded-md">
-                  <h3 className="text-sm font-medium mb-2">
-                    Class 10-A | Mathematics | Final Term Examination 2023-24
-                  </h3>
-                  
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[100px]">Roll No</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Marks</TableHead>
-                        <TableHead>Grade</TableHead>
-                        <TableHead className="w-[120px]">Remarks</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>A001</TableCell>
-                        <TableCell>Aryan Sharma</TableCell>
-                        <TableCell>
-                          <Input type="number" className="w-20" defaultValue="" />
-                        </TableCell>
-                        <TableCell>
-                          <Select>
-                            <SelectTrigger className="w-20">
-                              <SelectValue placeholder="--" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="A+">A+</SelectItem>
-                              <SelectItem value="A">A</SelectItem>
-                              <SelectItem value="B+">B+</SelectItem>
-                              <SelectItem value="B">B</SelectItem>
-                              <SelectItem value="C+">C+</SelectItem>
-                              <SelectItem value="C">C</SelectItem>
-                              <SelectItem value="D">D</SelectItem>
-                              <SelectItem value="F">F</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input className="w-full" />
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>A002</TableCell>
-                        <TableCell>Priya Patel</TableCell>
-                        <TableCell>
-                          <Input type="number" className="w-20" defaultValue="" />
-                        </TableCell>
-                        <TableCell>
-                          <Select>
-                            <SelectTrigger className="w-20">
-                              <SelectValue placeholder="--" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="A+">A+</SelectItem>
-                              <SelectItem value="A">A</SelectItem>
-                              <SelectItem value="B+">B+</SelectItem>
-                              <SelectItem value="B">B</SelectItem>
-                              <SelectItem value="C+">C+</SelectItem>
-                              <SelectItem value="C">C</SelectItem>
-                              <SelectItem value="D">D</SelectItem>
-                              <SelectItem value="F">F</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input className="w-full" />
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>A003</TableCell>
-                        <TableCell>Rahul Yadav</TableCell>
-                        <TableCell>
-                          <Input type="number" className="w-20" defaultValue="" />
-                        </TableCell>
-                        <TableCell>
-                          <Select>
-                            <SelectTrigger className="w-20">
-                              <SelectValue placeholder="--" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="A+">A+</SelectItem>
-                              <SelectItem value="A">A</SelectItem>
-                              <SelectItem value="B+">B+</SelectItem>
-                              <SelectItem value="B">B</SelectItem>
-                              <SelectItem value="C+">C+</SelectItem>
-                              <SelectItem value="C">C</SelectItem>
-                              <SelectItem value="D">D</SelectItem>
-                              <SelectItem value="F">F</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input className="w-full" />
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-                
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsGroupEntryOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">Save All Results</Button>
+                  <Button type="submit">Upload Results</Button>
                 </DialogFooter>
               </form>
             </Form>

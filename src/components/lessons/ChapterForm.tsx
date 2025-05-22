@@ -63,6 +63,7 @@ export function ChapterForm({
     },
   });
 
+  // Function to handle file uploads - modified to match the FileUpload component's expected props
   const handleFileUpload = (urls: string[]) => {
     form.setValue('resources', urls, { shouldValidate: true });
   };

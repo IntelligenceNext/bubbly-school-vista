@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
-import DataTable from '@/components/DataTable';
+import DataTable, { RowAction } from '@/components/DataTable';
 import { 
   Dialog, 
   DialogTrigger, 
@@ -32,6 +31,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { cn } from "@/lib/utils";
 import { Badge } from '@/components/ui/badge';
+import { ButtonVariant } from '@/components/DataTable';
 
 const ManageExams = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -174,8 +174,8 @@ const ManageExams = () => {
     }
   ];
   
-  // Table actions
-  const actions = [
+  // Table actions with properly typed variants
+  const actions: RowAction<any>[] = [
     {
       label: "Edit Exam",
       onClick: (exam: any) => {
@@ -187,7 +187,7 @@ const ManageExams = () => {
       onClick: (exam: any) => {
         console.log("Delete exam:", exam);
       },
-      variant: "destructive"
+      variant: "destructive" as ButtonVariant
     },
     {
       label: "Schedule Groups",
@@ -222,7 +222,7 @@ const ManageExams = () => {
               {
                 label: "Delete Selected",
                 onClick: (selectedExams) => console.log("Delete selected:", selectedExams),
-                variant: "destructive"
+                variant: "destructive" as ButtonVariant
               }
             ]}
           />

@@ -2,338 +2,442 @@
 import React, { useState } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
-import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
-import { 
-  Dialog, 
-  DialogTrigger, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import { Card, CardContent } from '@/components/ui/card';
+import DataTable, { ColumnSize, ButtonVariant } from '@/components/DataTable';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from '@/components/ui/dialog';
-import { 
-  Form, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormControl, 
-  FormMessage 
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { 
+import { Textarea } from '@/components/ui/textarea';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, Edit, Trash, Book } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Plus, Filter, Trash, Edit } from 'lucide-react';
+
+// Mock data for exams
+const exams = [
+  { id: '1', name: 'Final Term Examination' },
+  { id: '2', name: 'Mid Term Assessment' },
+  { id: '3', name: 'First Unit Test' },
+  { id: '4', name: 'Pre-Board Examination' },
+];
+
+// Mock data for classes
+const classes = [
+  { id: '1', name: 'Grade 1' },
+  { id: '2', name: 'Grade 2' },
+  { id: '3', name: 'Grade 3' },
+  { id: '4', name: 'Grade 4' },
+  { id: '5', name: 'Grade 5' },
+];
+
+// Mock data for subjects
+const subjects = [
+  { id: '1', name: 'Mathematics', code: 'MATH' },
+  { id: '2', name: 'Science', code: 'SCI' },
+  { id: '3', name: 'English', code: 'ENG' },
+  { id: '4', name: 'Social Studies', code: 'SOC' },
+  { id: '5', name: 'Computer', code: 'COMP' },
+];
+
+// Mock data for exam groups
+const examGroups = [
+  {
+    id: '1',
+    name: 'Math Final - Grade 3',
+    exam_id: '1',
+    exam_name: 'Final Term Examination',
+    class_id: '3',
+    class_name: 'Grade 3',
+    subject_id: '1',
+    subject_name: 'Mathematics',
+    date: '2023-12-10',
+    start_time: '09:00',
+    end_time: '11:00',
+    room: 'Hall A',
+    max_marks: 100,
+    passing_marks: 40,
+    instructions: 'No calculators allowed. Answer all questions.',
+  },
+  {
+    id: '2',
+    name: 'Science Mid - Grade 2',
+    exam_id: '2',
+    exam_name: 'Mid Term Assessment',
+    class_id: '2',
+    class_name: 'Grade 2',
+    subject_id: '2',
+    subject_name: 'Science',
+    date: '2023-08-20',
+    start_time: '10:00',
+    end_time: '11:30',
+    room: 'Lab 1',
+    max_marks: 50,
+    passing_marks: 20,
+    instructions: 'Write neatly and answer all questions.',
+  },
+  {
+    id: '3',
+    name: 'English Unit Test - Grade 4',
+    exam_id: '3',
+    exam_name: 'First Unit Test',
+    class_id: '4',
+    class_name: 'Grade 4',
+    subject_id: '3',
+    subject_name: 'English',
+    date: '2023-07-12',
+    start_time: '09:30',
+    end_time: '10:30',
+    room: 'Room 7',
+    max_marks: 30,
+    passing_marks: 12,
+    instructions: 'Answer in complete sentences.',
+  },
+  {
+    id: '4',
+    name: 'Maths Pre-Board - Grade 5',
+    exam_id: '4',
+    exam_name: 'Pre-Board Examination',
+    class_id: '5',
+    class_name: 'Grade 5',
+    subject_id: '1',
+    subject_name: 'Mathematics',
+    date: '2023-11-15',
+    start_time: '09:00',
+    end_time: '12:00',
+    room: 'Hall B',
+    max_marks: 100,
+    passing_marks: 35,
+    instructions:
+      'Answer all questions. Show your work for all problems. Use blue or black pen only.',
+  },
+];
+
+// Form schema for creating and editing exam groups
+const formSchema = z.object({
+  name: z.string().min(3, 'Name must be at least 3 characters'),
+  exam_id: z.string().min(1, 'Please select an exam'),
+  class_id: z.string().min(1, 'Please select a class'),
+  subject_id: z.string().min(1, 'Please select a subject'),
+  date: z.string().min(1, 'Please enter a date'),
+  start_time: z.string().min(1, 'Please enter start time'),
+  end_time: z.string().min(1, 'Please enter end time'),
+  room: z.string().min(1, 'Please enter a room'),
+  max_marks: z.number().min(1, 'Marks must be at least 1'),
+  passing_marks: z.number().min(1, 'Passing marks must be at least 1'),
+  instructions: z.string().optional(),
+});
 
 const ManageGroups = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
-  // Mock data for exam groups
-  const examGroups = [
-    {
-      id: "1",
-      exam: "Final Term Examination",
-      subject: "Mathematics",
-      class: "Class 10",
-      section: "A",
-      date: "2023-12-05",
-      time: "09:00 AM - 12:00 PM",
-      room: "Hall A",
-      fullMarks: 100,
-      passMarks: 33,
-    },
-    {
-      id: "2",
-      exam: "Final Term Examination",
-      subject: "Science",
-      class: "Class 10",
-      section: "A",
-      date: "2023-12-07",
-      time: "09:00 AM - 12:00 PM",
-      room: "Hall A",
-      fullMarks: 100,
-      passMarks: 33,
-    },
-    {
-      id: "3",
-      exam: "Final Term Examination",
-      subject: "English",
-      class: "Class 10",
-      section: "A",
-      date: "2023-12-09",
-      time: "09:00 AM - 12:00 PM",
-      room: "Hall B",
-      fullMarks: 100,
-      passMarks: 33,
-    },
-    {
-      id: "4",
-      exam: "Mid Term Assessment",
-      subject: "Mathematics",
-      class: "Class 8",
-      section: "B",
-      date: "2023-08-15",
-      time: "10:00 AM - 12:00 PM",
-      room: "Room 101",
-      fullMarks: 50,
-      passMarks: 17,
-    },
-    {
-      id: "5",
-      exam: "Mid Term Assessment",
-      subject: "History",
-      class: "Class 9",
-      section: "A",
-      date: "2023-08-16",
-      time: "10:00 AM - 12:00 PM",
-      room: "Room 102",
-      fullMarks: 50,
-      passMarks: 17,
-    }
-  ];
-  
-  // Mock data for dropdowns
-  const exams = [
-    { id: "1", name: "Final Term Examination" },
-    { id: "2", name: "Mid Term Assessment" },
-    { id: "3", name: "First Unit Test" },
-    { id: "4", name: "Pre-Board Examination" }
-  ];
-  
-  const classes = [
-    { id: "1", name: "Class 1" },
-    { id: "2", name: "Class 2" },
-    { id: "8", name: "Class 8" },
-    { id: "9", name: "Class 9" },
-    { id: "10", name: "Class 10" },
-    { id: "11", name: "Class 11" },
-    { id: "12", name: "Class 12" }
-  ];
-  
-  const sections = [
-    { id: "A", name: "Section A" },
-    { id: "B", name: "Section B" },
-    { id: "C", name: "Section C" },
-  ];
-  
-  const subjects = [
-    { id: "1", name: "Mathematics" },
-    { id: "2", name: "Science" },
-    { id: "3", name: "English" },
-    { id: "4", name: "History" },
-    { id: "5", name: "Geography" },
-    { id: "6", name: "Physics" },
-    { id: "7", name: "Chemistry" },
-    { id: "8", name: "Biology" }
-  ];
-  
-  // Form schema for exam group creation/editing
-  const formSchema = z.object({
-    examId: z.string({
-      required_error: "Please select an examination",
-    }),
-    classId: z.string({
-      required_error: "Please select a class",
-    }),
-    sectionId: z.string({
-      required_error: "Please select a section",
-    }),
-    subjectId: z.string({
-      required_error: "Please select a subject",
-    }),
-    fullMarks: z.string().transform((val) => parseInt(val)),
-    passMarks: z.string().transform((val) => parseInt(val)),
-    examDate: z.date({
-      required_error: "Exam date is required",
-    }),
-    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please enter a valid time (HH:MM)"),
-    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Please enter a valid time (HH:MM)"),
-    roomNo: z.string().min(1, "Room number is required"),
-  });
-  
+  const [selectedExam, setSelectedExam] = useState<string | null>(null);
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullMarks: "100",
-      passMarks: "33",
-      startTime: "09:00",
-      endTime: "11:00",
-      roomNo: ""
-    }
+      name: '',
+      exam_id: '',
+      class_id: '',
+      subject_id: '',
+      date: '',
+      start_time: '09:00',
+      end_time: '11:00',
+      room: '',
+      max_marks: 100, // Fixed: This is now a number, not a string
+      passing_marks: 40, // Fixed: This is now a number, not a string
+      instructions: '',
+    },
   });
-  
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("Form submitted:", values);
+    console.log('Form submitted:', values);
     setIsDialogOpen(false);
     form.reset();
   };
 
-  // Table columns
+  // Filter groups based on selection
+  const filteredGroups = examGroups.filter((group) => {
+    if (selectedExam && group.exam_id !== selectedExam) return false;
+    if (selectedClass && group.class_id !== selectedClass) return false;
+    if (selectedSubject && group.subject_id !== selectedSubject) return false;
+    return true;
+  });
+
+  // Define columns for the DataTable with proper type for size
   const columns = [
     {
-      id: "exam",
-      header: "Examination",
-      cell: (row: any) => <span className="font-medium">{row.exam}</span>,
+      id: 'name',
+      header: 'Group Name',
+      cell: (group: any) => <span className="font-medium">{group.name}</span>,
       isSortable: true,
-      sortKey: "exam"
+      sortKey: 'name',
     },
     {
-      id: "subject",
-      header: "Subject",
-      cell: (row: any) => (
-        <div className="flex items-center">
-          <Book className="h-4 w-4 mr-2 text-slate-500" />
-          {row.subject}
-        </div>
-      ),
+      id: 'exam',
+      header: 'Exam',
+      cell: (group: any) => group.exam_name,
       isSortable: true,
-      sortKey: "subject"
+      sortKey: 'exam_name',
     },
     {
-      id: "class",
-      header: "Class",
-      cell: (row: any) => (
-        <span>{row.class} {row.section && `- ${row.section}`}</span>
-      ),
+      id: 'class',
+      header: 'Class',
+      cell: (group: any) => group.class_name,
       isSortable: true,
-      sortKey: "class"
+      sortKey: 'class_name',
     },
     {
-      id: "schedule",
-      header: "Schedule",
-      cell: (row: any) => (
+      id: 'subject',
+      header: 'Subject',
+      cell: (group: any) => group.subject_name,
+      isSortable: true,
+      sortKey: 'subject_name',
+    },
+    {
+      id: 'schedule',
+      header: 'Schedule',
+      cell: (group: any) => (
         <div>
-          <div>{row.date}</div>
-          <div className="text-sm text-muted-foreground">{row.time}</div>
+          <div>{group.date}</div>
+          <div className="text-sm text-gray-500">
+            {group.start_time} - {group.end_time}
+          </div>
         </div>
       ),
       isSortable: true,
-      sortKey: "date"
+      sortKey: 'date',
     },
     {
-      id: "room",
-      header: "Room",
-      cell: (row: any) => row.room,
+      id: 'room',
+      header: 'Room',
+      cell: (group: any) => group.room,
       isSortable: true,
-      sortKey: "room"
+      sortKey: 'room',
     },
     {
-      id: "marks",
-      header: "Marks",
-      cell: (row: any) => (
+      id: 'marks',
+      header: 'Marks',
+      cell: (group: any) => (
         <div>
-          <div>Full: {row.fullMarks}</div>
-          <div className="text-sm text-muted-foreground">Pass: {row.passMarks}</div>
+          <div>Max: {group.max_marks}</div>
+          <div className="text-sm text-gray-500">
+            Pass: {group.passing_marks}
+          </div>
         </div>
       ),
-      isSortable: false
-    }
+      isSortable: false,
+      size: 'sm' as ColumnSize,
+    },
   ];
-  
-  // Table actions
+
+  // Define actions for the DataTable with proper typing for variant
   const actions = [
     {
-      label: "Edit",
+      label: 'Edit Group',
       onClick: (group: any) => {
-        console.log("Edit group:", group);
+        console.log('Edit group:', group);
       },
     },
     {
-      label: "Delete",
+      label: 'Delete',
       onClick: (group: any) => {
-        console.log("Delete group:", group);
+        console.log('Delete group:', group);
       },
-      variant: "destructive"
-    }
+      variant: 'destructive' as ButtonVariant,
+    },
   ];
-  
+
   return (
-    <PageTemplate title="Manage Groups" subtitle="Organize exam groups by class, section, and subject">
+    <PageTemplate
+      title="Exam Groups"
+      subtitle="Create and manage examination groups"
+    >
       <div className="space-y-6">
         <PageHeader
-          title="Examination Groups"
-          description="Create and manage examination schedules by subject"
+          title="Exam Groups"
+          description="Schedule exams for specific classes and subjects"
           primaryAction={{
-            label: "Add Exam Group",
+            label: 'Create New Group',
             onClick: () => setIsDialogOpen(true),
+            icon: <Plus className="h-4 w-4" />,
           }}
         />
-        
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <DataTable
-            data={examGroups}
-            columns={columns}
-            keyField="id"
-            selectable={true}
-            actions={actions}
-            onRowClick={(group) => console.log("Row clicked:", group)}
-            bulkActions={[
-              {
-                label: "Delete Selected",
-                onClick: (selectedGroups) => console.log("Delete selected:", selectedGroups),
-                variant: "destructive"
-              }
-            ]}
-          />
-        </div>
-        
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-wrap gap-4 mb-6">
+              <div className="w-full sm:w-auto">
+                <Select
+                  value={selectedExam || ''}
+                  onValueChange={(value) =>
+                    setSelectedExam(value === 'all' ? null : value)
+                  }
+                >
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Filter by Exam" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Exams</SelectItem>
+                    {exams.map((exam) => (
+                      <SelectItem key={exam.id} value={exam.id}>
+                        {exam.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full sm:w-auto">
+                <Select
+                  value={selectedClass || ''}
+                  onValueChange={(value) =>
+                    setSelectedClass(value === 'all' ? null : value)
+                  }
+                >
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filter by Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {classes.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="w-full sm:w-auto">
+                <Select
+                  value={selectedSubject || ''}
+                  onValueChange={(value) =>
+                    setSelectedSubject(value === 'all' ? null : value)
+                  }
+                >
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filter by Subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Subjects</SelectItem>
+                    {subjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DataTable
+              data={filteredGroups}
+              columns={columns}
+              keyField="id"
+              selectable={true}
+              actions={actions}
+              bulkActions={[
+                {
+                  label: 'Delete Selected',
+                  onClick: (selectedGroups) =>
+                    console.log('Delete selected:', selectedGroups),
+                  variant: 'destructive' as ButtonVariant,
+                },
+              ]}
+            />
+          </CardContent>
+        </Card>
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create Exam Group</DialogTitle>
               <DialogDescription>
-                Schedule an examination for a specific class, section, and subject
+                Schedule an exam for a specific class and subject.
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
                 <FormField
                   control={form.control}
-                  name="examId"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Examination</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select examination" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {exams.map((exam) => (
-                            <SelectItem key={exam.id} value={exam.id}>
-                              {exam.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Group Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. Mathematics Final - Grade 3"
+                          {...field}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
-                    name="classId"
+                    name="exam_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Exam</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select exam" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {exams.map((exam) => (
+                              <SelectItem key={exam.id} value={exam.id}>
+                                {exam.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="class_id"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Class</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select class" />
@@ -351,39 +455,17 @@ const ManageGroups = () => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
-                    name="sectionId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Section</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select section" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {sections.map((section) => (
-                              <SelectItem key={section.id} value={section.id}>
-                                {section.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="subjectId"
+                    name="subject_id"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subject</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select subject" />
@@ -402,81 +484,25 @@ const ManageGroups = () => {
                     )}
                   />
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <FormField
                     control={form.control}
-                    name="fullMarks"
+                    name="date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Marks</FormLabel>
+                        <FormLabel>Date</FormLabel>
                         <FormControl>
-                          <Input type="number" min="0" {...field} />
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
-                    name="passMarks"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pass Marks</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="examDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Exam Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="startTime"
+                    name="start_time"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Start Time</FormLabel>
@@ -487,10 +513,10 @@ const ManageGroups = () => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
-                    name="endTime"
+                    name="end_time"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>End Time</FormLabel>
@@ -501,27 +527,94 @@ const ManageGroups = () => {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="room"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Room</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g. Hall A"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-                
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="max_marks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Maximum Marks</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="e.g. 100"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="passing_marks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Passing Marks</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="e.g. 40"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
-                  name="roomNo"
+                  name="instructions"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Room/Hall</FormLabel>
+                      <FormLabel>Instructions (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Hall A, Room 101" {...field} />
+                        <Textarea
+                          placeholder="Enter instructions for students"
+                          {...field}
+                          rows={3}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit">Schedule Exam</Button>
+                  <Button type="submit">Create Group</Button>
                 </DialogFooter>
               </form>
             </Form>
