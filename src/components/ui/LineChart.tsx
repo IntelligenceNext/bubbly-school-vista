@@ -51,6 +51,12 @@ export function LineChart({
         })
       : data;
 
+  // Check if categories array is valid before mapping
+  if (!categories || !Array.isArray(categories)) {
+    console.error("Invalid categories array provided to LineChart");
+    return <div>Invalid chart configuration</div>;
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RechartsLineChart
