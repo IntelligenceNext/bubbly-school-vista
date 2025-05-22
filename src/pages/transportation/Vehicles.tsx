@@ -202,7 +202,7 @@ const Vehicles = () => {
       header: 'Remarks',
       cell: (item) => <span className="truncate max-w-xs">{item.remarks}</span>,
       isSortable: false,
-      size: 'lg'
+      size: "lg" // Changed from 'lg' string to "lg" enum value
     },
   ];
 

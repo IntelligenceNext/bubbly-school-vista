@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,9 +62,10 @@ export function ChapterForm({
     },
   });
 
-  // Function to handle file uploads
-  const handleFileUpload = (urls: string[]) => {
-    form.setValue('resources', urls, { shouldValidate: true });
+  // Function to handle file uploads - updated to match FileUpload component interface
+  const handleFileUpload = (url: string) => {
+    const currentUrls = form.getValues('resources') || [];
+    form.setValue('resources', [...currentUrls, url], { shouldValidate: true });
   };
 
   return (

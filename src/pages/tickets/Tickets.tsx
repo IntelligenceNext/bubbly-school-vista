@@ -206,10 +206,10 @@ const Tickets = () => {
     form.reset();
   };
 
-  // Function to handle file uploads
-  const handleFileUpload = (urls: string[]) => {
-    console.log("Files uploaded:", urls);
-    form.setValue('attachments', urls);
+  // Function to handle file uploads - updated to match FileUpload component interface
+  const handleFileUpload = (url: string) => {
+    const currentAttachments = form.getValues('attachments') || [];
+    form.setValue('attachments', [...currentAttachments, url]);
   };
 
   const columns = [

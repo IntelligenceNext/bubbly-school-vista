@@ -135,7 +135,7 @@ const Dashboard = () => {
               <div className="h-80">
                 <LineChart 
                   data={monthlyDistanceData} 
-                  index={0}
+                  index="Distance Traveled (km)"
                   categories={["Distance"]}
                   colors={["#3b82f6"]}
                 />
@@ -151,7 +151,7 @@ const Dashboard = () => {
               <div className="h-80">
                 <BarChart 
                   data={vehicleMaintenanceData}
-                  index={0}
+                  index="Cost (USD)"
                   categories={["Maintenance"]}
                   colors={["#10b981"]}
                 />
@@ -171,7 +171,7 @@ const Dashboard = () => {
               <div className="h-80">
                 <BarChart 
                   data={routeOccupancyData}
-                  index={0}
+                  index="Students"
                   categories={["Occupancy"]}
                   colors={["#f59e0b", "#a3a3a3"]}
                 />

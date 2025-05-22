@@ -317,7 +317,7 @@ const Report = () => {
       header: 'Most Delayed Stop',
       cell: (item) => <span className="text-sm">{item.most_delayed_stop}</span>,
       isSortable: false,
-      size: 'md'
+      size: "md"
     },
     {
       id: 'avg_rating',
@@ -486,7 +486,7 @@ const Report = () => {
                   <div className="h-80">
                     <BarChart 
                       data={vehicleUsageChartData}
-                      index={0}
+                      index="Total KM"
                       categories={["Usage"]}
                       colors={["#4f46e5", "#10b981"]}
                     />
@@ -547,7 +547,7 @@ const Report = () => {
                   <div className="h-80">
                     <BarChart 
                       data={routePerformanceChartData}
-                      index={0}
+                      index="Students"
                       categories={["Performance"]}
                       colors={["#f59e0b", "#3b82f6"]}
                     />
@@ -608,7 +608,7 @@ const Report = () => {
                   <div className="h-80">
                     <BarChart 
                       data={studentDistributionData}
-                      index={0}
+                      index="Student Count"
                       categories={["Distribution"]}
                       colors={["#3b82f6", "#10b981", "#f59e0b", "#ef4444"]}
                     />

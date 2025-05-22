@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Filter, Search } from 'lucide-react';
-import DataTable, { RowAction } from '@/components/DataTable';
+import { Plus, Filter, FileDown } from 'lucide-react';
+import DataTable, { ButtonVariant, RowAction } from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -29,29 +30,39 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import FileUpload from '@/components/FileUpload';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-toast';
-import FileUpload from '@/components/FileUpload';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card"
 
 // Define schema for book form
 const bookFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   author: z.string().min(3, 'Author must be at least 3 characters'),
-  isbn: z.string().optional(),
-  publisher: z.string().optional(),
-  edition: z.string().optional(),
-  language: z.string().min(1, 'Please select a language'),
-  category: z.string().min(1, 'Please select a category'),
-  total_copies: z.number().min(1, 'At least one copy is required'),
-  shelf_location: z.string().min(1, 'Shelf location is required'),
-  book_cover: z.string().optional(),
+  isbn: z.string().min(10, 'ISBN must be at least 10 characters'),
+  genre: z.string().min(1, 'Please select a genre'),
+  publication_date: z.string().min(1, 'Please select a publication date'),
+  description: z.string().min(10, 'Description must be at least 10 characters'),
+  cover_image: z.string().optional(),
+  publisher: z.string().min(3, 'Publisher must be at least 3 characters'),
+  language: z.string().min(2, 'Language must be at least 2 characters'),
+  total_pages: z.number().min(1, 'Total pages must be at least 1'),
+  price: z.number().min(0, 'Price must be at least 0'),
+  quantity: z.number().min(0, 'Quantity must be at least 0'),
+  location_in_library: z.string().min(3, 'Location must be at least 3 characters'),
 });
 
 type BookFormValues = z.infer<typeof bookFormSchema>;
@@ -59,79 +70,84 @@ type BookFormValues = z.infer<typeof bookFormSchema>;
 // Mock data for books
 const mockBooks = [
   {
-    id: "BK-001",
-    title: "To Kill a Mockingbird",
-    author: "Harper Lee",
-    isbn: "9780061120084",
-    publisher: "HarperCollins",
-    edition: "50th Anniversary",
-    language: "English",
-    category: "Fiction",
-    total_copies: 5,
-    available_copies: 3,
-    shelf_location: "F-12-A",
-    added_date: "2023-01-15T09:30:00Z",
-    book_cover: "https://images-na.ssl-images-amazon.com/images/I/71FxgtFKcQL.jpg"
-  },
-  {
-    id: "BK-002",
+    id: "BOOK-001",
     title: "The Great Gatsby",
     author: "F. Scott Fitzgerald",
-    isbn: "9780743273565",
-    publisher: "Scribner",
-    edition: "First Edition",
+    isbn: "978-3-16-148410-0",
+    genre: "Classic",
+    publication_date: "1925-04-10",
+    description: "A novel about the Roaring Twenties.",
+    cover_image: "gatsby.jpg",
+    publisher: "Charles Scribner's Sons",
     language: "English",
-    category: "Fiction",
-    total_copies: 3,
-    available_copies: 1,
-    shelf_location: "F-12-B",
-    added_date: "2023-01-20T10:15:00Z",
-    book_cover: "https://images-na.ssl-images-amazon.com/images/I/91pheKRx-qL.jpg"
+    total_pages: 180,
+    price: 12.99,
+    quantity: 5,
+    location_in_library: "A12-05"
   },
   {
-    id: "BK-003",
-    title: "Introduction to Algorithms",
-    author: "Thomas H. Cormen",
-    isbn: "9780262033848",
-    publisher: "MIT Press",
-    edition: "Third Edition",
+    id: "BOOK-002",
+    title: "To Kill a Mockingbird",
+    author: "Harper Lee",
+    isbn: "978-0-06-112008-4",
+    genre: "Classic",
+    publication_date: "1960-07-11",
+    description: "A story of racial injustice and childhood innocence.",
+    cover_image: "mockingbird.jpg",
+    publisher: "J. B. Lippincott & Co.",
     language: "English",
-    category: "Computer Science",
-    total_copies: 2,
-    available_copies: 0,
-    shelf_location: "CS-05-C",
-    added_date: "2023-02-05T14:20:00Z",
-    book_cover: "https://images-na.ssl-images-amazon.com/images/I/41T0iBxY8FL._SX258_BO1,204,203,200_.jpg"
+    total_pages: 281,
+    price: 14.99,
+    quantity: 3,
+    location_in_library: "B03-12"
   },
   {
-    id: "BK-004",
-    title: "Physics for Scientists and Engineers",
-    author: "Raymond A. Serway",
-    isbn: "9781133947271",
-    publisher: "Cengage Learning",
-    edition: "9th Edition",
+    id: "BOOK-003",
+    title: "1984",
+    author: "George Orwell",
+    isbn: "978-0-452-28423-4",
+    genre: "Dystopian",
+    publication_date: "1949-06-08",
+    description: "A dystopian novel set in Oceania.",
+    cover_image: "1984.jpg",
+    publisher: "Secker & Warburg",
     language: "English",
-    category: "Science",
-    total_copies: 4,
-    available_copies: 2,
-    shelf_location: "S-08-D",
-    added_date: "2023-02-10T11:45:00Z",
-    book_cover: "https://images-na.ssl-images-amazon.com/images/I/51GR4YyFMqL._SX394_BO1,204,203,200_.jpg"
+    total_pages: 328,
+    price: 11.99,
+    quantity: 8,
+    location_in_library: "C21-01"
   },
   {
-    id: "BK-005",
-    title: "World History: Modern Era",
-    author: "Elisabeth Gaynor Ellis",
-    isbn: "9780131299719",
-    publisher: "Prentice Hall",
-    edition: "2nd Edition",
+    id: "BOOK-004",
+    title: "Pride and Prejudice",
+    author: "Jane Austen",
+    isbn: "978-0-14-143951-8",
+    genre: "Romance",
+    publication_date: "1813-01-28",
+    description: "A romantic novel set in rural England.",
+    cover_image: "pride.jpg",
+    publisher: "T. Egerton, Whitehall",
     language: "English",
-    category: "History",
-    total_copies: 6,
-    available_copies: 4,
-    shelf_location: "H-03-E",
-    added_date: "2023-03-01T09:00:00Z",
-    book_cover: "https://images-na.ssl-images-amazon.com/images/I/51VZGakKJFL._SX373_BO1,204,203,200_.jpg"
+    total_pages: 279,
+    price: 9.99,
+    quantity: 6,
+    location_in_library: "A12-06"
+  },
+  {
+    id: "BOOK-005",
+    title: "The Catcher in the Rye",
+    author: "J. D. Salinger",
+    isbn: "978-0-316-76953-0",
+    genre: "Literary",
+    publication_date: "1951-07-16",
+    description: "A novel about teenage angst and alienation.",
+    cover_image: "catcher.jpg",
+    publisher: "Little, Brown and Company",
+    language: "English",
+    total_pages: 234,
+    price: 10.99,
+    quantity: 4,
+    location_in_library: "B03-13"
   }
 ];
 
@@ -139,7 +155,7 @@ const AllBooks = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<any>(null);
-  const [isGridView, setIsGridView] = useState(false);
+  const [books, setBooks] = useState(mockBooks);
 
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookFormSchema),
@@ -147,42 +163,33 @@ const AllBooks = () => {
       title: '',
       author: '',
       isbn: '',
+      genre: '',
+      publication_date: '',
+      description: '',
+      cover_image: '',
       publisher: '',
-      edition: '',
       language: '',
-      category: '',
-      total_copies: 1,
-      shelf_location: '',
-      book_cover: '',
+      total_pages: 1,
+      price: 0,
+      quantity: 0,
+      location_in_library: '',
     }
   });
 
   const onSubmit = (values: BookFormValues) => {
     console.log('Form submitted:', values);
+    // Here you would typically handle the form submission, e.g., sending data to an API
     toast({
       title: "Book created",
-      description: "The book has been added to the library.",
+      description: "A new book has been added to the library.",
     });
     setIsCreateDialogOpen(false);
     form.reset();
   };
 
-  const handleCoverUpload = (urls: string[]) => {
-    if (urls && urls.length > 0) {
-      form.setValue('book_cover', urls[0]);
-    }
-  };
-
-  const availabilityColors: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "bubble" | "warning"> = {
-    "available": "success",
-    "low": "warning",
-    "unavailable": "destructive"
-  };
-
-  const getAvailabilityStatus = (available: number, total: number) => {
-    if (available === 0) return { status: "unavailable", label: "Not Available" };
-    if (available < total / 3) return { status: "low", label: `Low (${available})` };
-    return { status: "available", label: `Available (${available})` };
+  // Function to handle cover image upload
+  const handleCoverUpload = (url: string) => {
+    form.setValue('cover_image', url, { shouldValidate: true });
   };
 
   const columns = [
@@ -196,60 +203,44 @@ const AllBooks = () => {
     {
       id: "title",
       header: "Title",
-      cell: (row: any) => (
-        <div className="flex items-center">
-          {row.book_cover && (
-            <div className="w-10 h-14 mr-3 overflow-hidden rounded">
-              <img 
-                src={row.book_cover} 
-                alt={row.title}
-                className="w-full h-full object-cover" 
-              />
-            </div>
-          )}
-          <div>
-            <div className="font-medium">{row.title}</div>
-            <div className="text-xs text-muted-foreground">{row.author}</div>
-          </div>
-        </div>
-      ),
+      cell: (row: any) => row.title,
       isSortable: true,
       sortKey: "title"
     },
     {
-      id: "category",
-      header: "Category",
-      cell: (row: any) => row.category,
+      id: "author",
+      header: "Author",
+      cell: (row: any) => row.author,
       isSortable: true,
-      sortKey: "category"
+      sortKey: "author"
     },
     {
-      id: "isbn",
-      header: "ISBN",
-      cell: (row: any) => <span className="text-xs">{row.isbn}</span>,
+      id: "genre",
+      header: "Genre",
+      cell: (row: any) => row.genre,
       isSortable: true,
-      sortKey: "isbn"
+      sortKey: "genre"
     },
     {
-      id: "availability",
-      header: "Availability",
-      cell: (row: any) => {
-        const availability = getAvailabilityStatus(row.available_copies, row.total_copies);
-        return (
-          <Badge variant={availabilityColors[availability.status]}>
-            {availability.label}
-          </Badge>
-        );
-      },
+      id: "publication_date",
+      header: "Publication Date",
+      cell: (row: any) => new Date(row.publication_date).toLocaleDateString(),
       isSortable: true,
-      sortKey: "available_copies"
+      sortKey: "publication_date"
     },
     {
-      id: "shelf",
+      id: "quantity",
+      header: "Quantity",
+      cell: (row: any) => row.quantity,
+      isSortable: true,
+      sortKey: "quantity"
+    },
+    {
+      id: "location_in_library",
       header: "Location",
-      cell: (row: any) => row.shelf_location,
+      cell: (row: any) => row.location_in_library,
       isSortable: true,
-      sortKey: "shelf_location"
+      sortKey: "location_in_library"
     }
   ];
 
@@ -262,74 +253,27 @@ const AllBooks = () => {
       },
     },
     {
-      label: "Issue Book",
-      onClick: (book: any) => {
-        if (book.available_copies > 0) {
-          console.log("Issue book:", book);
-          // Navigation to issue book page
-        } else {
-          toast({
-            title: "Cannot issue book",
-            description: "No copies available for issuing.",
-            variant: "destructive"
-          });
-        }
-      },
-    },
-    {
       label: "Edit Book",
       onClick: (book: any) => {
         console.log("Edit book:", book);
-        // Handle edit book logic
+        // Handle edit logic
       },
     },
     {
       label: "Delete Book",
       onClick: (book: any) => {
         console.log("Delete book:", book);
-        // Handle deletion logic
+        // Handle delete logic
       },
-      variant: "destructive"
+      variant: "destructive" as ButtonVariant
     }
   ];
 
-  // Function to render book card for grid view
-  const renderBookCard = (book: any) => {
-    const availability = getAvailabilityStatus(book.available_copies, book.total_copies);
-    
-    return (
-      <Card className="overflow-hidden hover:shadow-md transition-shadow" key={book.id}>
-        <div className="relative">
-          <AspectRatio ratio={2/3}>
-            <img 
-              src={book.book_cover || "https://placehold.co/300x450?text=No+Cover"} 
-              alt={book.title}
-              className="object-cover w-full h-full"
-            />
-          </AspectRatio>
-          <div className="absolute top-2 right-2">
-            <Badge variant={availabilityColors[availability.status]}>
-              {availability.label}
-            </Badge>
-          </div>
-        </div>
-        <CardContent className="p-4">
-          <h3 className="font-medium text-base line-clamp-1">{book.title}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-1">{book.author}</p>
-          <div className="flex justify-between items-center mt-3">
-            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{book.category}</span>
-            <span className="text-xs">{book.id}</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
   return (
-    <PageTemplate title="All Books" subtitle="Manage library book collection">
+    <PageTemplate title="All Books" subtitle="Manage all books in the library">
       <div className="space-y-6">
         <PageHeader
-          title="Books Catalog"
+          title="Library Books"
           description="View and manage all books in the library"
           primaryAction={{
             label: "Add New Book",
@@ -337,66 +281,48 @@ const AllBooks = () => {
             icon: <Plus className="h-4 w-4" />
           }}
           actions={[
-            <Button 
-              key="view-toggle" 
-              variant="outline" 
-              size="sm"
-              onClick={() => setIsGridView(!isGridView)}
-            >
-              {isGridView ? "Table View" : "Grid View"}
-            </Button>,
             <Button key="filter" variant="outline" size="sm">
               <Filter className="h-4 w-4 mr-2" />
               Filter
             </Button>,
             <Button key="export" variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
+              <FileDown className="h-4 w-4 mr-2" />
               Export
             </Button>
           ]}
         />
-        
+
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          {isGridView ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {mockBooks.map(renderBookCard)}
-            </div>
-          ) : (
-            <DataTable
-              data={mockBooks}
-              columns={columns}
-              keyField="id"
-              selectable={true}
-              actions={actions}
-              onRowClick={(book) => {
-                setSelectedBook(book);
-                setIsViewDialogOpen(true);
-              }}
-              bulkActions={[
-                {
-                  label: "Export Selected",
-                  onClick: (selectedBooks) => console.log("Export books:", selectedBooks),
-                },
-                {
-                  label: "Delete Selected",
-                  onClick: (selectedBooks) => console.log("Delete books:", selectedBooks),
-                  variant: "destructive"
-                }
-              ]}
-            />
-          )}
+          <DataTable
+            data={books}
+            columns={columns}
+            keyField="id"
+            selectable={true}
+            actions={actions}
+            onRowClick={(book) => {
+              setSelectedBook(book);
+              setIsViewDialogOpen(true);
+            }}
+            bulkActions={[
+              {
+                label: "Bulk Delete",
+                onClick: (selectedBooks) => console.log("Bulk delete:", selectedBooks),
+                variant: "destructive" as ButtonVariant
+              }
+            ]}
+          />
         </div>
-        
+
         {/* Create Book Dialog */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Add New Book</DialogTitle>
+              <DialogTitle>Add a New Book</DialogTitle>
               <DialogDescription>
-                Complete the form to add a new book to the library.
+                Fill out the form to create a new book in the library.
               </DialogDescription>
             </DialogHeader>
-            
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -413,7 +339,7 @@ const AllBooks = () => {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="author"
@@ -421,15 +347,15 @@ const AllBooks = () => {
                       <FormItem>
                         <FormLabel>Author</FormLabel>
                         <FormControl>
-                          <Input placeholder="Author name" {...field} />
+                          <Input placeholder="Enter author name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="isbn"
@@ -437,13 +363,67 @@ const AllBooks = () => {
                       <FormItem>
                         <FormLabel>ISBN</FormLabel>
                         <FormControl>
-                          <Input placeholder="ISBN code" {...field} />
+                          <Input placeholder="Enter ISBN" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
+                  <FormField
+                    control={form.control}
+                    name="genre"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Genre</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select genre" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Fiction">Fiction</SelectItem>
+                            <SelectItem value="Non-Fiction">Non-Fiction</SelectItem>
+                            <SelectItem value="Mystery">Mystery</SelectItem>
+                            <SelectItem value="Thriller">Thriller</SelectItem>
+                            <SelectItem value="Science Fiction">Science Fiction</SelectItem>
+                            <SelectItem value="Fantasy">Fantasy</SelectItem>
+                            <SelectItem value="Romance">Romance</SelectItem>
+                            <SelectItem value="Historical Fiction">Historical Fiction</SelectItem>
+                            <SelectItem value="Classic">Classic</SelectItem>
+                            <SelectItem value="Dystopian">Dystopian</SelectItem>
+                            <SelectItem value="Literary">Literary</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="publication_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Publication Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            placeholder="Select publication date"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="publisher"
@@ -451,100 +431,40 @@ const AllBooks = () => {
                       <FormItem>
                         <FormLabel>Publisher</FormLabel>
                         <FormControl>
-                          <Input placeholder="Publisher name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="edition"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Edition</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Edition" {...field} />
+                          <Input placeholder="Enter publisher" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="language"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Language</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select language" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="English">English</SelectItem>
-                            <SelectItem value="Spanish">Spanish</SelectItem>
-                            <SelectItem value="French">French</SelectItem>
-                            <SelectItem value="German">German</SelectItem>
-                            <SelectItem value="Chinese">Chinese</SelectItem>
-                            <SelectItem value="Arabic">Arabic</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Fiction">Fiction</SelectItem>
-                            <SelectItem value="Non-fiction">Non-fiction</SelectItem>
-                            <SelectItem value="Science">Science</SelectItem>
-                            <SelectItem value="History">History</SelectItem>
-                            <SelectItem value="Mathematics">Mathematics</SelectItem>
-                            <SelectItem value="Computer Science">Computer Science</SelectItem>
-                            <SelectItem value="Literature">Literature</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="total_copies"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Total Copies</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            min={1} 
-                            {...field} 
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          <Input placeholder="Enter language" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="total_pages"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Total Pages</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Enter total pages"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -552,21 +472,80 @@ const AllBooks = () => {
                     )}
                   />
                 </div>
-                
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Enter price"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Quantity</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Enter quantity"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
-                  name="shelf_location"
+                  name="location_in_library"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Shelf Location</FormLabel>
+                      <FormLabel>Location in Library</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. F-12-A" {...field} />
+                        <Input
+                          placeholder="Enter location in library"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter description"
+                          {...field}
+                          rows={4}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid gap-2">
                   <FormLabel htmlFor="book_cover">Book Cover (Optional)</FormLabel>
                   <FileUpload
@@ -577,7 +556,7 @@ const AllBooks = () => {
                     maxSizeInMB={2}
                   />
                 </div>
-                
+
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                     Cancel
@@ -588,133 +567,68 @@ const AllBooks = () => {
             </Form>
           </DialogContent>
         </Dialog>
-        
+
         {/* View Book Dialog */}
         {selectedBook && (
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
             <DialogContent className="sm:max-w-[700px]">
               <DialogHeader>
-                <DialogTitle>{selectedBook.title}</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  {selectedBook.title}
+                </DialogTitle>
                 <DialogDescription>
-                  Added on {new Date(selectedBook.added_date).toLocaleDateString()}
+                  {selectedBook.author} - {new Date(selectedBook.publication_date).toLocaleDateString()}
                 </DialogDescription>
               </DialogHeader>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  {selectedBook.book_cover ? (
-                    <AspectRatio ratio={2/3} className="overflow-hidden rounded-md border">
-                      <img 
-                        src={selectedBook.book_cover} 
-                        alt={selectedBook.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </AspectRatio>
-                  ) : (
-                    <AspectRatio ratio={2/3} className="bg-gray-100 rounded-md flex items-center justify-center">
-                      <p className="text-muted-foreground text-sm">No cover available</p>
-                    </AspectRatio>
-                  )}
-                  
-                  <div className="mt-3 space-y-2">
-                    {selectedBook.available_copies > 0 ? (
-                      <Button className="w-full">Issue Book</Button>
-                    ) : (
-                      <Button className="w-full" disabled>Not Available</Button>
-                    )}
-                    
-                    <Button variant="outline" className="w-full">Edit Details</Button>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Genre</p>
+                    <Badge variant="secondary">
+                      {selectedBook.genre}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-1">ISBN</p>
+                    <p className="text-sm">{selectedBook.isbn}</p>
                   </div>
                 </div>
-                
-                <div className="md:col-span-2 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium mb-1">Author</p>
-                      <p>{selectedBook.author}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium mb-1">Category</p>
-                      <p>{selectedBook.category}</p>
-                    </div>
+
+                <div>
+                  <p className="text-sm font-medium mb-1">Description</p>
+                  <div className="bg-gray-50 p-3 rounded-md text-sm">
+                    {selectedBook.description}
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium mb-1">ISBN</p>
-                      <p>{selectedBook.isbn}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium mb-1">Language</p>
-                      <p>{selectedBook.language}</p>
-                    </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium mb-1">Location in Library</p>
+                  <p className="text-sm">{selectedBook.location_in_library}</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Price</p>
+                    <p className="text-sm">${selectedBook.price}</p>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium mb-1">Publisher</p>
-                      <p>{selectedBook.publisher}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium mb-1">Edition</p>
-                      <p>{selectedBook.edition}</p>
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium mb-1">Quantity</p>
+                    <p className="text-sm">{selectedBook.quantity}</p>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium mb-1">Shelf Location</p>
-                      <p>{selectedBook.shelf_location}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium mb-1">Availability</p>
-                      <p>{selectedBook.available_copies} of {selectedBook.total_copies} copies available</p>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t pt-4 mt-4">
-                    <p className="text-sm font-medium mb-2">Current Status</p>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Copy</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Due Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {Array.from({ length: selectedBook.total_copies }).map((_, index) => {
-                          const isAvailable = index < selectedBook.available_copies;
-                          return (
-                            <TableRow key={index}>
-                              <TableCell>{`${selectedBook.id}-${index + 1}`}</TableCell>
-                              <TableCell>
-                                <Badge variant={isAvailable ? "success" : "destructive"}>
-                                  {isAvailable ? "Available" : "Issued"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {!isAvailable && (
-                                  <span>
-                                    {new Date(
-                                      Date.now() + (Math.random() * 14 + 1) * 24 * 60 * 60 * 1000
-                                    ).toLocaleDateString()}
-                                  </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                  <div>
+                    <p className="text-sm font-medium mb-1">Total Pages</p>
+                    <p className="text-sm">{selectedBook.total_pages}</p>
                   </div>
                 </div>
               </div>
-              
+
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                  Close
-                </Button>
+                <div className="flex w-full justify-end">
+                  <Button variant="outline" size="sm" onClick={() => setIsViewDialogOpen(false)}>
+                    Close
+                  </Button>
+                </div>
               </DialogFooter>
             </DialogContent>
           </Dialog>
