@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Button } from '@/components/ui/button';
@@ -22,8 +21,9 @@ import {
   DialogTitle,
   DialogFooter
 } from '@/components/ui/dialog';
+import { cva } from 'class-variance-authority';
 
-// Define ButtonVariant type to fix the error
+// Define ButtonVariant type based on button.tsx variants
 type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "success" | "warning";
 
 const BooksIssued: React.FC = () => {

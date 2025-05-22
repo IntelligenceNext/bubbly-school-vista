@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Button } from '@/components/ui/button';
@@ -36,7 +35,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "@/components/ui/use-toast";
 
-// Define ButtonVariant type to fix the error
+// Define ButtonVariant type to match our actual button variants
 type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "success" | "warning";
 
 const LibraryCards: React.FC = () => {

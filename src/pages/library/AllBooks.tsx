@@ -3,7 +3,7 @@ import PageTemplate from '@/components/PageTemplate';
 import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Filter, Search } from 'lucide-react';
-import DataTable, { RowAction, ButtonVariant } from '@/components/DataTable';
+import DataTable, { RowAction } from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -38,6 +38,7 @@ import FileUpload from '@/components/FileUpload';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
 
 // Define schema for book form
 const bookFormSchema = z.object({
@@ -567,10 +568,10 @@ const AllBooks = () => {
                 />
                 
                 <div className="grid gap-2">
-                  <Label htmlFor="book_cover">Book Cover (Optional)</Label>
+                  <FormLabel htmlFor="book_cover">Book Cover (Optional)</FormLabel>
                   <FileUpload
                     bucket="book-covers"
-                    onUploadComplete={(urls) => handleCoverUpload(urls)}
+                    onUploadComplete={handleCoverUpload}
                     acceptedFileTypes={['image/jpeg', 'image/png']}
                     maxFiles={1}
                     maxSizeInMB={2}
