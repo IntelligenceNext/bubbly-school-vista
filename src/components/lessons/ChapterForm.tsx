@@ -23,12 +23,13 @@ import {
 } from '@/components/ui/select';
 import FileUpload from '@/components/FileUpload';
 
+// Update schema to match our implementation
 const chapterFormSchema = z.object({
   lesson_id: z.string().min(1, 'Lesson is required'),
   chapter_number: z.number().int().min(1, 'Chapter number must be at least 1'),
   chapter_title: z.string().min(3, 'Title must be at least 3 characters'),
   content: z.string().min(10, 'Content must be at least 10 characters'),
-  resources: z.array(z.string()).optional(),
+  resources: z.array(z.string()).default([]),
   teacher_notes: z.string().optional(),
 });
 
@@ -63,7 +64,7 @@ export function ChapterForm({
     },
   });
 
-  // Function to handle file uploads - updated to match FileUpload component interface
+  // Updated to handle multiple file uploads
   const handleFileUpload = (url: string) => {
     const currentUrls = form.getValues('resources') || [];
     form.setValue('resources', [...currentUrls, url], { shouldValidate: true });

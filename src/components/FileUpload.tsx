@@ -10,7 +10,8 @@ interface FileUploadProps {
   folder?: string;
   onUploadComplete?: (filePath: string) => void;
   maxSize?: number; // in MB
-  acceptedFileTypes?: string;
+  acceptedFileTypes?: string[];
+  maxFiles?: number;
   buttonText?: string;
 }
 
@@ -20,6 +21,7 @@ const FileUpload = ({
   onUploadComplete,
   maxSize = 5, // Default 5MB
   acceptedFileTypes,
+  maxFiles = 1,
   buttonText = "Upload File"
 }: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -105,7 +107,7 @@ const FileUpload = ({
               type="file"
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               onChange={handleFileChange}
-              accept={acceptedFileTypes}
+              accept={acceptedFileTypes ? acceptedFileTypes.map(type => `.${type}`).join(',') : undefined}
               disabled={isUploading}
             />
             {buttonText}
