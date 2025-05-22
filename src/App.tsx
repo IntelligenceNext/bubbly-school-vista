@@ -7,6 +7,15 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+// Profile Module Routes
+import ProfilePage from "./pages/profile/index";
+import ProfileSettings from "./pages/profile/settings";
+import SecurityPage from "./pages/profile/security";
+import DocumentsPage from "./pages/profile/documents";
+import AttendancePage from "./pages/profile/attendance";
+import PermissionsPage from "./pages/profile/permissions";
+import ActivityPage from "./pages/profile/activity";
+
 // School Management Routes
 import SchoolDashboard from "./pages/school-management/Dashboard";
 import Schools from "./pages/school-management/Schools";
@@ -117,6 +126,15 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          
+          {/* Profile Routes */}
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/settings" element={<ProfileSettings />} />
+          <Route path="/profile/security" element={<SecurityPage />} />
+          <Route path="/profile/documents" element={<DocumentsPage />} />
+          <Route path="/profile/attendance" element={<AttendancePage />} />
+          <Route path="/profile/permissions" element={<PermissionsPage />} />
+          <Route path="/profile/activity" element={<ActivityPage />} />
           
           {/* School Management Routes */}
           <Route path="/school-management/dashboard" element={<SchoolDashboard />} />
