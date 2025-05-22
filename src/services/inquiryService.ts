@@ -1,27 +1,24 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
+import { toast } from '@/hooks/use-toast';
 
-// Define interfaces
-export type Inquiry = Tables<"inquiries">;
-
-export interface CreateInquiryParams {
+export interface Inquiry {
+  id: string;
+  school_id: string;
   name: string;
   email: string;
-  phone: string;
-  message: string;
-  source: string;
-  preferred_contact: string;
+  phone: string | null;
   inquiry_type: string;
-  priority?: string;
-  student_age?: number;
-  student_grade?: string;
-  internal_notes?: string;
-  school_id: string;
-  class_id?: string; // Add class_id as optional
+  message: string | null;
+  priority: string;
+  status: string;
+  source: string | null;
+  assigned_to: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-interface GetInquiriesFilters {
+export interface InquiryFilters {
   status?: string;
   source?: string;
   priority?: string;
@@ -29,107 +26,132 @@ interface GetInquiriesFilters {
   dateTo?: string;
 }
 
-export interface GetInquiriesResponse {
+export interface InquiryResponse {
   data: Inquiry[];
   count: number;
 }
 
-// Get all inquiries for a school
 export const getInquiries = async (
-  schoolId: string, 
-  filters?: GetInquiriesFilters, 
-  page: number = 1, 
-  pageSize: number = 20
-): Promise<GetInquiriesResponse> => {
-  let query = supabase
-    .from('inquiries')
-    .select('*', { count: 'exact' })
-    .eq('school_id', schoolId);
-  
-  // Apply filters
-  if (filters) {
+  schoolId: string,
+  filters: InquiryFilters = {},
+  page = 1,
+  pageSize = 10
+): Promise<InquiryResponse> => {
+  try {
+    let query = supabase
+      .from('inquiries')
+      .select('*', { count: 'exact' })
+      .eq('school_id', schoolId);
+
     if (filters.status) {
       query = query.eq('status', filters.status);
     }
-    
+
     if (filters.source) {
       query = query.eq('source', filters.source);
     }
-    
+
     if (filters.priority) {
       query = query.eq('priority', filters.priority);
     }
-    
+
     if (filters.dateFrom) {
       query = query.gte('created_at', filters.dateFrom);
     }
-    
+
     if (filters.dateTo) {
-      // Add 1 day to include the entire end date
-      const dateTo = new Date(filters.dateTo);
-      dateTo.setDate(dateTo.getDate() + 1);
-      query = query.lt('created_at', dateTo.toISOString());
+      const endDate = new Date(filters.dateTo);
+      endDate.setDate(endDate.getDate() + 1);
+      query = query.lt('created_at', endDate.toISOString());
     }
-  }
-  
-  // Apply pagination
-  if (page && pageSize) {
+
+    // Apply pagination
     const start = (page - 1) * pageSize;
     query = query.range(start, start + pageSize - 1);
+    
+    // Sort by created_at date, newest first
+    query = query.order('created_at', { ascending: false });
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error('Error fetching inquiries:', error);
+      throw error;
+    }
+    
+    return { 
+      data: data || [],
+      count: count || 0
+    };
+  } catch (error) {
+    console.error('Error in getInquiries:', error);
+    toast({
+      title: "Failed to fetch inquiries",
+      description: "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return { data: [], count: 0 };
   }
-  
-  // Sort by created_at date, newest first
-  query = query.order('created_at', { ascending: false });
-  
-  const { data, error, count } = await query;
-  
-  if (error) {
-    console.error('Error fetching inquiries:', error);
-    throw error;
-  }
-  
-  return {
-    data: data || [],
-    count: count || 0
-  };
 };
 
-// Create a new inquiry
-export const createInquiry = async (inquiry: CreateInquiryParams) => {
-  const { data, error } = await supabase
-    .from('inquiries')
-    .insert([{
-      ...inquiry,
-      status: 'new',
-      updated_at: new Date().toISOString(),
-    }])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating inquiry:', error);
-    throw error;
+export const updateInquiryStatus = async (inquiryId: string, status: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('inquiries')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', inquiryId);
+    
+    if (error) {
+      console.error('Error updating inquiry status:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in updateInquiryStatus:', error);
+    return false;
   }
-  
-  return data;
 };
 
-// Update an inquiry's status
-export const updateInquiryStatus = async (id: string, status: string) => {
-  const { data, error } = await supabase
-    .from('inquiries')
-    .update({
-      status,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error updating inquiry status:', error);
-    throw error;
+export const createInquiry = async (inquiry: Omit<Inquiry, 'id' | 'created_at' | 'updated_at'>): Promise<Inquiry | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .insert([inquiry])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating inquiry:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in createInquiry:', error);
+    return null;
   }
-  
-  return data;
+};
+
+export const getInquiryById = async (inquiryId: string): Promise<Inquiry | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .eq('id', inquiryId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching inquiry:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in getInquiryById:', error);
+    return null;
+  }
 };

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -211,83 +212,103 @@ export const updateSchool = async (
 export const getClasses = async (params: GetClassesParams = {}): Promise<PaginatedResponse<Class>> => {
   const { school_id, name, is_active, page, pageSize } = params;
   
-  let query = supabase
-    .from('classes')
-    .select('*, schools(name)', { count: 'exact' });
-  
-  if (school_id) {
-    query = query.eq('school_id', school_id);
+  try {
+    let query = supabase
+      .from('classes')
+      .select('*, schools(name)', { count: 'exact' });
+    
+    if (school_id) {
+      query = query.eq('school_id', school_id);
+    }
+    
+    if (name) {
+      query = query.ilike('name', `%${name}%`);
+    }
+    
+    if (is_active !== undefined) {
+      query = query.eq('is_active', is_active);
+    }
+    
+    // Apply pagination if provided
+    if (page !== undefined && pageSize !== undefined) {
+      const start = (page - 1) * pageSize;
+      query = query.range(start, start + pageSize - 1);
+    }
+    
+    // Sort by created_at date, newest first
+    query = query.order('created_at', { ascending: false });
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error('Error fetching classes:', error);
+      throw error;
+    }
+    
+    return {
+      data: data || [],
+      count: count || 0
+    };
+  } catch (error) {
+    console.error('Error in getClasses:', error);
+    toast({
+      title: "Failed to fetch classes",
+      description: "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return { data: [], count: 0 };
   }
-  
-  if (name) {
-    query = query.ilike('name', `%${name}%`);
-  }
-  
-  if (is_active !== undefined) {
-    query = query.eq('is_active', is_active);
-  }
-  
-  // Apply pagination if provided
-  if (page !== undefined && pageSize !== undefined) {
-    const start = (page - 1) * pageSize;
-    query = query.range(start, start + pageSize - 1);
-  }
-  
-  // Sort by created_at date, newest first
-  query = query.order('created_at', { ascending: false });
-  
-  const { data, error, count } = await query;
-  
-  if (error) {
-    console.error('Error fetching classes:', error);
-    throw error;
-  }
-  
-  return {
-    data: data || [],
-    count: count || 0
-  };
 };
 
 export const getSessions = async (params: GetSessionsParams = {}): Promise<PaginatedResponse<Session>> => {
   const { school_id, is_current, is_active, page, pageSize } = params;
   
-  let query = supabase
-    .from('sessions')
-    .select('*, schools(name)', { count: 'exact' });
-  
-  if (school_id) {
-    query = query.eq('school_id', school_id);
+  try {
+    let query = supabase
+      .from('sessions')
+      .select('*, schools(name)', { count: 'exact' });
+    
+    if (school_id) {
+      query = query.eq('school_id', school_id);
+    }
+    
+    if (is_current !== undefined) {
+      query = query.eq('is_current', is_current);
+    }
+    
+    if (is_active !== undefined) {
+      query = query.eq('is_active', is_active);
+    }
+    
+    // Apply pagination if provided
+    if (page !== undefined && pageSize !== undefined) {
+      const start = (page - 1) * pageSize;
+      query = query.range(start, start + pageSize - 1);
+    }
+    
+    // Sort by start_date date, newest first
+    query = query.order('start_date', { ascending: false });
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error('Error fetching sessions:', error);
+      throw error;
+    }
+    
+    return {
+      data: data || [],
+      count: count || 0
+    };
+  } catch (error) {
+    console.error('Error in getSessions:', error);
+    toast({
+      title: "Failed to fetch sessions",
+      description: "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return { data: [], count: 0 };
   }
-  
-  if (is_current !== undefined) {
-    query = query.eq('is_current', is_current);
-  }
-  
-  if (is_active !== undefined) {
-    query = query.eq('is_active', is_active);
-  }
-  
-  // Apply pagination if provided
-  if (page !== undefined && pageSize !== undefined) {
-    const start = (page - 1) * pageSize;
-    query = query.range(start, start + pageSize - 1);
-  }
-  
-  // Sort by start_date date, newest first
-  query = query.order('start_date', { ascending: false });
-  
-  const { data, error, count } = await query;
-  
-  if (error) {
-    console.error('Error fetching sessions:', error);
-    throw error;
-  }
-  
-  return {
-    data: data || [],
-    count: count || 0
-  };
 };
 
 export const deleteSchool = async (id: string): Promise<boolean> => {
