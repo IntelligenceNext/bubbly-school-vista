@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogDescription, 
   DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '@/components/ui/dialog';
-import DataTable from '@/components/DataTable';
+import DataTable, { Column, RowAction, BulkAction } from '@/components/DataTable';
 import { Calendar, Download, FileText, Plus, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -80,7 +80,7 @@ const Expenses = () => {
   ];
   
   // Table column definitions
-  const columns = [
+  const columns: Column<any>[] = [
     {
       id: "id",
       header: "ID",
@@ -142,7 +142,7 @@ const Expenses = () => {
   ];
   
   // Actions for the table
-  const actions = [
+  const actions: RowAction<any>[] = [
     {
       label: "View Details",
       onClick: (item) => alert(`Viewing details for ${item.id}`)
@@ -158,7 +158,7 @@ const Expenses = () => {
   ];
   
   // Bulk actions
-  const bulkActions = [
+  const bulkActions: BulkAction<any>[] = [
     {
       label: "Export Selected",
       onClick: (items) => alert(`Exporting ${items.length} items`)

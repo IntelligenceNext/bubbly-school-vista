@@ -9,7 +9,7 @@ import {
   DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import DataTable from '@/components/DataTable';
+import DataTable, { Column, RowAction, BulkAction, ButtonVariant } from '@/components/DataTable';
 import { Calendar, CircleDollarSign, Download, FileText, Plus, Printer, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -115,7 +115,7 @@ const FeeInvoices = () => {
   };
   
   // Status color mapping - fixed the variants to match accepted values
-  const statusColors = {
+  const statusColors: Record<string, ButtonVariant> = {
     "Paid": "default",
     "Pending": "secondary",
     "Overdue": "destructive",
@@ -123,7 +123,7 @@ const FeeInvoices = () => {
   };
   
   // Table column definitions
-  const columns = [
+  const columns: Column<any>[] = [
     {
       id: "id",
       header: "Invoice #",
@@ -195,7 +195,7 @@ const FeeInvoices = () => {
   ];
   
   // Actions for the table - fixed the variants to match accepted values
-  const actions = [
+  const actions: RowAction<any>[] = [
     {
       label: "View Invoice",
       onClick: (item) => alert(`Viewing invoice ${item.id}`)
@@ -221,7 +221,7 @@ const FeeInvoices = () => {
   ];
   
   // Bulk actions
-  const bulkActions = [
+  const bulkActions: BulkAction<any>[] = [
     {
       label: "Print Selected",
       onClick: (items) => alert(`Printing ${items.length} invoices`)

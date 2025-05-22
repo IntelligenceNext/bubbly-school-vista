@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Table,
@@ -23,14 +24,30 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+export type ColumnSize = "sm" | "md" | "lg";
+export type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+
 export interface Column<T> {
   id: string;
   header: React.ReactNode;
   cell: (item: T) => React.ReactNode;
   isSortable?: boolean;
   sortKey?: string;
-  size?: "sm" | "md" | "lg";
+  size?: ColumnSize;
   visible?: boolean;
+}
+
+export interface RowAction<T> {
+  label: string;
+  onClick: (item: T) => void;
+  condition?: (item: T) => boolean;
+  variant?: ButtonVariant;
+}
+
+export interface BulkAction<T> {
+  label: string;
+  onClick: (items: T[]) => void;
+  variant?: ButtonVariant;
 }
 
 interface DataTableProps<T> {
@@ -42,21 +59,12 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
   onSort?: (key: string, direction: "asc" | "desc") => void;
   onSelectionChange?: (selectedItems: T[]) => void;
-  actions?: {
-    label: string;
-    onClick: (item: T) => void;
-    condition?: (item: T) => boolean;
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-  }[];
-  bulkActions?: {
-    label: string;
-    onClick: (items: T[]) => void;
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-  }[];
+  actions?: RowAction<T>[];
+  bulkActions?: BulkAction<T>[];
   emptyState?: React.ReactNode;
 }
 
-// Change from default export to named export to match the imports
+// Named export for the DataTable component
 export const DataTable = <T extends {}>({
   data,
   columns: initialColumns,

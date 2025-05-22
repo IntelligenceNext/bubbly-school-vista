@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import DataTable, { Column } from '@/components/DataTable';
+import DataTable, { Column, RowAction } from '@/components/DataTable';
 import { Hostel, getHostels, createHostel, updateHostel, deleteHostel } from '@/services/hostelService';
 import { PlusCircle, Building, Phone, Pencil, Trash2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
@@ -225,12 +225,8 @@ const HostelsPage = () => {
           columns={columns}
           data={hostels}
           isLoading={loading}
-          searchPlaceholder="Search hostels..."
-          searchColumn="name"
-          rowActions={rowActions}
-          pagination={{
-            pageSize: 10
-          }}
+          keyField="id"
+          actions={rowActions}
         />
       </Card>
 

@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogDescription, 
   DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '@/components/ui/dialog';
-import DataTable from '@/components/DataTable';
+import DataTable, { Column, RowAction } from '@/components/DataTable';
 import { Calendar, FileText, Plus, Search, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -90,7 +90,7 @@ const FeeTypes = () => {
   ];
   
   // Table column definitions
-  const columns = [
+  const columns: Column<any>[] = [
     {
       id: "title",
       header: "Fee Type",
@@ -138,7 +138,7 @@ const FeeTypes = () => {
   ];
   
   // Actions for the table
-  const actions = [
+  const actions: RowAction<any>[] = [
     {
       label: "Edit",
       onClick: (item) => alert(`Editing ${item.title}`)
