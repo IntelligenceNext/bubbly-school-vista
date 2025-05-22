@@ -93,9 +93,14 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
   const { name, status, created_at_start, created_at_end, page, pageSize } = params;
 
   try {
+    // Log the supabase instance to verify it's properly initialized
+    console.log('Supabase client:', supabase);
+    
     let query = supabase
       .from('schools')
       .select('*', { count: 'exact' });
+    
+    console.log('Query initialized for schools table');
     
     if (name) {
       query = query.ilike('name', `%${name}%`);
@@ -124,6 +129,7 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
     // Sort by created_at date, newest first
     query = query.order('created_at', { ascending: false });
     
+    console.log('Executing query:', query);
     const { data, error, count } = await query;
     
     if (error) {
@@ -151,6 +157,32 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
       variant: "destructive",
     });
     return { data: [], count: 0 };
+  }
+};
+
+export const createSchool = async (school: Omit<School, 'id' | 'created_at' | 'updated_at'>): Promise<School | null> => {
+  try {
+    console.log('Creating school with data:', school);
+    const { data, error } = await supabase
+      .from('schools')
+      .insert([school])
+      .select();
+    
+    if (error) {
+      console.error('Error creating school:', error);
+      throw error;
+    }
+    
+    console.log('School created successfully:', data);
+    return data[0] as School;
+  } catch (error: any) {
+    console.error('Error in createSchool:', error);
+    toast({
+      title: "Failed to create school",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return null;
   }
 };
 
@@ -324,82 +356,132 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
 };
 
 export const deleteSchool = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('schools')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting school:', error);
+  try {
+    const { error } = await supabase
+      .from('schools')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting school:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteSchool:', error);
+    toast({
+      title: "Failed to delete school",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
     return false;
   }
-  
-  return true;
 };
 
 export const deleteClass = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('classes')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting class:', error);
+  try {
+    const { error } = await supabase
+      .from('classes')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting class:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteClass:', error);
+    toast({
+      title: "Failed to delete class",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
     return false;
   }
-  
-  return true;
 };
 
 export const deleteSession = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('sessions')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting session:', error);
+  try {
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting session:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteSession:', error);
+    toast({
+      title: "Failed to delete session",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
     return false;
   }
-  
-  return true;
 };
 
 export const bulkUpdateSchoolStatus = async (ids: string[], status: 'active' | 'inactive'): Promise<boolean> => {
-  const { error } = await supabase
-    .from('schools')
-    .update({ status, updated_at: new Date().toISOString() })
-    .in('id', ids);
-  
-  if (error) {
-    console.error('Error updating schools status:', error);
+  try {
+    const { error } = await supabase
+      .from('schools')
+      .update({ status, updated_at: new Date().toISOString() })
+      .in('id', ids);
+    
+    if (error) {
+      console.error('Error updating schools status:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error: any) {
+    console.error('Error in bulkUpdateSchoolStatus:', error);
+    toast({
+      title: "Failed to update schools status",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
     return false;
   }
-  
-  return true;
 };
 
 // Settings management functions
 export const getSettings = async (params: GetSettingsParams): Promise<Setting[]> => {
   const { schoolId, key } = params;
   
-  let query = supabase
-    .from('settings')
-    .select('*')
-    .eq('school_id', schoolId);
-  
-  if (key) {
-    query = query.eq('key', key);
+  try {
+    let query = supabase
+      .from('settings')
+      .select('*')
+      .eq('school_id', schoolId);
+    
+    if (key) {
+      query = query.eq('key', key);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching settings:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error: any) {
+    console.error('Error in getSettings:', error);
+    toast({
+      title: "Failed to fetch settings",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return [];
   }
-  
-  const { data, error } = await query;
-  
-  if (error) {
-    console.error('Error fetching settings:', error);
-    throw error;
-  }
-  
-  return data || [];
 };
 
 export const createOrUpdateSetting = async (
@@ -408,67 +490,92 @@ export const createOrUpdateSetting = async (
   value: any
 ): Promise<Setting> => {
   // Check if setting exists
-  const { data: existingSettings } = await supabase
-    .from('settings')
-    .select('*')
-    .eq('school_id', schoolId)
-    .eq('key', key);
-  
-  const exists = existingSettings && existingSettings.length > 0;
-  const now = new Date().toISOString();
-  
-  if (exists) {
-    // Update
-    const { data, error } = await supabase
+  try {
+    const { data: existingSettings, error: fetchError } = await supabase
       .from('settings')
-      .update({ 
-        value,
-        updated_at: now
-      })
+      .select('*')
       .eq('school_id', schoolId)
-      .eq('key', key)
-      .select()
-      .single();
+      .eq('key', key);
     
-    if (error) {
-      console.error('Error updating setting:', error);
-      throw error;
+    if (fetchError) {
+      console.error('Error checking for existing setting:', fetchError);
+      throw fetchError;
     }
     
-    return data;
-  } else {
-    // Create
-    const { data, error } = await supabase
-      .from('settings')
-      .insert([{ 
-        school_id: schoolId,
-        key,
-        value,
-        created_at: now,
-        updated_at: now
-      }])
-      .select()
-      .single();
+    const exists = existingSettings && existingSettings.length > 0;
+    const now = new Date().toISOString();
     
-    if (error) {
-      console.error('Error creating setting:', error);
-      throw error;
+    if (exists) {
+      // Update
+      const { data, error } = await supabase
+        .from('settings')
+        .update({ 
+          value,
+          updated_at: now
+        })
+        .eq('school_id', schoolId)
+        .eq('key', key)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating setting:', error);
+        throw error;
+      }
+      
+      return data;
+    } else {
+      // Create
+      const { data, error } = await supabase
+        .from('settings')
+        .insert([{ 
+          school_id: schoolId,
+          key,
+          value,
+          created_at: now,
+          updated_at: now
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating setting:', error);
+        throw error;
+      }
+      
+      return data;
     }
-    
-    return data;
+  } catch (error: any) {
+    console.error('Error in createOrUpdateSetting:', error);
+    toast({
+      title: "Failed to manage setting",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
+    throw error;
   }
 };
 
 export const deleteSetting = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('settings')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting setting:', error);
+  try {
+    const { error } = await supabase
+      .from('settings')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting setting:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error: any) {
+    console.error('Error in deleteSetting:', error);
+    toast({
+      title: "Failed to delete setting",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
     return false;
   }
-  
-  return true;
 };

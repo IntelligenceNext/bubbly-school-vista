@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import PageTemplate from '@/components/PageTemplate';
 import DataTable, { Column } from '@/components/DataTable';
 import PageHeader from '@/components/PageHeader';
-import { School, getSchools, deleteSchool, bulkUpdateSchoolStatus } from '@/services/schoolManagementService';
+import { School, getSchools, deleteSchool, bulkUpdateSchoolStatus, updateSchool, createSchool } from '@/services/schoolManagementService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -230,59 +229,38 @@ const SchoolsPage = () => {
       if (editingSchool) {
         // Update existing school
         console.log('Updating school with ID:', editingSchool.id);
-        const { data: updatedSchool, error } = await supabase
-          .from('schools')
-          .update({
-            name: data.name,
-            code: data.code,
-            email: data.email,
-            phone: data.phone,
-            address: data.address,
-            status: data.status,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingSchool.id)
-          .select();
+        const updatedSchool = await updateSchool(editingSchool.id, data);
 
-        if (error) {
-          console.error('Supabase error updating school:', error);
-          throw error;
+        if (updatedSchool) {
+          toast({
+            title: 'School updated',
+            description: `${data.name} has been updated successfully.`,
+          });
+          setIsSchoolDialogOpen(false);
+          refetch();
         }
-        
-        console.log('School updated successfully:', updatedSchool);
-        toast({
-          title: 'School updated',
-          description: `${data.name} has been updated successfully.`,
-        });
       } else {
         // Create new school
-        console.log('Creating new school');
-        const { data: newSchool, error } = await supabase
-          .from('schools')
-          .insert({
-            name: data.name,
-            code: data.code,
-            email: data.email,
-            phone: data.phone,
-            address: data.address,
-            status: data.status,
-          })
-          .select();
-
-        if (error) {
-          console.error('Supabase error creating school:', error);
-          throw error;
-        }
-        
-        console.log('School created successfully:', newSchool);
-        toast({
-          title: 'School created',
-          description: `${data.name} has been created successfully.`,
+        console.log('Creating new school with data:', data);
+        const newSchool = await createSchool({
+          name: data.name,
+          code: data.code,
+          email: data.email || null,
+          phone: data.phone || null,
+          address: data.address || null,
+          status: data.status,
+          logo_url: null
         });
+
+        if (newSchool) {
+          toast({
+            title: 'School created',
+            description: `${data.name} has been created successfully.`,
+          });
+          setIsSchoolDialogOpen(false);
+          refetch();
+        }
       }
-      
-      setIsSchoolDialogOpen(false);
-      refetch();
     } catch (error: any) {
       console.error('Error in form submission:', error);
       toast({
