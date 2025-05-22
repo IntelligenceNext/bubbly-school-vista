@@ -325,6 +325,60 @@ export type Database = {
           },
         ]
       }
+      school_records: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          id: string
+          phone_number: string | null
+          school_code: string
+          school_logo_url: string | null
+          school_name: string
+          state: string | null
+          status: Database["public"]["Enums"]["school_status"]
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by: string
+          email?: string | null
+          id?: string
+          phone_number?: string | null
+          school_code: string
+          school_logo_url?: string | null
+          school_name: string
+          state?: string | null
+          status?: Database["public"]["Enums"]["school_status"]
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          phone_number?: string | null
+          school_code?: string
+          school_logo_url?: string | null
+          school_name?: string
+          state?: string | null
+          status?: Database["public"]["Enums"]["school_status"]
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
       schools: {
         Row: {
           address: string | null
@@ -537,13 +591,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_superadmin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       user_has_role_for_school: {
         Args: { school_uuid: string; roles: string[] }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      school_status: "active" | "inactive" | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -658,6 +716,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      school_status: ["active", "inactive", "archived"],
+    },
   },
 } as const

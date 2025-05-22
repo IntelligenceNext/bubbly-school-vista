@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -169,7 +170,7 @@ const Report = () => {
             header: 'Vehicle',
             cell: (report) => <div>{report.vehicle_details}</div>,
             isSortable: true,
-            size: "md" as const,
+            size: "md",
           },
           {
             id: 'driver',
@@ -192,7 +193,7 @@ const Report = () => {
         ]}
         keyField="id"
         isLoading={isLoading}
-        paginationState={pagination}
+        pagination={pagination}
       />
     </PageTemplate>
   );

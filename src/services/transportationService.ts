@@ -341,3 +341,116 @@ export const getReports = async (params: TransportationQueryParams = {}) => {
     return { data: [], count: 0 };
   }
 };
+
+// Update or create a transportation route
+export const createOrUpdateRoute = async (data: Partial<Route> & { name: string }, id?: string): Promise<boolean> => {
+  try {
+    if (id) {
+      // Update existing route
+      const { error } = await supabase
+        .from('transportation_routes')
+        .update({
+          name: data.name,
+          description: data.description,
+          status: data.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Route updated",
+        description: `${data.name} has been updated successfully.`
+      });
+    } else {
+      // Create new route
+      const { error } = await supabase
+        .from('transportation_routes')
+        .insert({
+          name: data.name,
+          description: data.description,
+          status: data.status
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Route created",
+        description: `${data.name} has been created successfully.`
+      });
+    }
+    
+    return true;
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive"
+    });
+    return false;
+  }
+};
+
+// Update or create a vehicle
+export const createOrUpdateVehicle = async (data: Partial<Vehicle> & { 
+  name: string, 
+  registration_number: string
+}, id?: string): Promise<boolean> => {
+  try {
+    if (id) {
+      // Update existing vehicle
+      const { error } = await supabase
+        .from('transportation_vehicles')
+        .update({
+          name: data.name,
+          registration_number: data.registration_number,
+          vehicle_type: data.vehicle_type,
+          make: data.make,
+          model: data.model,
+          year: data.year,
+          capacity: data.capacity,
+          status: data.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Vehicle updated",
+        description: `${data.name} has been updated successfully.`
+      });
+    } else {
+      // Create new vehicle
+      const { error } = await supabase
+        .from('transportation_vehicles')
+        .insert({
+          name: data.name,
+          registration_number: data.registration_number,
+          vehicle_type: data.vehicle_type,
+          make: data.make,
+          model: data.model,
+          year: data.year,
+          capacity: data.capacity,
+          status: data.status
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Vehicle created",
+        description: `${data.name} has been created successfully.`
+      });
+    }
+    
+    return true;
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive"
+    });
+    return false;
+  }
+};
