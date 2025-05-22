@@ -12,6 +12,8 @@ import { toast } from '@/hooks/use-toast';
 import AuthLayout from '@/components/AuthLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from 'lucide-react';
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
@@ -30,12 +32,13 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
   const { user } = useAuth();
   
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/administrator/dashboard');
+      navigate('/school-management/dashboard');
     }
   }, [user, navigate]);
 
@@ -51,8 +54,21 @@ const Register = () => {
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
+    setRegistrationError(null);
+    
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      // First check if the administrators table exists in the database
+      // to avoid errors if the table doesn't exist yet
+      const { data: adminData, error: adminError } = await supabase
+        .from('administrators')
+        .select('id')
+        .limit(1);
+        
+      // If there's an error checking the administrators table, it probably doesn't exist yet
+      // We should proceed with just creating the auth user
+      
+      // Sign up the user with Supabase Auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -64,6 +80,34 @@ const Register = () => {
       
       if (signUpError) throw signUpError;
       
+      if (!authData.user) {
+        throw new Error('User creation failed');
+      }
+      
+      // If we already confirmed the administrators table exists, try to create an admin record
+      if (!adminError && authData.user) {
+        try {
+          const { error: adminInsertError } = await supabase
+            .from('administrators')
+            .insert({
+              user_id: authData.user.id,
+              full_name: data.fullName,
+              email: data.email,
+              username: data.email.split('@')[0], // Generate a username from email
+              role: 'admin', // Default role
+              status: 'Active',
+            });
+          
+          if (adminInsertError) {
+            console.error('Error creating admin record:', adminInsertError);
+            // We don't throw here because the auth user was created successfully
+          }
+        } catch (err) {
+          console.error('Error in admin creation:', err);
+          // Just log the error, don't prevent user creation
+        }
+      }
+      
       toast({
         title: 'Registration successful',
         description: 'Your administrator account has been created. You can now log in.',
@@ -72,6 +116,10 @@ const Register = () => {
       // Navigate to login page after successful registration
       navigate('/auth/login');
     } catch (error: any) {
+      console.error('Registration error:', error);
+      
+      setRegistrationError(error.message || 'An error occurred during registration');
+      
       toast({
         title: 'Registration failed',
         description: error.message || 'An error occurred during registration.',
@@ -95,6 +143,16 @@ const Register = () => {
         </p>
       }
     >
+      {registrationError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Registration failed</AlertTitle>
+          <AlertDescription>
+            {registrationError}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField

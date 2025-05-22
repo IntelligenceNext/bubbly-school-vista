@@ -23,23 +23,29 @@ export const useAuth = () => {
     const initializeAuth = async () => {
       setLoading(true);
       
-      const { data: { session } } = await supabase.auth.getSession();
-      setUserSession(session);
-      
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          full_name: session.user.user_metadata?.full_name,
-        });
+      try {
+        // Get current session first
+        const { data: { session } } = await supabase.auth.getSession();
+        setUserSession(session);
+        
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            full_name: session.user.user_metadata?.full_name,
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
       
       // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (_event, session) => {
           setUserSession(session);
+          
           setUser(session?.user ? {
             id: session.user.id,
             email: session.user.email || '',
