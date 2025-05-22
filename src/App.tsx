@@ -81,8 +81,12 @@ import Vehicles from "./pages/transportation/Vehicles";
 import TransportRoutes from "./pages/transportation/Routes"; // Renamed to TransportRoutes
 import Report from "./pages/transportation/Report";
 
-// Activities Route
-import Activities from "./pages/activities/Activities";
+// Activities Routes
+import ActivitiesDashboard from "./pages/activities/Dashboard";
+import ActivitiesList from "./pages/activities/Activities";
+import Categories from "./pages/activities/Categories";
+import Participation from "./pages/activities/Participation";
+import Reports from "./pages/activities/Reports";
 
 // Hostel Routes
 import HostelDashboard from "./pages/hostel/Dashboard";
@@ -188,8 +192,12 @@ const App = () => (
           <Route path="/transportation/routes" element={<TransportRoutes />} /> {/* Updated to TransportRoutes */}
           <Route path="/transportation/report" element={<Report />} />
           
-          {/* Activities Route */}
-          <Route path="/activities" element={<Activities />} />
+          {/* Activities Routes */}
+          <Route path="/activities/dashboard" element={<ActivitiesDashboard />} />
+          <Route path="/activities" element={<ActivitiesList />} />
+          <Route path="/activities/categories" element={<Categories />} />
+          <Route path="/activities/participation" element={<Participation />} />
+          <Route path="/activities/reports" element={<Reports />} />
           
           {/* Hostel Routes */}
           <Route path="/hostel/dashboard" element={<HostelDashboard />} />
