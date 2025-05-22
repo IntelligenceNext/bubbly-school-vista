@@ -36,6 +36,7 @@ import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
 import FileUpload from '@/components/FileUpload';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const schoolSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -224,10 +225,12 @@ const SchoolsPage = () => {
 
   const onSubmit = async (data: SchoolFormValues) => {
     try {
+      console.log('Submitting form data:', data);
+      
       if (editingSchool) {
         // Update existing school
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { error } = await supabase
+        console.log('Updating school with ID:', editingSchool.id);
+        const { data: updatedSchool, error } = await supabase
           .from('schools')
           .update({
             name: data.name,
@@ -238,18 +241,23 @@ const SchoolsPage = () => {
             status: data.status,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', editingSchool.id);
+          .eq('id', editingSchool.id)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error updating school:', error);
+          throw error;
+        }
         
+        console.log('School updated successfully:', updatedSchool);
         toast({
           title: 'School updated',
           description: `${data.name} has been updated successfully.`,
         });
       } else {
         // Create new school
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { error } = await supabase
+        console.log('Creating new school');
+        const { data: newSchool, error } = await supabase
           .from('schools')
           .insert({
             name: data.name,
@@ -258,10 +266,15 @@ const SchoolsPage = () => {
             phone: data.phone,
             address: data.address,
             status: data.status,
-          });
+          })
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error creating school:', error);
+          throw error;
+        }
         
+        console.log('School created successfully:', newSchool);
         toast({
           title: 'School created',
           description: `${data.name} has been created successfully.`,
@@ -271,6 +284,7 @@ const SchoolsPage = () => {
       setIsSchoolDialogOpen(false);
       refetch();
     } catch (error: any) {
+      console.error('Error in form submission:', error);
       toast({
         title: 'Error',
         description: error.message || 'An unexpected error occurred',

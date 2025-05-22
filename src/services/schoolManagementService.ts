@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -90,56 +89,69 @@ export interface GetSettingsParams {
 
 // School management APIs
 export const getSchools = async (params: GetSchoolsParams = {}): Promise<PaginatedResponse<School>> => {
+  console.log('Fetching schools with params:', params);
   const { name, status, created_at_start, created_at_end, page, pageSize } = params;
 
-  let query = supabase
-    .from('schools')
-    .select('*', { count: 'exact' });
-  
-  if (name) {
-    query = query.ilike('name', `%${name}%`);
-  }
-  
-  if (status) {
-    query = query.eq('status', status);
-  }
-  
-  if (created_at_start) {
-    query = query.gte('created_at', created_at_start);
-  }
-  
-  if (created_at_end) {
-    const endDate = new Date(created_at_end);
-    endDate.setDate(endDate.getDate() + 1);
-    query = query.lt('created_at', endDate.toISOString());
-  }
+  try {
+    let query = supabase
+      .from('schools')
+      .select('*', { count: 'exact' });
+    
+    if (name) {
+      query = query.ilike('name', `%${name}%`);
+    }
+    
+    if (status) {
+      query = query.eq('status', status);
+    }
+    
+    if (created_at_start) {
+      query = query.gte('created_at', created_at_start);
+    }
+    
+    if (created_at_end) {
+      const endDate = new Date(created_at_end);
+      endDate.setDate(endDate.getDate() + 1);
+      query = query.lt('created_at', endDate.toISOString());
+    }
 
-  // Apply pagination if provided
-  if (page !== undefined && pageSize !== undefined) {
-    const start = (page - 1) * pageSize;
-    query = query.range(start, start + pageSize - 1);
+    // Apply pagination if provided
+    if (page !== undefined && pageSize !== undefined) {
+      const start = (page - 1) * pageSize;
+      query = query.range(start, start + pageSize - 1);
+    }
+    
+    // Sort by created_at date, newest first
+    query = query.order('created_at', { ascending: false });
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error('Error fetching schools:', error);
+      throw error;
+    }
+    
+    console.log(`Retrieved ${count} schools:`, data);
+    
+    // Ensure status is cast to the correct type
+    const typedData = data?.map(school => ({
+      ...school,
+      status: school.status as 'active' | 'inactive'
+    })) || [];
+    
+    return { 
+      data: typedData,
+      count: count || 0
+    };
+  } catch (error: any) {
+    console.error('Error in getSchools:', error);
+    toast({
+      title: "Failed to fetch schools",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return { data: [], count: 0 };
   }
-  
-  // Sort by created_at date, newest first
-  query = query.order('created_at', { ascending: false });
-  
-  const { data, error, count } = await query;
-  
-  if (error) {
-    console.error('Error fetching schools:', error);
-    throw error;
-  }
-  
-  // Ensure status is cast to the correct type
-  const typedData = data?.map(school => ({
-    ...school,
-    status: school.status as 'active' | 'inactive'
-  })) || [];
-  
-  return { 
-    data: typedData,
-    count: count || 0
-  };
 };
 
 export const getSchoolById = async (id: string): Promise<School | null> => {
