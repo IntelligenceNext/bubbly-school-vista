@@ -186,7 +186,8 @@ const AdmitCardsBulkPrint = () => {
                     <SelectValue placeholder="All Sections" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Sections</SelectItem>
+                    {/* Fix: Changed empty string value to "all" */}
+                    <SelectItem value="all">All Sections</SelectItem>
                     {sections.map((section) => (
                       <SelectItem key={section.id} value={section.id}>
                         {section.name}
