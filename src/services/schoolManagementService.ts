@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 // Interfaces for tables
 export interface School {
@@ -139,6 +139,73 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
     data: typedData,
     count: count || 0
   };
+};
+
+export const getSchoolById = async (id: string): Promise<School | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('schools')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching school by ID:', error);
+      toast({
+        title: "Error fetching school",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    }
+    
+    return data as School;
+  } catch (error: any) {
+    console.error('Error in getSchoolById:', error);
+    toast({
+      title: "Failed to fetch school",
+      description: "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return null;
+  }
+};
+
+export const updateSchool = async (
+  id: string,
+  updates: Partial<Omit<School, 'id' | 'created_at'>>
+): Promise<School | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('schools')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating school:', error);
+      toast({
+        title: "Error updating school",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    }
+    
+    return data as School;
+  } catch (error: any) {
+    console.error('Error in updateSchool:', error);
+    toast({
+      title: "Failed to update school",
+      description: "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return null;
+  }
 };
 
 export const getClasses = async (params: GetClassesParams = {}): Promise<PaginatedResponse<Class>> => {

@@ -15,8 +15,11 @@ export interface Route {
 export interface Vehicle {
   id: string;
   name: string;
-  type: string;
-  license_plate: string;
+  registration_number: string;
+  vehicle_type: string;
+  make: string;
+  model: string;
+  year: number;
   capacity: number;
   status: 'active' | 'inactive' | 'maintenance';
   created_at: string;
@@ -179,6 +182,102 @@ export const bulkUpdateRouteStatus = async (ids: string[], status: 'active' | 'i
   }
 };
 
+// Vehicles-related functions
+export const getVehicles = async (params: TransportationQueryParams = {}) => {
+  try {
+    const {
+      page = 1,
+      pageSize = 10,
+      name,
+      status,
+      created_at_start,
+      created_at_end
+    } = params;
+    
+    // Calculate pagination
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    
+    // Start building query
+    let query = supabase
+      .from('transportation_vehicles')
+      .select('*', { count: 'exact' })
+      .range(from, to)
+      .order('created_at', { ascending: false });
+    
+    // Apply filters
+    if (name) {
+      query = query.ilike('name', `%${name}%`);
+    }
+    
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+    
+    if (created_at_start) {
+      query = query.gte('created_at', created_at_start);
+    }
+    
+    if (created_at_end) {
+      query = query.lte('created_at', created_at_end);
+    }
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error('Error fetching vehicles:', error);
+      toast({
+        title: "Error fetching vehicles",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { data: [], count: 0 };
+    }
+    
+    return { data: data as Vehicle[], count: count || 0 };
+  } catch (error: any) {
+    console.error('Error in getVehicles:', error);
+    toast({
+      title: "Failed to fetch vehicles",
+      description: "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return { data: [], count: 0 };
+  }
+};
+
+export const deleteVehicle = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('transportation_vehicles')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      toast({
+        title: "Error deleting vehicle",
+        description: error.message,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    toast({
+      title: "Vehicle deleted",
+      description: "The vehicle has been deleted successfully.",
+    });
+    
+    return true;
+  } catch (error: any) {
+    toast({
+      title: "Failed to delete vehicle",
+      description: error.message || "An unexpected error occurred",
+      variant: "destructive",
+    });
+    return false;
+  }
+};
+
 // Reports-related functions
 export const getReports = async (params: TransportationQueryParams = {}) => {
   try {
@@ -242,5 +341,3 @@ export const getReports = async (params: TransportationQueryParams = {}) => {
     return { data: [], count: 0 };
   }
 };
-
-// Now let's update the transportation/Report.tsx file to fix the column size type issues
