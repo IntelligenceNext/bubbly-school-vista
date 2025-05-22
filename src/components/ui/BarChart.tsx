@@ -34,17 +34,24 @@ export function BarChart({
   yAxisWidth = 40,
   startAtZero = true
 }: BarChartProps) {
-  // Process data to make it compatible with Recharts
-  const processedData = data.labels?.map((label: string, i: number) => {
-    const item: Record<string, any> = { name: label };
-    
-    // Add each dataset's data point to this item
-    data.datasets.forEach((dataset: any, datasetIndex: number) => {
-      item[dataset.label] = dataset.data[i];
-    });
-    
-    return item;
-  });
+  // Check if we have valid data before proceeding
+  if (!data) {
+    console.error("No data provided to BarChart");
+    return <div>No data available</div>;
+  }
+  
+  // Determine if we're using the format provided directly or need to process it
+  const processedData = Array.isArray(data) 
+    ? data 
+    : (data.datasets && data.labels)
+      ? data.labels.map((label: string, i: number) => {
+          const item: Record<string, any> = { name: label };
+          data.datasets.forEach((dataset: any, datasetIndex: number) => {
+            item[dataset.label] = dataset.data[i];
+          });
+          return item;
+        })
+      : data;
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -58,17 +65,17 @@ export function BarChart({
         }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
+        <XAxis dataKey={index || "name"} />
         {showYAxis && <YAxis width={yAxisWidth} domain={startAtZero ? [0, 'auto'] : undefined} />}
         <Tooltip formatter={valueFormatter} />
         {showLegend && <Legend />}
-        {data.datasets.map((dataset: any, index: number) => (
+        {categories.map((category, idx) => (
           <Bar
-            key={index}
-            dataKey={dataset.label}
-            fill={colors?.[index % colors.length] ? 
-                  `rgb(${colors[index % colors.length]})` : 
-                  dataset.backgroundColor || '#8884d8'}
+            key={idx}
+            dataKey={category}
+            fill={colors?.[idx % colors.length] ? 
+                  `rgb(${colors[idx % colors.length]})` : 
+                  `#${Math.floor(Math.random()*16777215).toString(16)}`}
           />
         ))}
       </RechartsBarChart>
