@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface User {
   id: string;
   email: string;
+  full_name?: string;
 }
 
 interface Session {
@@ -29,6 +30,7 @@ export const useAuth = () => {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
+          full_name: session.user.user_metadata?.full_name,
         });
       }
       
@@ -41,6 +43,7 @@ export const useAuth = () => {
           setUser(session?.user ? {
             id: session.user.id,
             email: session.user.email || '',
+            full_name: session.user.user_metadata?.full_name,
           } : null);
         }
       );
@@ -53,9 +56,20 @@ export const useAuth = () => {
     initializeAuth();
   }, []);
   
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      return { success: true };
+    } catch (error) {
+      console.error('Error logging out:', error);
+      return { success: false, error };
+    }
+  };
+  
   return {
     user,
     userSession,
     loading,
+    logout,
   };
 };
