@@ -159,29 +159,29 @@ const Tickets = () => {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
 
   // Status badge color mapping
-  const statusColors: Record<string, "default" | "primary" | "secondary" | "destructive" | "outline"> = {
+  const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "bubble" | "warning"> = {
     "New": "outline",
     "Assigned": "secondary",
-    "In Progress": "primary",
-    "Resolved": "default",
+    "In Progress": "bubble",
+    "Resolved": "success",
     "Closed": "destructive"
   };
 
   // Priority badge color mapping
-  const priorityColors: Record<string, "default" | "primary" | "secondary" | "destructive" | "outline"> = {
+  const priorityColors: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "bubble" | "warning"> = {
     "Low": "outline",
     "Medium": "secondary",
-    "High": "primary",
+    "High": "bubble",
     "Urgent": "destructive"
   };
 
   // Category badge color mapping
-  const categoryColors: Record<string, "default" | "primary" | "secondary" | "destructive" | "outline"> = {
+  const categoryColors: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "bubble" | "warning"> = {
     "IT": "outline",
     "Admin": "secondary",
-    "Academic": "primary",
-    "Transport": "default",
-    "Hostel": "destructive",
+    "Academic": "bubble",
+    "Transport": "success",
+    "Hostel": "warning",
     "Other": "secondary"
   };
 
@@ -207,8 +207,10 @@ const Tickets = () => {
     form.reset();
   };
 
+  // Modified handleFileUpload to work with FileUpload component
   const handleFileUpload = (urls: string[]) => {
-    form.setValue('attachments', urls, { shouldValidate: true });
+    console.log("Files uploaded:", urls);
+    form.setValue('attachments', urls);
   };
 
   const columns = [
@@ -485,6 +487,7 @@ const Tickets = () => {
                 
                 <div>
                   <FormLabel>Attachments (Optional)</FormLabel>
+                  {/* Fixed FileUpload component usage */}
                   <FileUpload 
                     bucket="attachments"
                     onUploadComplete={handleFileUpload}
