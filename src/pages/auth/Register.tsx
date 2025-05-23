@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -59,10 +58,10 @@ const Register = () => {
     try {
       // First check if the administrators table exists in the database
       // to avoid errors if the table doesn't exist yet
-      const { data: adminData, error: adminError } = await supabase
+      const { data: adminData, error: adminError } = await (supabase
         .from('administrators')
         .select('id')
-        .limit(1);
+        .limit(1) as any);
         
       // If there's an error checking the administrators table, it probably doesn't exist yet
       // We should proceed with just creating the auth user
@@ -87,7 +86,7 @@ const Register = () => {
       // If we already confirmed the administrators table exists, try to create an admin record
       if (!adminError && authData.user) {
         try {
-          const { error: adminInsertError } = await supabase
+          const { error: adminInsertError } = await (supabase
             .from('administrators')
             .insert({
               user_id: authData.user.id,
@@ -96,7 +95,7 @@ const Register = () => {
               username: data.email.split('@')[0], // Generate a username from email
               role: 'admin', // Default role
               status: 'Active',
-            });
+            }) as any);
           
           if (adminInsertError) {
             console.error('Error creating admin record:', adminInsertError);

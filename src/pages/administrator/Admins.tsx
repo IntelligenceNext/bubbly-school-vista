@@ -84,7 +84,7 @@ const Admins = () => {
         const { data, error } = await supabase
           .from('schools')
           .select('id, name')
-          .eq('is_active', true)
+          .eq('status', 'active')
           .order('name');
         
         if (error) throw error;
@@ -102,7 +102,7 @@ const Admins = () => {
     async function fetchAdministrators() {
       setIsLoading(true);
       try {
-        // Create query
+        // Create query with type cast to ensure TypeScript knows this is a valid table
         let query = supabase
           .from('administrators')
           .select(`
@@ -114,7 +114,7 @@ const Admins = () => {
             status, 
             last_login,
             school_id
-          `, { count: 'exact' });
+          `, { count: 'exact' }) as any;
         
         // Add search condition if searchQuery exists
         if (searchQuery) {
@@ -194,8 +194,8 @@ const Admins = () => {
       // Determine if school_id should be null (for all schools access)
       const schoolId = data.school_id === 'all_schools' ? null : data.school_id || null;
       
-      // Then create the administrator record
-      const { error: adminError } = await supabase
+      // Then create the administrator record - with type casting to fix TypeScript error
+      const { error: adminError } = await (supabase
         .from('administrators')
         .insert({
           user_id: authData.user.id,
@@ -206,19 +206,19 @@ const Admins = () => {
           role: data.role,
           school_id: schoolId,
           status: 'Active',
-        });
+        }) as any);
       
       if (adminError) throw adminError;
       
       // If admin should be connected to a school, create the relationship
       if (schoolId) {
-        const { error: relationError } = await supabase
+        const { error: relationError } = await (supabase
           .from('users_to_schools')
           .insert({
             user_id: authData.user.id,
             school_id: schoolId,
             role: data.role,
-          });
+          }) as any);
           
         if (relationError) throw relationError;
       }
@@ -257,10 +257,10 @@ const Admins = () => {
   const handleDeleteAdmin = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this administrator?')) {
       try {
-        const { error } = await supabase
+        const { error } = await (supabase
           .from('administrators')
           .delete()
-          .eq('id', id);
+          .eq('id', id) as any);
           
         if (error) throw error;
         

@@ -9,6 +9,59 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      administrators: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          last_login: string | null
+          phone: string | null
+          role: string
+          school_id: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          last_login?: string | null
+          phone?: string | null
+          role: string
+          school_id?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          last_login?: string | null
+          phone?: string | null
+          role?: string
+          school_id?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "administrators_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           address: string
@@ -59,6 +112,41 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      users_to_schools: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          school_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          school_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          school_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_to_schools_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
