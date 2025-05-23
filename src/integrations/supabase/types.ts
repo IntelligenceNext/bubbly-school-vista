@@ -9,27 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      schools: {
+        Row: {
+          address: string
+          admins_count: number
+          classes_count: number
+          created_at: string | null
+          created_by: string | null
+          email: string
+          id: string
+          logo: string | null
+          name: string
+          phone: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string
+          admins_count?: number
+          classes_count?: number
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          id?: string
+          logo?: string | null
+          name: string
+          phone?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          admins_count?: number
+          classes_count?: number
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          id?: string
+          logo?: string | null
+          name?: string
+          phone?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      is_superadmin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      user_has_role_for_school: {
-        Args: { school_uuid: string; roles: string[] }
-        Returns: boolean
-      }
-      user_has_school_access: {
-        Args: { school_uuid: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      school_status: "active" | "inactive" | "archived"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -144,8 +177,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      school_status: ["active", "inactive", "archived"],
-    },
+    Enums: {},
   },
 } as const
