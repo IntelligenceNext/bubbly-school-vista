@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 export interface School {
   id: string;
   name: string;
-  code: string;
+  code: string | null;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -163,9 +163,23 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
 export const createSchool = async (school: Omit<School, 'id' | 'created_at' | 'updated_at'>): Promise<School | null> => {
   try {
     console.log('Creating school with data:', school);
+    
+    // Make sure we have the correct column names matching the database
+    const schoolData = {
+      name: school.name,
+      code: school.code || null,
+      email: school.email || null,
+      phone: school.phone || null,
+      address: school.address || null,
+      status: school.status || 'active',
+      logo_url: school.logo_url || null,
+    };
+    
+    console.log('Prepared school data for insertion:', schoolData);
+    
     const { data, error } = await supabase
       .from('schools')
-      .insert([school])
+      .insert([schoolData])
       .select();
     
     if (error) {

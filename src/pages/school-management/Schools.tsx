@@ -240,14 +240,14 @@ const SchoolsPage = () => {
           refetch();
         }
       } else {
-        // Create new school
+        // Create new school - using fixed createSchool function
         console.log('Creating new school with data:', data);
         const newSchool = await createSchool({
           name: data.name,
           code: data.code,
-          email: data.email || null,
-          phone: data.phone || null,
-          address: data.address || null,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
           status: data.status,
           logo_url: null
         });

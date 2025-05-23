@@ -14,11 +14,13 @@ export type Database = {
           address: string
           admins_count: number
           classes_count: number
+          code: string | null
           created_at: string | null
           created_by: string | null
           email: string
           id: string
           logo: string | null
+          logo_url: string | null
           name: string
           phone: string
           status: string
@@ -28,11 +30,13 @@ export type Database = {
           address?: string
           admins_count?: number
           classes_count?: number
+          code?: string | null
           created_at?: string | null
           created_by?: string | null
           email: string
           id?: string
           logo?: string | null
+          logo_url?: string | null
           name: string
           phone?: string
           status?: string
@@ -42,11 +46,13 @@ export type Database = {
           address?: string
           admins_count?: number
           classes_count?: number
+          code?: string | null
           created_at?: string | null
           created_by?: string | null
           email?: string
           id?: string
           logo?: string | null
+          logo_url?: string | null
           name?: string
           phone?: string
           status?: string
