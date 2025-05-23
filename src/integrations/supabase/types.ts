@@ -62,6 +62,120 @@ export type Database = {
           },
         ]
       }
+      classes: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          school_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          school_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          school_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hostels: {
+        Row: {
+          capacity: number
+          created_at: string
+          description: string
+          gender: string
+          id: string
+          name: string
+          school_id: string
+          status: string
+        }
+        Insert: {
+          capacity: number
+          created_at?: string
+          description: string
+          gender: string
+          id?: string
+          name: string
+          school_id: string
+          status?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          description?: string
+          gender?: string
+          id?: string
+          name?: string
+          school_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      inquiries: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          email: string
+          id: string
+          inquiry_type: string
+          message: string | null
+          name: string
+          phone: string | null
+          priority: string
+          school_id: string
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          inquiry_type: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          priority: string
+          school_id: string
+          source?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          inquiry_type?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          priority?: string
+          school_id?: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       schools: {
         Row: {
           address: string
@@ -108,6 +222,39 @@ export type Database = {
           logo_url?: string | null
           name?: string
           phone?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          school_id: string
+          start_date: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          school_id: string
+          start_date: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          school_id?: string
+          start_date?: string
           status?: string
           updated_at?: string | null
         }

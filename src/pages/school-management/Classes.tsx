@@ -35,6 +35,10 @@ import usePagination from '@/hooks/usePagination';
 import { cn } from '@/lib/utils';
 import { Class, getClasses, createClass, updateClass, deleteClass } from '@/services/classService';
 
+// Define a default school_id to use throughout the application
+// In a real application, you would get this from user context/authentication
+const DEFAULT_SCHOOL_ID = 'your_school_id';
+
 const classSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   code: z.string().min(2, "Code must be at least 2 characters"),
@@ -58,7 +62,7 @@ const ClassesPage = () => {
 
   const pagination = usePagination();
   const { page, pageSize, setTotal } = pagination;
-
+  
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
     defaultValues: {
@@ -66,7 +70,7 @@ const ClassesPage = () => {
       code: '',
       description: '',
       status: 'active',
-      school_id: 'your_school_id', // Replace with actual school ID
+      school_id: DEFAULT_SCHOOL_ID, // Set a default school ID
     },
   });
 
@@ -167,7 +171,7 @@ const ClassesPage = () => {
       code: '',
       description: '',
       status: 'active',
-      school_id: 'your_school_id', // Replace with actual school ID
+      school_id: DEFAULT_SCHOOL_ID, // Always provide a default school_id
     });
     setIsClassDialogOpen(true);
   };
@@ -179,7 +183,7 @@ const ClassesPage = () => {
       code: classItem.code,
       description: classItem.description || '',
       status: classItem.status,
-      school_id: classItem.school_id, // Replace with actual school ID
+      school_id: classItem.school_id || DEFAULT_SCHOOL_ID, // Use the class's school_id or default
     });
     setIsClassDialogOpen(true);
   };
@@ -203,7 +207,13 @@ const ClassesPage = () => {
     try {
       if (editingClass) {
         // Update existing class
-        const updatedClass = await updateClass(editingClass.id, data);
+        const updatedClass = await updateClass(editingClass.id, {
+          name: data.name,
+          code: data.code,
+          description: data.description,
+          status: data.status,
+          school_id: data.school_id,
+        });
 
         if (updatedClass) {
           toast({
@@ -214,8 +224,14 @@ const ClassesPage = () => {
           refetch();
         }
       } else {
-        // Create new class
-        const newClass = await createClass(data);
+        // Create new class - ensure school_id is included
+        const newClass = await createClass({
+          name: data.name,
+          code: data.code,
+          description: data.description,
+          status: data.status,
+          school_id: data.school_id,
+        });
 
         if (newClass) {
           toast({
@@ -236,6 +252,7 @@ const ClassesPage = () => {
   };
 
   return (
+    
     <PageTemplate title="Classes" subtitle="Manage classes">
       <PageHeader
         title="Classes"
@@ -379,6 +396,16 @@ const ClassesPage = () => {
                   </FormItem>
                 )}
               />
+              
+          {/* Hidden school_id field - not visible to users but required for form submission */}
+          <FormField
+            control={form.control}
+            name="school_id"
+            render={({ field }) => (
+              <input type="hidden" {...field} />
+            )}
+          />
+          
               <DialogFooter>
                 <Button
                   type="button"
@@ -431,6 +458,7 @@ const ClassesPage = () => {
         </DialogContent>
       </Dialog>
     </PageTemplate>
+    
   );
 };
 

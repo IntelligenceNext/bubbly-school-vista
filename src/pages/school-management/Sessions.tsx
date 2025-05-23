@@ -23,6 +23,10 @@ import usePagination from '@/hooks/usePagination';
 import { cn } from '@/lib/utils';
 import { Session, getSessions, createSession, updateSession, deleteSession } from '@/services/sessionService';
 
+// Define a default school_id to use throughout the application
+// In a real application, you would get this from user context/authentication
+const DEFAULT_SCHOOL_ID = 'your_school_id';
+
 const sessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   start_date: z.string(),
@@ -54,7 +58,7 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: 'your_school_id', // Replace with actual school ID
+      school_id: DEFAULT_SCHOOL_ID, // Set a default school ID
     },
   });
 
@@ -151,7 +155,7 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: 'your_school_id', // Replace with actual school ID
+      school_id: DEFAULT_SCHOOL_ID, // Always provide a default school_id
     });
     setIsSessionDialogOpen(true);
   };
@@ -163,7 +167,7 @@ const SessionsPage = () => {
       start_date: sessionItem.start_date,
       end_date: sessionItem.end_date,
       status: sessionItem.status,
-      school_id: sessionItem.school_id, // Replace with actual school ID
+      school_id: sessionItem.school_id || DEFAULT_SCHOOL_ID, // Use the session's school_id or default
     });
     setIsSessionDialogOpen(true);
   };
@@ -187,7 +191,13 @@ const SessionsPage = () => {
     try {
       if (editingSession) {
         // Update existing session
-        const updatedSession = await updateSession(editingSession.id, data);
+        const updatedSession = await updateSession(editingSession.id, {
+          name: data.name,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          status: data.status,
+          school_id: data.school_id,
+        });
 
         if (updatedSession) {
           toast({
@@ -198,8 +208,14 @@ const SessionsPage = () => {
           refetch();
         }
       } else {
-        // Create new session
-        const newSession = await createSession(data);
+        // Create new session - ensure school_id is included
+        const newSession = await createSession({
+          name: data.name,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          status: data.status,
+          school_id: data.school_id,
+        });
 
         if (newSession) {
           toast({
@@ -417,6 +433,14 @@ const SessionsPage = () => {
                     </Select>
                     <FormMessage />
                   </FormItem>
+                )}
+              />
+              {/* Hidden school_id field - not visible to users but required for form submission */}
+              <FormField
+                control={form.control}
+                name="school_id"
+                render={({ field }) => (
+                  <input type="hidden" {...field} />
                 )}
               />
               <DialogFooter>
