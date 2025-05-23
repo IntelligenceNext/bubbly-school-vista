@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import PageTemplate from '@/components/PageTemplate';
@@ -7,124 +7,42 @@ import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { Session, getSessions, createSession, updateSession, deleteSession } from '@/services/sessionService';
 
 const sessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  start_date: z.date(),
-  end_date: z.date(),
-  is_current: z.boolean().default(false),
+  start_date: z.string(),
+  end_date: z.string(),
   status: z.enum(["active", "inactive"]).default("active"),
+  school_id: z.string().uuid(),
 });
 
 type SessionFormValues = z.infer<typeof sessionSchema>;
 
-// Fix TypeScript errors with Supabase queries using type assertion
-const getSessions = async () => {
-  // Use type assertion to avoid TypeScript errors
-  const { data, error } = await (supabase
-    .from('sessions') as any)
-    .select('*')
-    .order('created_at', { ascending: false });
-    
-  if (error) throw error;
-  return data || [];
-};
-
-const createSession = async (sessionData) => {
-  // Use type assertion to avoid TypeScript errors
-  const { data, error } = await (supabase
-    .from('sessions') as any)
-    .insert({
-      school_id: sessionData.school_id,
-      name: sessionData.name,
-      start_date: sessionData.start_date,
-      end_date: sessionData.end_date,
-      is_current: sessionData.is_current,
-      status: sessionData.status,
-    });
-    
-  if (error) throw error;
-  return data;
-};
-
-const updateSession = async (id: string, sessionData: any) => {
-  try {
-    const { data, error } = await (supabase
-      .from('sessions') as any)
-      .update(sessionData)
-      .eq('id', id)
-      .select();
-
-    if (error) {
-      console.error('Error updating session:', error);
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error updating session:', error);
-    throw error;
-  }
-};
-
-const deleteSession = async (id: string) => {
-  try {
-    const { data, error } = await (supabase
-      .from('sessions') as any)
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting session:', error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error deleting session:', error);
-    return false;
-  }
-};
-
 const SessionsPage = () => {
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
-  const [editingSession, setEditingSession] = useState<any | null>(null);
-  const [selectedSession, setSelectedSession] = useState<any | null>(null);
+  const [editingSession, setEditingSession] = useState(null);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     name: '',
     status: '',
-    start_date_start: '',
-    start_date_end: '',
   });
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState([]);
 
   const pagination = usePagination();
   const { page, pageSize, setTotal } = pagination;
@@ -133,10 +51,10 @@ const SessionsPage = () => {
     resolver: zodResolver(sessionSchema),
     defaultValues: {
       name: '',
-      start_date: new Date(),
-      end_date: new Date(),
-      is_current: false,
+      start_date: '',
+      end_date: '',
       status: 'active',
+      school_id: 'your_school_id', // Replace with actual school ID
     },
   });
 
@@ -153,54 +71,45 @@ const SessionsPage = () => {
     {
       id: 'name',
       header: 'Name',
-      cell: (session) => <div className="font-medium">{session.name}</div>,
+      cell: (sessionItem) => <div className="font-medium">{sessionItem.name}</div>,
       isSortable: true,
       sortKey: 'name',
     },
     {
       id: 'start_date',
       header: 'Start Date',
-      cell: (session) => <div>{format(new Date(session.start_date), 'MMM d, yyyy')}</div>,
+      cell: (sessionItem) => <div>{format(new Date(sessionItem.start_date), 'MMM d, yyyy')}</div>,
     },
     {
       id: 'end_date',
       header: 'End Date',
-      cell: (session) => <div>{format(new Date(session.end_date), 'MMM d, yyyy')}</div>,
-    },
-    {
-      id: 'is_current',
-      header: 'Current',
-      cell: (session) => (
-        <Badge variant={session.is_current ? 'success' : 'secondary'}>
-          {session.is_current ? 'Yes' : 'No'}
-        </Badge>
-      ),
+      cell: (sessionItem) => <div>{format(new Date(sessionItem.end_date), 'MMM d, yyyy')}</div>,
     },
     {
       id: 'status',
       header: 'Status',
-      cell: (session) => (
-        <Badge variant={session.status === 'active' ? 'success' : 'secondary'}>
-          {session.status === 'active' ? 'Active' : 'Inactive'}
+      cell: (sessionItem) => (
+        <Badge variant={sessionItem.status === 'active' ? 'success' : 'secondary'}>
+          {sessionItem.status === 'active' ? 'Active' : 'Inactive'}
         </Badge>
       ),
     },
     {
       id: 'created_at',
       header: 'Created',
-      cell: (session) => <div>{format(new Date(session.created_at), 'MMM d, yyyy')}</div>,
+      cell: (sessionItem) => <div>{format(new Date(sessionItem.created_at), 'MMM d, yyyy')}</div>,
     },
   ];
 
   const actions = [
     {
       label: 'Edit',
-      onClick: (session: any) => handleEditSession(session),
+      onClick: (sessionItem) => handleEditSession(sessionItem),
     },
     {
       label: 'Delete',
-      onClick: (session: any) => {
-        setSelectedSession(session);
+      onClick: (sessionItem) => {
+        setSelectedSession(sessionItem);
         setIsDeleteDialogOpen(true);
       },
       variant: 'destructive' as const,
@@ -222,8 +131,6 @@ const SessionsPage = () => {
     const active: string[] = [];
     if (filters.name) active.push('name');
     if (filters.status) active.push('status');
-    if (filters.start_date_start || filters.start_date_end) active.push('date');
-    
     setActiveFilters(active);
     refetch();
   };
@@ -232,8 +139,6 @@ const SessionsPage = () => {
     setFilters({
       name: '',
       status: '',
-      start_date_start: '',
-      start_date_end: '',
     });
     setActiveFilters([]);
     refetch();
@@ -243,22 +148,22 @@ const SessionsPage = () => {
     setEditingSession(null);
     form.reset({
       name: '',
-      start_date: new Date(),
-      end_date: new Date(),
-      is_current: false,
+      start_date: '',
+      end_date: '',
       status: 'active',
+      school_id: 'your_school_id', // Replace with actual school ID
     });
     setIsSessionDialogOpen(true);
   };
 
-  const handleEditSession = (session: any) => {
-    setEditingSession(session);
+  const handleEditSession = (sessionItem) => {
+    setEditingSession(sessionItem);
     form.reset({
-      name: session.name,
-      start_date: new Date(session.start_date),
-      end_date: new Date(session.end_date),
-      is_current: session.is_current,
-      status: session.status,
+      name: sessionItem.name,
+      start_date: sessionItem.start_date,
+      end_date: sessionItem.end_date,
+      status: sessionItem.status,
+      school_id: sessionItem.school_id, // Replace with actual school ID
     });
     setIsSessionDialogOpen(true);
   };
@@ -275,24 +180,14 @@ const SessionsPage = () => {
   };
 
   const handleBulkStatusChange = async (sessions: any[], status: 'active' | 'inactive') => {
-    // const sessionIds = sessions.map(session => session.id);
-    // const success = await bulkUpdateSessionStatus(sessionIds, status);
-    // if (success) {
-    //   refetch();
-    // }
+    // Implement bulk status change logic here
   };
 
   const onSubmit = async (data: SessionFormValues) => {
     try {
       if (editingSession) {
         // Update existing session
-        const updatedSession = await updateSession(editingSession.id, {
-          name: data.name,
-          start_date: data.start_date.toISOString(),
-          end_date: data.end_date.toISOString(),
-          is_current: data.is_current,
-          status: data.status,
-        });
+        const updatedSession = await updateSession(editingSession.id, data);
 
         if (updatedSession) {
           toast({
@@ -304,13 +199,7 @@ const SessionsPage = () => {
         }
       } else {
         // Create new session
-        const newSession = await createSession({
-          name: data.name,
-          start_date: data.start_date.toISOString(),
-          end_date: data.end_date.toISOString(),
-          is_current: data.is_current,
-          status: data.status,
-        });
+        const newSession = await createSession(data);
 
         if (newSession) {
           toast({
@@ -329,12 +218,12 @@ const SessionsPage = () => {
       });
     }
   };
-
+  
   return (
-    <PageTemplate title="Sessions" subtitle="Manage all sessions in the system">
+    <PageTemplate title="Sessions" subtitle="Manage sessions">
       <PageHeader
         title="Sessions"
-        description="Create and manage sessions in the system"
+        description="Create and manage sessions"
         primaryAction={{
           label: "Add Session",
           onClick: handleCreateSession,
@@ -369,67 +258,6 @@ const SessionsPage = () => {
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Start Date Range</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filters.start_date_start ? (
-                            format(new Date(filters.start_date_start), "PPP")
-                          ) : (
-                            <span>From date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={filters.start_date_start ? new Date(filters.start_date_start) : undefined}
-                          onSelect={(date) =>
-                            setFilters({
-                              ...filters,
-                              start_date_start: date ? date.toISOString() : "",
-                            })
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filters.start_date_end ? (
-                            format(new Date(filters.start_date_end), "PPP")
-                          ) : (
-                            <span>To date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={filters.start_date_end ? new Date(filters.start_date_end) : undefined}
-                          onSelect={(date) =>
-                            setFilters({
-                              ...filters,
-                              start_date_end: date ? date.toISOString() : "",
-                            })
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
                 </div>
               </div>
             }
@@ -485,108 +313,84 @@ const SessionsPage = () => {
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="start_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-[240px] pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date()
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="end_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-[240px] pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date()
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
               <FormField
                 control={form.control}
-                name="is_current"
+                name="start_date"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Current Session</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Is this the current active session?
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                      />
-                    </FormControl>
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[240px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(date) => field.onChange(date?.toISOString())}
+                          disabled={(date) =>
+                            date > new Date()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="end_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[240px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(date) => field.onChange(date?.toISOString())}
+                          disabled={(date) =>
+                            date > new Date()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}

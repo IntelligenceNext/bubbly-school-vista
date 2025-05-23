@@ -33,7 +33,7 @@ import * as z from 'zod';
 import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { Class, getClasses, createClass, updateClass, deleteClass } from '@/services/classService';
 
 const classSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -44,78 +44,6 @@ const classSchema = z.object({
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
-
-// Fix TypeScript errors with Supabase queries using type assertion
-const getClasses = async () => {
-  // Use type assertion to avoid TypeScript errors
-  const { data, error } = await (supabase
-    .from('classes') as any)
-    .select('*')
-    .order('created_at', { ascending: false });
-    
-  if (error) throw error;
-  return data || [];
-};
-
-const createClass = async (classData) => {
-  // Use type assertion to avoid TypeScript errors
-  const { data, error } = await (supabase
-    .from('classes') as any)
-    .insert({
-      school_id: classData.school_id,
-      name: classData.name,
-      code: classData.code,
-      description: classData.description,
-      status: classData.status,
-    });
-    
-  if (error) throw error;
-  return data;
-};
-
-const updateClass = async (id: string, classData: ClassFormValues) => {
-  try {
-    const { data, error } = await (supabase
-      .from('classes') as any)
-      .update({
-        name: classData.name,
-        code: classData.code,
-        description: classData.description,
-        status: classData.status,
-      })
-      .eq('id', id)
-      .select();
-
-    if (error) {
-      console.error('Error updating class:', error);
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error updating class:', error);
-    throw error;
-  }
-};
-
-const deleteClass = async (id: string) => {
-  try {
-    const { data, error } = await (supabase
-      .from('classes') as any)
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting class:', error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error deleting class:', error);
-    return false;
-  }
-};
 
 const ClassesPage = () => {
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);

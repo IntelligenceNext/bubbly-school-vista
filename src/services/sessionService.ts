@@ -1,0 +1,82 @@
+
+import { supabase } from '@/integrations/supabase/client';
+
+export interface Session {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  status: 'active' | 'inactive';
+  school_id: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export const getSessions = async () => {
+  try {
+    // Use type assertion to avoid TypeScript errors
+    const { data, error } = await (supabase
+      .from('sessions') as any)
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    throw error;
+  }
+};
+
+export const createSession = async (sessionData: Omit<Session, 'id' | 'created_at' | 'updated_at'>) => {
+  try {
+    // Use type assertion to avoid TypeScript errors
+    const { data, error } = await (supabase
+      .from('sessions') as any)
+      .insert(sessionData)
+      .select();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error creating session:', error);
+    throw error;
+  }
+};
+
+export const updateSession = async (id: string, sessionData: Partial<Omit<Session, 'id' | 'created_at' | 'updated_at'>>) => {
+  try {
+    // Use type assertion to avoid TypeScript errors
+    const { data, error } = await (supabase
+      .from('sessions') as any)
+      .update(sessionData)
+      .eq('id', id)
+      .select();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating session:', error);
+    throw error;
+  }
+};
+
+export const deleteSession = async (id: string) => {
+  try {
+    // Use type assertion to avoid TypeScript errors
+    const { error } = await (supabase
+      .from('sessions') as any)
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting session:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    return false;
+  }
+};
