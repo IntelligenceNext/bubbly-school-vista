@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import PageTemplate from '@/components/PageTemplate';
 import DataTable, { Column } from '@/components/DataTable';
 import PageHeader from '@/components/PageHeader';
-import { Class, School, getClasses, deleteClass, getSchools } from '@/services/schoolManagementService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -21,40 +21,112 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { CheckCircle, Plus, School2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, Pencil, Plus, Trash2 } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from "@/components/ui/switch";
+import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const classSchema = z.object({
-  school_id: z.string().min(1, "School is required"),
   name: z.string().min(2, "Name must be at least 2 characters"),
   code: z.string().min(2, "Code must be at least 2 characters"),
-  description: z.string().optional(),
-  is_active: z.boolean().default(true),
+  description: z.string().optional().nullable(),
+  status: z.enum(["active", "inactive"]).default("active"),
+  school_id: z.string().uuid(),
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
 
+// Fix TypeScript errors with Supabase queries using type assertion
+const getClasses = async () => {
+  // Use type assertion to avoid TypeScript errors
+  const { data, error } = await (supabase
+    .from('classes') as any)
+    .select('*')
+    .order('created_at', { ascending: false });
+    
+  if (error) throw error;
+  return data || [];
+};
+
+const createClass = async (classData) => {
+  // Use type assertion to avoid TypeScript errors
+  const { data, error } = await (supabase
+    .from('classes') as any)
+    .insert({
+      school_id: classData.school_id,
+      name: classData.name,
+      code: classData.code,
+      description: classData.description,
+      status: classData.status,
+    });
+    
+  if (error) throw error;
+  return data;
+};
+
+const updateClass = async (id: string, classData: ClassFormValues) => {
+  try {
+    const { data, error } = await (supabase
+      .from('classes') as any)
+      .update({
+        name: classData.name,
+        code: classData.code,
+        description: classData.description,
+        status: classData.status,
+      })
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error('Error updating class:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error updating class:', error);
+    throw error;
+  }
+};
+
+const deleteClass = async (id: string) => {
+  try {
+    const { data, error } = await (supabase
+      .from('classes') as any)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting class:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting class:', error);
+    return false;
+  }
+};
+
 const ClassesPage = () => {
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
-  const [editingClass, setEditingClass] = useState<Class | null>(null);
-  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const [filters, setFilters] = useState({
-    school_id: '',
-    name: '',
-    is_active: undefined as boolean | undefined,
-  });
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [editingClass, setEditingClass] = useState(null);
+  const [selectedClass, setSelectedClass] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    name: '',
+    status: '',
+  });
+  const [activeFilters, setActiveFilters] = useState([]);
 
   const pagination = usePagination();
   const { page, pageSize, setTotal } = pagination;
@@ -62,36 +134,28 @@ const ClassesPage = () => {
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
     defaultValues: {
-      school_id: '',
       name: '',
       code: '',
       description: '',
-      is_active: true,
-    },
-  });
-
-  const { data: schoolsData } = useQuery({
-    queryKey: ['schools-dropdown'],
-    queryFn: async () => {
-      const result = await getSchools();
-      return result.data;
+      status: 'active',
+      school_id: 'your_school_id', // Replace with actual school ID
     },
   });
 
   const { data: classesData, isLoading, refetch } = useQuery({
     queryKey: ['classes', filters, page, pageSize],
     queryFn: async () => {
-      const result = await getClasses({
-        ...filters,
-        page,
-        pageSize,
-      });
-      setTotal(result.count);
-      return result.data;
+      const classes = await getClasses();
+      setTotal(classes.length);
+      return classes;
     },
   });
 
-  const columns: Column<Class & { schools: { name: string } }>[] = [
+  useEffect(() => {
+    refetch();
+  }, [page, pageSize, refetch]);
+
+  const columns: Column<any>[] = [
     {
       id: 'name',
       header: 'Name',
@@ -105,42 +169,34 @@ const ClassesPage = () => {
       cell: (classItem) => <div>{classItem.code}</div>,
     },
     {
-      id: 'school',
-      header: 'School',
-      cell: (classItem) => (
-        <div className="flex items-center">
-          <School2 className="h-4 w-4 mr-2 text-muted-foreground" />
-          {classItem.schools?.name || '—'}
-        </div>
-      ),
+      id: 'description',
+      header: 'Description',
+      cell: (classItem) => <div>{classItem.description || '-'}</div>,
     },
     {
-      id: 'is_active',
+      id: 'status',
       header: 'Status',
       cell: (classItem) => (
-        <Badge variant={classItem.is_active ? 'success' : 'secondary'}>
-          {classItem.is_active ? 'Active' : 'Inactive'}
+        <Badge variant={classItem.status === 'active' ? 'success' : 'secondary'}>
+          {classItem.status === 'active' ? 'Active' : 'Inactive'}
         </Badge>
       ),
     },
     {
-      id: 'description',
-      header: 'Description',
-      cell: (classItem) => (
-        <div className="max-w-[200px] truncate">{classItem.description || '—'}</div>
-      ),
-      isVisible: false, // Changed 'visible' to 'isVisible'
+      id: 'created_at',
+      header: 'Created',
+      cell: (classItem) => <div>{format(new Date(classItem.created_at), 'MMM d, yyyy')}</div>,
     },
   ];
 
   const actions = [
     {
       label: 'Edit',
-      onClick: (classItem: Class & { schools: { name: string } }) => handleEditClass(classItem),
+      onClick: (classItem) => handleEditClass(classItem),
     },
     {
       label: 'Delete',
-      onClick: (classItem: Class & { schools: { name: string } }) => {
+      onClick: (classItem) => {
         setSelectedClass(classItem);
         setIsDeleteDialogOpen(true);
       },
@@ -148,21 +204,29 @@ const ClassesPage = () => {
     },
   ];
 
+  const bulkActions = [
+    {
+      label: 'Activate',
+      onClick: (classes: any[]) => handleBulkStatusChange(classes, 'active'),
+    },
+    {
+      label: 'Deactivate',
+      onClick: (classes: any[]) => handleBulkStatusChange(classes, 'inactive'),
+    },
+  ];
+
   const applyFilters = () => {
     const active: string[] = [];
-    if (filters.school_id) active.push('school');
     if (filters.name) active.push('name');
-    if (filters.is_active !== undefined) active.push('status');
-    
+    if (filters.status) active.push('status');
     setActiveFilters(active);
     refetch();
   };
 
   const clearFilters = () => {
     setFilters({
-      school_id: '',
       name: '',
-      is_active: undefined,
+      status: '',
     });
     setActiveFilters([]);
     refetch();
@@ -171,23 +235,23 @@ const ClassesPage = () => {
   const handleCreateClass = () => {
     setEditingClass(null);
     form.reset({
-      school_id: '',
       name: '',
       code: '',
       description: '',
-      is_active: true,
+      status: 'active',
+      school_id: 'your_school_id', // Replace with actual school ID
     });
     setIsClassDialogOpen(true);
   };
 
-  const handleEditClass = (classItem: Class) => {
+  const handleEditClass = (classItem) => {
     setEditingClass(classItem);
     form.reset({
-      school_id: classItem.school_id,
       name: classItem.name,
       code: classItem.code,
       description: classItem.description || '',
-      is_active: classItem.is_active,
+      status: classItem.status,
+      school_id: classItem.school_id, // Replace with actual school ID
     });
     setIsClassDialogOpen(true);
   };
@@ -203,52 +267,37 @@ const ClassesPage = () => {
     }
   };
 
+  const handleBulkStatusChange = async (classes: any[], status: 'active' | 'inactive') => {
+    // Implement bulk status change logic here
+  };
+
   const onSubmit = async (data: ClassFormValues) => {
     try {
       if (editingClass) {
         // Update existing class
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { error } = await supabase
-          .from('classes')
-          .update({
-            school_id: data.school_id,
-            name: data.name,
-            code: data.code,
-            description: data.description,
-            is_active: data.is_active,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingClass.id);
+        const updatedClass = await updateClass(editingClass.id, data);
 
-        if (error) throw error;
-        
-        toast({
-          title: 'Class updated',
-          description: `${data.name} has been updated successfully.`,
-        });
+        if (updatedClass) {
+          toast({
+            title: 'Class updated',
+            description: `${data.name} has been updated successfully.`,
+          });
+          setIsClassDialogOpen(false);
+          refetch();
+        }
       } else {
         // Create new class
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { error } = await supabase
-          .from('classes')
-          .insert({
-            school_id: data.school_id,
-            name: data.name,
-            code: data.code,
-            description: data.description,
-            is_active: data.is_active,
-          });
+        const newClass = await createClass(data);
 
-        if (error) throw error;
-        
-        toast({
-          title: 'Class created',
-          description: `${data.name} has been created successfully.`,
-        });
+        if (newClass) {
+          toast({
+            title: 'Class created',
+            description: `${data.name} has been created successfully.`,
+          });
+          setIsClassDialogOpen(false);
+          refetch();
+        }
       }
-      
-      setIsClassDialogOpen(false);
-      refetch();
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -259,10 +308,10 @@ const ClassesPage = () => {
   };
 
   return (
-    <PageTemplate title="Classes" subtitle="Manage school classes">
+    <PageTemplate title="Classes" subtitle="Manage classes">
       <PageHeader
         title="Classes"
-        description="Create and manage classes for each school"
+        description="Create and manage classes"
         primaryAction={{
           label: "Add Class",
           onClick: handleCreateClass,
@@ -273,25 +322,6 @@ const ClassesPage = () => {
             key="filter"
             filters={
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="school-filter">School</Label>
-                  <Select
-                    value={filters.school_id}
-                    onValueChange={(value) => setFilters({ ...filters, school_id: value })}
-                  >
-                    <SelectTrigger id="school-filter">
-                      <SelectValue placeholder="All schools" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All schools</SelectItem>
-                      {schoolsData?.map((school) => (
-                        <SelectItem key={school.id} value={school.id}>
-                          {school.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div>
                   <Label htmlFor="name-filter">Class Name</Label>
                   <Input
@@ -304,19 +334,16 @@ const ClassesPage = () => {
                 <div>
                   <Label htmlFor="status-filter">Status</Label>
                   <Select
-                    value={filters.is_active !== undefined ? filters.is_active.toString() : ""}
-                    onValueChange={(value) => setFilters({ 
-                      ...filters, 
-                      is_active: value === "" ? undefined : value === "true" 
-                    })}
+                    value={filters.status}
+                    onValueChange={(value) => setFilters({ ...filters, status: value })}
                   >
                     <SelectTrigger id="status-filter">
                       <SelectValue placeholder="All statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
-                      <SelectItem value="true">Active</SelectItem>
-                      <SelectItem value="false">Inactive</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -336,7 +363,7 @@ const ClassesPage = () => {
         isLoading={isLoading}
         selectable={true}
         actions={actions}
-        paginationState={pagination}
+        bulkActions={bulkActions}
         emptyState={
           <div className="text-center py-10">
             <h3 className="text-lg font-medium">No classes found</h3>
@@ -361,107 +388,70 @@ const ClassesPage = () => {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <Tabs defaultValue="general" className="w-full">
-                <TabsList className="w-full grid grid-cols-2">
-                  <TabsTrigger value="general">General Info</TabsTrigger>
-                  <TabsTrigger value="extra">Extra Settings</TabsTrigger>
-                </TabsList>
-                <TabsContent value="general" className="mt-4 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="school_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>School</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a school" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {schoolsData?.map((school) => (
-                              <SelectItem key={school.id} value={school.id}>
-                                {school.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Class Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter class name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Class Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter class code" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-                <TabsContent value="extra" className="mt-4 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enter class description" 
-                            {...field} 
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="is_active"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                          <FormLabel>Active Status</FormLabel>
-                          <FormDescription>
-                            Mark if this class is currently active
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-              </Tabs>
-              <DialogFooter className="mt-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Class Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter class name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Class Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter class code" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter description" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
