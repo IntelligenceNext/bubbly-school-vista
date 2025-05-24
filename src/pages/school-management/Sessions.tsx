@@ -63,7 +63,7 @@ const SessionsPage = () => {
       name: '',
       start_date: '',
       end_date: '',
-      status: 'active',
+      status: 'active' as const,
       school_id: DEFAULT_SCHOOL_ID,
     },
   });
@@ -90,7 +90,7 @@ const SessionsPage = () => {
         name: '',
         start_date: '',
         end_date: '',
-        status: 'active',
+        status: 'active' as const,
         school_id: DEFAULT_SCHOOL_ID,
       });
     },
@@ -119,7 +119,7 @@ const SessionsPage = () => {
         name: '',
         start_date: '',
         end_date: '',
-        status: 'active',
+        status: 'active' as const,
         school_id: DEFAULT_SCHOOL_ID,
       });
     },
@@ -237,7 +237,7 @@ const SessionsPage = () => {
       name: '',
       start_date: '',
       end_date: '',
-      status: 'active',
+      status: 'active' as const,
       school_id: DEFAULT_SCHOOL_ID,
     });
     setIsSessionDialogOpen(true);
@@ -249,7 +249,7 @@ const SessionsPage = () => {
       name: sessionItem.name,
       start_date: sessionItem.start_date,
       end_date: sessionItem.end_date,
-      status: sessionItem.status,
+      status: sessionItem.status as 'active' | 'inactive',
       school_id: sessionItem.school_id || DEFAULT_SCHOOL_ID,
     });
     setIsSessionDialogOpen(true);
@@ -480,7 +480,7 @@ const SessionsPage = () => {
                       name: '',
                       start_date: '',
                       end_date: '',
-                      status: 'active',
+                      status: 'active' as const,
                       school_id: DEFAULT_SCHOOL_ID,
                     });
                   }}
