@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import PageTemplate from '@/components/PageTemplate';
 import DataTable, { Column } from '@/components/DataTable';
@@ -12,15 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { DatePickerWithMonthYear } from '@/components/ui/DatePickerWithMonthYear';
+import { Plus } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
-import { cn } from '@/lib/utils';
 import { Session, getSessions, createSession, updateSession, deleteSession } from '@/services/sessionService';
 
 // Define a default school_id to use throughout the application
@@ -39,17 +37,18 @@ type SessionFormValues = z.infer<typeof sessionSchema>;
 
 const SessionsPage = () => {
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
-  const [editingSession, setEditingSession] = useState(null);
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     name: '',
     status: '',
   });
-  const [activeFilters, setActiveFilters] = useState([]);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   const pagination = usePagination();
   const { page, pageSize, setTotal } = pagination;
+  const queryClient = useQueryClient();
 
   const form = useForm<SessionFormValues>({
     resolver: zodResolver(sessionSchema),
@@ -58,7 +57,7 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: DEFAULT_SCHOOL_ID, // Set a default school ID
+      school_id: DEFAULT_SCHOOL_ID,
     },
   });
 
@@ -71,7 +70,68 @@ const SessionsPage = () => {
     },
   });
 
-  const columns: Column<any>[] = [
+  const createSessionMutation = useMutation({
+    mutationFn: createSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      toast({
+        title: 'Success',
+        description: 'Session created successfully.',
+      });
+      setIsSessionDialogOpen(false);
+      form.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create session.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateSessionMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Omit<Session, 'id' | 'created_at' | 'updated_at'>> }) =>
+      updateSession(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      toast({
+        title: 'Success',
+        description: 'Session updated successfully.',
+      });
+      setIsSessionDialogOpen(false);
+      setEditingSession(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update session.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteSessionMutation = useMutation({
+    mutationFn: deleteSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      toast({
+        title: 'Success',
+        description: 'Session deleted successfully.',
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedSession(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete session.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const columns: Column<Session>[] = [
     {
       id: 'name',
       header: 'Name',
@@ -108,11 +168,11 @@ const SessionsPage = () => {
   const actions = [
     {
       label: 'Edit',
-      onClick: (sessionItem) => handleEditSession(sessionItem),
+      onClick: (sessionItem: Session) => handleEditSession(sessionItem),
     },
     {
       label: 'Delete',
-      onClick: (sessionItem) => {
+      onClick: (sessionItem: Session) => {
         setSelectedSession(sessionItem);
         setIsDeleteDialogOpen(true);
       },
@@ -123,11 +183,11 @@ const SessionsPage = () => {
   const bulkActions = [
     {
       label: 'Activate',
-      onClick: (sessions: any[]) => handleBulkStatusChange(sessions, 'active'),
+      onClick: (sessions: Session[]) => handleBulkStatusChange(sessions, 'active'),
     },
     {
       label: 'Deactivate',
-      onClick: (sessions: any[]) => handleBulkStatusChange(sessions, 'inactive'),
+      onClick: (sessions: Session[]) => handleBulkStatusChange(sessions, 'inactive'),
     },
   ];
 
@@ -155,82 +215,54 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: DEFAULT_SCHOOL_ID, // Always provide a default school_id
+      school_id: DEFAULT_SCHOOL_ID,
     });
     setIsSessionDialogOpen(true);
   };
 
-  const handleEditSession = (sessionItem) => {
+  const handleEditSession = (sessionItem: Session) => {
     setEditingSession(sessionItem);
     form.reset({
       name: sessionItem.name,
       start_date: sessionItem.start_date,
       end_date: sessionItem.end_date,
       status: sessionItem.status,
-      school_id: sessionItem.school_id || DEFAULT_SCHOOL_ID, // Use the session's school_id or default
+      school_id: sessionItem.school_id || DEFAULT_SCHOOL_ID,
     });
     setIsSessionDialogOpen(true);
   };
 
   const handleDeleteSession = async () => {
     if (!selectedSession) return;
-    
-    const success = await deleteSession(selectedSession.id);
-    if (success) {
-      refetch();
-      setIsDeleteDialogOpen(false);
-      setSelectedSession(null);
-    }
+    deleteSessionMutation.mutate(selectedSession.id);
   };
 
-  const handleBulkStatusChange = async (sessions: any[], status: 'active' | 'inactive') => {
+  const handleBulkStatusChange = async (sessions: Session[], status: 'active' | 'inactive') => {
     // Implement bulk status change logic here
+    console.log('Bulk status change:', sessions, status);
   };
 
   const onSubmit = async (data: SessionFormValues) => {
-    try {
-      if (editingSession) {
-        // Update existing session
-        const updatedSession = await updateSession(editingSession.id, {
+    console.log('Form submitted with data:', data);
+    
+    if (editingSession) {
+      updateSessionMutation.mutate({
+        id: editingSession.id,
+        data: {
           name: data.name,
           start_date: data.start_date,
           end_date: data.end_date,
           status: data.status,
           school_id: data.school_id,
-        });
-
-        if (updatedSession) {
-          toast({
-            title: 'Session updated',
-            description: `${data.name} has been updated successfully.`,
-          });
-          setIsSessionDialogOpen(false);
-          refetch();
         }
-      } else {
-        // Create new session - ensure school_id is included
-        const newSession = await createSession({
-          name: data.name,
-          start_date: data.start_date,
-          end_date: data.end_date,
-          status: data.status,
-          school_id: data.school_id,
-        });
-
-        if (newSession) {
-          toast({
-            title: 'Session created',
-            description: `${data.name} has been created successfully.`,
-          });
-          setIsSessionDialogOpen(false);
-          refetch();
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'An unexpected error occurred',
-        variant: 'destructive',
+      });
+    } else {
+      createSessionMutation.mutate({
+        name: data.name,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        status: data.status,
+        school_id: data.school_id,
       });
     }
   };
@@ -329,88 +361,49 @@ const SessionsPage = () => {
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="start_date"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-[240px] pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(new Date(field.value), "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => field.onChange(date?.toISOString())}
-                          disabled={(date) =>
-                            date > new Date()
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePickerWithMonthYear
+                        date={field.value ? new Date(field.value) : undefined}
+                        onDateChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                        placeholder="Select start date"
+                        className="w-full"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="end_date"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>End Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-[240px] pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(new Date(field.value), "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => field.onChange(date?.toISOString())}
-                          disabled={(date) =>
-                            date > new Date()
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <DatePickerWithMonthYear
+                        date={field.value ? new Date(field.value) : undefined}
+                        onDateChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                        placeholder="Select end date"
+                        disabled={(date) => {
+                          const startDate = form.getValues('start_date');
+                          return startDate ? date < new Date(startDate) : false;
+                        }}
+                        className="w-full"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="status"
@@ -435,7 +428,8 @@ const SessionsPage = () => {
                   </FormItem>
                 )}
               />
-              {/* Hidden school_id field - not visible to users but required for form submission */}
+              
+              {/* Hidden school_id field */}
               <FormField
                 control={form.control}
                 name="school_id"
@@ -443,6 +437,7 @@ const SessionsPage = () => {
                   <input type="hidden" {...field} />
                 )}
               />
+              
               <DialogFooter>
                 <Button
                   type="button"
@@ -451,8 +446,11 @@ const SessionsPage = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingSession ? "Update Session" : "Create Session"}
+                <Button type="submit" disabled={createSessionMutation.isPending || updateSessionMutation.isPending}>
+                  {createSessionMutation.isPending || updateSessionMutation.isPending 
+                    ? 'Saving...' 
+                    : editingSession ? "Update Session" : "Create Session"
+                  }
                 </Button>
               </DialogFooter>
             </form>
@@ -488,8 +486,9 @@ const SessionsPage = () => {
               type="button"
               variant="destructive"
               onClick={handleDeleteSession}
+              disabled={deleteSessionMutation.isPending}
             >
-              Delete Session
+              {deleteSessionMutation.isPending ? 'Deleting...' : 'Delete Session'}
             </Button>
           </DialogFooter>
         </DialogContent>

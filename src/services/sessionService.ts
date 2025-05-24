@@ -14,9 +14,8 @@ export interface Session {
 
 export const getSessions = async () => {
   try {
-    // Use type assertion to avoid TypeScript errors
-    const { data, error } = await (supabase
-      .from('sessions') as any)
+    const { data, error } = await supabase
+      .from('sessions')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -30,11 +29,11 @@ export const getSessions = async () => {
 
 export const createSession = async (sessionData: Omit<Session, 'id' | 'created_at' | 'updated_at'>) => {
   try {
-    // Use type assertion to avoid TypeScript errors
-    const { data, error } = await (supabase
-      .from('sessions') as any)
+    const { data, error } = await supabase
+      .from('sessions')
       .insert(sessionData)
-      .select();
+      .select()
+      .single();
     
     if (error) throw error;
     return data;
@@ -46,12 +45,12 @@ export const createSession = async (sessionData: Omit<Session, 'id' | 'created_a
 
 export const updateSession = async (id: string, sessionData: Partial<Omit<Session, 'id' | 'created_at' | 'updated_at'>>) => {
   try {
-    // Use type assertion to avoid TypeScript errors
-    const { data, error } = await (supabase
-      .from('sessions') as any)
+    const { data, error } = await supabase
+      .from('sessions')
       .update(sessionData)
       .eq('id', id)
-      .select();
+      .select()
+      .single();
     
     if (error) throw error;
     return data;
@@ -63,9 +62,8 @@ export const updateSession = async (id: string, sessionData: Partial<Omit<Sessio
 
 export const deleteSession = async (id: string) => {
   try {
-    // Use type assertion to avoid TypeScript errors
-    const { error } = await (supabase
-      .from('sessions') as any)
+    const { error } = await supabase
+      .from('sessions')
       .delete()
       .eq('id', id);
     
