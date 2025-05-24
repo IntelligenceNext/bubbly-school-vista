@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -40,7 +39,8 @@ const classSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   code: z.string().min(2, "Code must be at least 2 characters"),
   description: z.string().optional(),
-  status: z.enum(["active", "inactive"]).default("active"),
+  status: z.string().default("active"),
+  is_active: z.boolean().default(true),
   school_id: z.string().uuid(),
 });
 
@@ -68,6 +68,7 @@ const ClassesPage = () => {
       code: '',
       description: '',
       status: 'active',
+      is_active: true,
       school_id: DEFAULT_SCHOOL_ID,
     },
   });
@@ -226,6 +227,7 @@ const ClassesPage = () => {
       code: '',
       description: '',
       status: 'active',
+      is_active: true,
       school_id: DEFAULT_SCHOOL_ID,
     });
     setIsClassDialogOpen(true);
@@ -238,6 +240,7 @@ const ClassesPage = () => {
       code: classItem.code,
       description: classItem.description || '',
       status: classItem.status,
+      is_active: classItem.is_active ?? true,
       school_id: classItem.school_id || DEFAULT_SCHOOL_ID,
     });
     setIsClassDialogOpen(true);
@@ -248,7 +251,7 @@ const ClassesPage = () => {
     deleteClassMutation.mutate(selectedClass.id);
   };
 
-  const handleBulkStatusChange = async (classes: Class[], status: 'active' | 'inactive') => {
+  const handleBulkStatusChange = async (classes: Class[], status: string) => {
     // Implement bulk status change logic here
     console.log('Bulk status change:', classes, status);
   };
@@ -263,6 +266,7 @@ const ClassesPage = () => {
             code: data.code,
             description: data.description,
             status: data.status,
+            is_active: data.is_active,
             school_id: data.school_id,
           }
         });
@@ -272,6 +276,7 @@ const ClassesPage = () => {
           code: data.code,
           description: data.description,
           status: data.status,
+          is_active: data.is_active,
           school_id: data.school_id,
         });
       }
@@ -442,12 +447,20 @@ const ClassesPage = () => {
                 )}
               />
               
-              {/* Hidden school_id field */}
+              {/* Hidden fields */}
               <FormField
                 control={form.control}
                 name="school_id"
                 render={({ field }) => (
                   <input type="hidden" {...field} />
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="is_active"
+                render={({ field }) => (
+                  <input type="hidden" {...field} value={field.value ? 'true' : 'false'} />
                 )}
               />
               

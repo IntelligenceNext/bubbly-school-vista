@@ -6,7 +6,8 @@ export interface Class {
   name: string;
   code: string;
   description: string | null;
-  status: 'active' | 'inactive';
+  status: string;
+  is_active: boolean | null;
   school_id: string;
   created_at: string;
   updated_at: string | null;
