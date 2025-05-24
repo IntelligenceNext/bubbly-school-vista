@@ -56,6 +56,9 @@ const CreateInquiryPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // For demo purposes, using a valid UUID. In a real app, this would come from user context/auth
+  const DEMO_SCHOOL_ID = "550e8400-e29b-41d4-a716-446655440000";
+
   const form = useForm<InquiryFormData>({
     resolver: zodResolver(inquirySchema),
     defaultValues: {
@@ -69,11 +72,25 @@ const CreateInquiryPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const inquiryData = {
-        ...data,
-        school_id: "some-school-id", // Replace with actual school ID from user context
+        school_id: DEMO_SCHOOL_ID,
+        name: data.name,
+        email: data.email,
+        phone: data.phone || null,
+        parent_name: data.parent_name || null,
+        student_age: data.student_age || null,
+        student_grade: data.student_grade || null,
+        inquiry_type: data.inquiry_type,
+        message: data.message || null,
+        priority: data.priority,
+        source: data.source || null,
+        preferred_contact_method: data.preferred_contact_method || null,
+        follow_up_date: data.follow_up_date || null,
+        notes: data.notes || null,
         status: "new" as const,
         assigned_to: null,
       };
+
+      console.log('Submitting inquiry data:', inquiryData);
 
       const result = await createInquiry(inquiryData);
       
