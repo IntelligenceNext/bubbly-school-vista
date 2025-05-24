@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -84,50 +83,36 @@ const Admins = () => {
   useEffect(() => {
     async function fetchSchools() {
       try {
-        // Check if user is authenticated before fetching
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          console.log('User not authenticated, skipping schools fetch');
-          return;
-        }
-
+        console.log('Fetching schools...');
         const { data, error } = await supabase
           .from('schools')
           .select('id, name')
           .eq('status', 'active')
           .order('name');
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching schools:', error);
+          return;
+        }
+        
+        console.log('Schools fetched:', data);
         setSchoolOptions(data || []);
       } catch (error: any) {
         console.error('Error fetching schools:', error.message);
       }
     }
 
-    if (user) {
-      fetchSchools();
-    }
-  }, [user]);
+    fetchSchools();
+  }, []);
 
   // Fetch administrators with pagination and search
   useEffect(() => {
     async function fetchAdministrators() {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
       setIsLoading(true);
       try {
-        // Check if user is authenticated before fetching
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          console.log('User not authenticated, skipping administrators fetch');
-          setIsLoading(false);
-          return;
-        }
-
-        // Create query with type cast to ensure TypeScript knows this is a valid table
+        console.log('Fetching administrators...');
+        
+        // Build the query with joins to get school names
         let query = supabase
           .from('administrators')
           .select(`
@@ -138,8 +123,9 @@ const Admins = () => {
             role, 
             status, 
             last_login,
-            school_id
-          `, { count: 'exact' }) as any;
+            school_id,
+            schools!administrators_school_id_fkey(name)
+          `, { count: 'exact' });
         
         // Add search condition if searchQuery exists
         if (searchQuery) {
@@ -155,7 +141,12 @@ const Admins = () => {
           .order('created_at', { ascending: false })
           .range(from, to);
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching administrators:', error);
+          throw error;
+        }
+        
+        console.log('Administrators fetched:', data);
         
         if (count !== null) {
           setTotal(count);
@@ -170,7 +161,7 @@ const Admins = () => {
           username: admin.username,
           status: admin.status || 'Inactive',
           lastLogin: admin.last_login,
-          school: admin.school_id || null
+          school: admin.schools?.name || (admin.school_id ? 'Unknown School' : 'All Schools')
         }));
         
         setAdministrators(formattedData);
@@ -187,7 +178,7 @@ const Admins = () => {
     }
     
     fetchAdministrators();
-  }, [searchQuery, page, pageSize, user]);
+  }, [searchQuery, page, pageSize]);
 
   // Handle search input change
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,16 +199,7 @@ const Admins = () => {
 
     setIsSubmitting(true);
     try {
-      // Check if user is authenticated
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: 'Authentication required',
-          description: 'Please log in to create administrators',
-          variant: 'destructive',
-        });
-        return;
-      }
+      console.log('Creating new administrator:', data);
 
       // We'll use the signup method instead of admin.createUser
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -239,8 +221,8 @@ const Admins = () => {
       // Determine if school_id should be null (for all schools access)
       const schoolId = data.school_id === 'all_schools' ? null : data.school_id || null;
       
-      // Then create the administrator record - with type casting to fix TypeScript error
-      const { error: adminError } = await (supabase
+      // Then create the administrator record
+      const { error: adminError } = await supabase
         .from('administrators')
         .insert({
           user_id: authData.user.id,
@@ -251,19 +233,19 @@ const Admins = () => {
           role: data.role,
           school_id: schoolId,
           status: 'Active',
-        }) as any);
+        });
       
       if (adminError) throw adminError;
       
       // If admin should be connected to a school, create the relationship
       if (schoolId) {
-        const { error: relationError } = await (supabase
+        const { error: relationError } = await supabase
           .from('users_to_schools')
           .insert({
             user_id: authData.user.id,
             school_id: schoolId,
             role: data.role,
-          }) as any);
+          });
           
         if (relationError) throw relationError;
       }
@@ -284,8 +266,14 @@ const Admins = () => {
       
       form.reset();
       setActiveTab('all-admins');
-      // Refetch the administrators list
+      
+      // Refresh the administrators list
       setPage(1);
+      // Trigger a re-fetch by updating the search query briefly
+      const currentQuery = searchQuery;
+      setSearchQuery(currentQuery + ' ');
+      setTimeout(() => setSearchQuery(currentQuery), 100);
+      
     } catch (error: any) {
       console.error('Error creating administrator:', error);
       toast({
@@ -311,10 +299,10 @@ const Admins = () => {
 
     if (window.confirm('Are you sure you want to delete this administrator?')) {
       try {
-        const { error } = await (supabase
+        const { error } = await supabase
           .from('administrators')
           .delete()
-          .eq('id', id) as any);
+          .eq('id', id);
           
         if (error) throw error;
         
@@ -435,13 +423,13 @@ const Admins = () => {
                               <span>{admin.role}</span>
                             </div>
                           </TableCell>
-                          <TableCell>{admin.school || "All Schools"}</TableCell>
+                          <TableCell>{admin.school}</TableCell>
                           <TableCell>
-                            <Badge variant={admin.status === "Active" ? "success" : "destructive"}>
+                            <Badge variant={admin.status === "Active" ? "default" : "destructive"}>
                               {admin.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{admin.lastLogin || "Never"}</TableCell>
+                          <TableCell>{admin.lastLogin ? new Date(admin.lastLogin).toLocaleDateString() : "Never"}</TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -646,7 +634,6 @@ const Admins = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {/* Fixed: Changed empty string value to "all_schools" */}
                               <SelectItem value="all_schools">-- Access to All Schools --</SelectItem>
                               {schoolOptions.map(school => (
                                 <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>
