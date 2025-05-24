@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import PageTemplate from '@/components/PageTemplate';
 import DataTable, { Column } from '@/components/DataTable';
@@ -24,25 +25,21 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
-import { cn } from '@/lib/utils';
 import { Class, getClasses, createClass, updateClass, deleteClass } from '@/services/classService';
 
-// Define a default school_id to use throughout the application
-// In a real application, you would get this from user context/authentication
-const DEFAULT_SCHOOL_ID = 'your_school_id';
+// Generate a UUID for default school ID (in a real app, this would come from auth context)
+const DEFAULT_SCHOOL_ID = crypto.randomUUID();
 
 const classSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   code: z.string().min(2, "Code must be at least 2 characters"),
-  description: z.string().optional().nullable(),
+  description: z.string().optional(),
   status: z.enum(["active", "inactive"]).default("active"),
   school_id: z.string().uuid(),
 });
@@ -51,15 +48,16 @@ type ClassFormValues = z.infer<typeof classSchema>;
 
 const ClassesPage = () => {
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
-  const [editingClass, setEditingClass] = useState(null);
-  const [selectedClass, setSelectedClass] = useState(null);
+  const [editingClass, setEditingClass] = useState<Class | null>(null);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     name: '',
     status: '',
   });
-  const [activeFilters, setActiveFilters] = useState([]);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
+  const queryClient = useQueryClient();
   const pagination = usePagination();
   const { page, pageSize, setTotal } = pagination;
   
@@ -70,12 +68,12 @@ const ClassesPage = () => {
       code: '',
       description: '',
       status: 'active',
-      school_id: DEFAULT_SCHOOL_ID, // Set a default school ID
+      school_id: DEFAULT_SCHOOL_ID,
     },
   });
 
-  const { data: classesData, isLoading, refetch } = useQuery({
-    queryKey: ['classes', filters, page, pageSize],
+  const { data: classesData, isLoading, error } = useQuery({
+    queryKey: ['classes'],
     queryFn: async () => {
       const classes = await getClasses();
       setTotal(classes.length);
@@ -83,11 +81,68 @@ const ClassesPage = () => {
     },
   });
 
-  useEffect(() => {
-    refetch();
-  }, [page, pageSize, refetch]);
+  const createClassMutation = useMutation({
+    mutationFn: createClass,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      toast({
+        title: 'Success',
+        description: 'Class created successfully.',
+      });
+      setIsClassDialogOpen(false);
+      form.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create class',
+        variant: 'destructive',
+      });
+    },
+  });
 
-  const columns: Column<any>[] = [
+  const updateClassMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Omit<Class, 'id' | 'created_at' | 'updated_at'>> }) =>
+      updateClass(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      toast({
+        title: 'Success',
+        description: 'Class updated successfully.',
+      });
+      setIsClassDialogOpen(false);
+      setEditingClass(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update class',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteClassMutation = useMutation({
+    mutationFn: deleteClass,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      toast({
+        title: 'Success',
+        description: 'Class deleted successfully.',
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedClass(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete class',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const columns: Column<Class>[] = [
     {
       id: 'name',
       header: 'Name',
@@ -124,11 +179,11 @@ const ClassesPage = () => {
   const actions = [
     {
       label: 'Edit',
-      onClick: (classItem) => handleEditClass(classItem),
+      onClick: (classItem: Class) => handleEditClass(classItem),
     },
     {
       label: 'Delete',
-      onClick: (classItem) => {
+      onClick: (classItem: Class) => {
         setSelectedClass(classItem);
         setIsDeleteDialogOpen(true);
       },
@@ -139,11 +194,11 @@ const ClassesPage = () => {
   const bulkActions = [
     {
       label: 'Activate',
-      onClick: (classes: any[]) => handleBulkStatusChange(classes, 'active'),
+      onClick: (classes: Class[]) => handleBulkStatusChange(classes, 'active'),
     },
     {
       label: 'Deactivate',
-      onClick: (classes: any[]) => handleBulkStatusChange(classes, 'inactive'),
+      onClick: (classes: Class[]) => handleBulkStatusChange(classes, 'inactive'),
     },
   ];
 
@@ -152,7 +207,7 @@ const ClassesPage = () => {
     if (filters.name) active.push('name');
     if (filters.status) active.push('status');
     setActiveFilters(active);
-    refetch();
+    queryClient.invalidateQueries({ queryKey: ['classes'] });
   };
 
   const clearFilters = () => {
@@ -161,7 +216,7 @@ const ClassesPage = () => {
       status: '',
     });
     setActiveFilters([]);
-    refetch();
+    queryClient.invalidateQueries({ queryKey: ['classes'] });
   };
 
   const handleCreateClass = () => {
@@ -171,76 +226,54 @@ const ClassesPage = () => {
       code: '',
       description: '',
       status: 'active',
-      school_id: DEFAULT_SCHOOL_ID, // Always provide a default school_id
+      school_id: DEFAULT_SCHOOL_ID,
     });
     setIsClassDialogOpen(true);
   };
 
-  const handleEditClass = (classItem) => {
+  const handleEditClass = (classItem: Class) => {
     setEditingClass(classItem);
     form.reset({
       name: classItem.name,
       code: classItem.code,
       description: classItem.description || '',
       status: classItem.status,
-      school_id: classItem.school_id || DEFAULT_SCHOOL_ID, // Use the class's school_id or default
+      school_id: classItem.school_id || DEFAULT_SCHOOL_ID,
     });
     setIsClassDialogOpen(true);
   };
 
   const handleDeleteClass = async () => {
     if (!selectedClass) return;
-    
-    const success = await deleteClass(selectedClass.id);
-    if (success) {
-      refetch();
-      setIsDeleteDialogOpen(false);
-      setSelectedClass(null);
-    }
+    deleteClassMutation.mutate(selectedClass.id);
   };
 
-  const handleBulkStatusChange = async (classes: any[], status: 'active' | 'inactive') => {
+  const handleBulkStatusChange = async (classes: Class[], status: 'active' | 'inactive') => {
     // Implement bulk status change logic here
+    console.log('Bulk status change:', classes, status);
   };
 
   const onSubmit = async (data: ClassFormValues) => {
     try {
       if (editingClass) {
-        // Update existing class
-        const updatedClass = await updateClass(editingClass.id, {
-          name: data.name,
-          code: data.code,
-          description: data.description,
-          status: data.status,
-          school_id: data.school_id,
+        updateClassMutation.mutate({
+          id: editingClass.id,
+          data: {
+            name: data.name,
+            code: data.code,
+            description: data.description,
+            status: data.status,
+            school_id: data.school_id,
+          }
         });
-
-        if (updatedClass) {
-          toast({
-            title: 'Class updated',
-            description: `${data.name} has been updated successfully.`,
-          });
-          setIsClassDialogOpen(false);
-          refetch();
-        }
       } else {
-        // Create new class - ensure school_id is included
-        const newClass = await createClass({
+        createClassMutation.mutate({
           name: data.name,
           code: data.code,
           description: data.description,
           status: data.status,
           school_id: data.school_id,
         });
-
-        if (newClass) {
-          toast({
-            title: 'Class created',
-            description: `${data.name} has been created successfully.`,
-          });
-          setIsClassDialogOpen(false);
-          refetch();
-        }
       }
     } catch (error: any) {
       toast({
@@ -251,8 +284,20 @@ const ClassesPage = () => {
     }
   };
 
+  if (error) {
+    return (
+      <PageTemplate title="Classes" subtitle="Manage classes">
+        <div className="text-center py-10">
+          <h3 className="text-lg font-medium text-destructive">Error loading classes</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {error.message || 'Failed to load classes'}
+          </p>
+        </div>
+      </PageTemplate>
+    );
+  }
+
   return (
-    
     <PageTemplate title="Classes" subtitle="Manage classes">
       <PageHeader
         title="Classes"
@@ -397,25 +442,32 @@ const ClassesPage = () => {
                 )}
               />
               
-          {/* Hidden school_id field - not visible to users but required for form submission */}
-          <FormField
-            control={form.control}
-            name="school_id"
-            render={({ field }) => (
-              <input type="hidden" {...field} />
-            )}
-          />
-          
+              {/* Hidden school_id field */}
+              <FormField
+                control={form.control}
+                name="school_id"
+                render={({ field }) => (
+                  <input type="hidden" {...field} />
+                )}
+              />
+              
               <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsClassDialogOpen(false)}
+                  disabled={createClassMutation.isPending || updateClassMutation.isPending}
                 >
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingClass ? "Update Class" : "Create Class"}
+                <Button 
+                  type="submit"
+                  disabled={createClassMutation.isPending || updateClassMutation.isPending}
+                >
+                  {createClassMutation.isPending || updateClassMutation.isPending
+                    ? 'Saving...'
+                    : editingClass ? "Update Class" : "Create Class"
+                  }
                 </Button>
               </DialogFooter>
             </form>
@@ -444,6 +496,7 @@ const ClassesPage = () => {
               type="button"
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={deleteClassMutation.isPending}
             >
               Cancel
             </Button>
@@ -451,14 +504,14 @@ const ClassesPage = () => {
               type="button"
               variant="destructive"
               onClick={handleDeleteClass}
+              disabled={deleteClassMutation.isPending}
             >
-              Delete Class
+              {deleteClassMutation.isPending ? 'Deleting...' : 'Delete Class'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageTemplate>
-    
   );
 };
 

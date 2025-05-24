@@ -14,13 +14,15 @@ export interface Class {
 
 export const getClasses = async () => {
   try {
-    // Use type assertion to avoid TypeScript errors
-    const { data, error } = await (supabase
-      .from('classes') as any)
+    const { data, error } = await supabase
+      .from('classes')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching classes:', error);
+      throw error;
+    }
     return data || [];
   } catch (error) {
     console.error('Error fetching classes:', error);
@@ -30,13 +32,16 @@ export const getClasses = async () => {
 
 export const createClass = async (classData: Omit<Class, 'id' | 'created_at' | 'updated_at'>) => {
   try {
-    // Use type assertion to avoid TypeScript errors
-    const { data, error } = await (supabase
-      .from('classes') as any)
+    const { data, error } = await supabase
+      .from('classes')
       .insert(classData)
-      .select();
+      .select()
+      .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating class:', error);
+      throw error;
+    }
     return data;
   } catch (error) {
     console.error('Error creating class:', error);
@@ -46,12 +51,12 @@ export const createClass = async (classData: Omit<Class, 'id' | 'created_at' | '
 
 export const updateClass = async (id: string, classData: Partial<Omit<Class, 'id' | 'created_at' | 'updated_at'>>) => {
   try {
-    // Use type assertion to avoid TypeScript errors
-    const { data, error } = await (supabase
-      .from('classes') as any)
+    const { data, error } = await supabase
+      .from('classes')
       .update(classData)
       .eq('id', id)
-      .select();
+      .select()
+      .single();
     
     if (error) {
       console.error('Error updating class:', error);
@@ -67,9 +72,8 @@ export const updateClass = async (id: string, classData: Partial<Omit<Class, 'id
 
 export const deleteClass = async (id: string) => {
   try {
-    // Use type assertion to avoid TypeScript errors
-    const { error } = await (supabase
-      .from('classes') as any)
+    const { error } = await supabase
+      .from('classes')
       .delete()
       .eq('id', id);
     

@@ -296,6 +296,39 @@ export type Database = {
         }
         Relationships: []
       }
+      subjects: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          school_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          school_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          school_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       users_to_schools: {
         Row: {
           created_at: string | null
