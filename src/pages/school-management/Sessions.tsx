@@ -71,7 +71,9 @@ const SessionsPage = () => {
   const { data: sessionsData, isLoading, refetch } = useQuery({
     queryKey: ['sessions', filters, page, pageSize],
     queryFn: async () => {
+      console.log('Fetching sessions...');
       const sessions = await getSessions();
+      console.log('Sessions fetched:', sessions);
       setTotal(sessions.length);
       return sessions;
     },
@@ -79,7 +81,8 @@ const SessionsPage = () => {
 
   const createSessionMutation = useMutation({
     mutationFn: createSession,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Session created successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       toast({
         title: 'Success',
@@ -232,7 +235,8 @@ const SessionsPage = () => {
   };
 
   const handleCreateSession = () => {
-    console.log('Create Session button clicked');
+    console.log('handleCreateSession called - Create Session button clicked');
+    console.log('Current dialog state:', isSessionDialogOpen);
     setEditingSession(null);
     form.reset({
       name: '',
@@ -241,7 +245,9 @@ const SessionsPage = () => {
       status: 'active',
       school_id: DEFAULT_SCHOOL_ID,
     });
+    console.log('Setting dialog to open...');
     setIsSessionDialogOpen(true);
+    console.log('Dialog should now be open');
   };
 
   const handleEditSession = (sessionItem: Session) => {
@@ -266,10 +272,13 @@ const SessionsPage = () => {
   };
 
   const onSubmit = async (data: SessionFormValues) => {
-    console.log('Form submitted with data:', data);
+    console.log('onSubmit called with data:', data);
+    console.log('Form validation state:', form.formState);
+    console.log('Form errors:', form.formState.errors);
     
     // Validate that we have all required fields
     if (!data.name || !data.start_date || !data.end_date) {
+      console.log('Missing required fields');
       toast({
         title: 'Error',
         description: 'Please fill in all required fields.',
@@ -283,6 +292,7 @@ const SessionsPage = () => {
     const endDate = new Date(data.end_date);
     
     if (endDate <= startDate) {
+      console.log('Invalid date range');
       toast({
         title: 'Error',
         description: 'End date must be after start date.',
@@ -306,13 +316,15 @@ const SessionsPage = () => {
         });
       } else {
         console.log('Creating new session with data:', data);
-        await createSessionMutation.mutateAsync({
+        console.log('Mutation pending state:', createSessionMutation.isPending);
+        const result = await createSessionMutation.mutateAsync({
           name: data.name,
           start_date: data.start_date,
           end_date: data.end_date,
           status: data.status,
           school_id: data.school_id,
         });
+        console.log('Session creation result:', result);
       }
     } catch (error) {
       console.error('Form submission error:', error);
@@ -320,14 +332,17 @@ const SessionsPage = () => {
   };
 
   const handleDateChange = (field: any, date: Date | undefined) => {
+    console.log('Date change called:', date);
     if (date) {
       const formattedDate = format(date, 'yyyy-MM-dd');
-      console.log('Date changed:', formattedDate);
+      console.log('Formatted date:', formattedDate);
       field.onChange(formattedDate);
     } else {
       field.onChange('');
     }
   };
+  
+  console.log('Rendering SessionsPage with dialog state:', isSessionDialogOpen);
   
   return (
     <PageTemplate title="Sessions" subtitle="Manage sessions">
@@ -401,7 +416,10 @@ const SessionsPage = () => {
       />
 
       {/* Session Dialog */}
-      <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
+      <Dialog open={isSessionDialogOpen} onOpenChange={(open) => {
+        console.log('Dialog onOpenChange called with:', open);
+        setIsSessionDialogOpen(open);
+      }}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
             <DialogTitle>
@@ -505,6 +523,7 @@ const SessionsPage = () => {
                   type="button"
                   variant="outline"
                   onClick={() => {
+                    console.log('Cancel button clicked');
                     setIsSessionDialogOpen(false);
                     form.reset({
                       name: '',
@@ -520,6 +539,7 @@ const SessionsPage = () => {
                 <Button 
                   type="submit" 
                   disabled={createSessionMutation.isPending || updateSessionMutation.isPending}
+                  onClick={() => console.log('Submit button clicked')}
                 >
                   {createSessionMutation.isPending || updateSessionMutation.isPending 
                     ? 'Saving...' 
