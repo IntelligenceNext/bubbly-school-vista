@@ -40,15 +40,16 @@ const priorityColors: Record<string, "secondary" | "default" | "destructive" | "
   high: "destructive",
   medium: "default",
   low: "secondary",
+  urgent: "destructive",
 };
 
 const statusColors: Record<string, "secondary" | "default" | "destructive" | "outline" | "success"> = {
   new: "destructive",
-  contacted: "default", // Changed from "warning" to "default" as it's supported
+  contacted: "default",
   interested: "success",
-  scheduled: "default", // Changed from "info" to "default"
-  enrolled: "secondary", // Changed from "primary" to "secondary"
-  closed: "outline", // Changed from "secondary" to "outline" to avoid duplicate
+  scheduled: "default",
+  enrolled: "secondary",
+  closed: "outline",
 };
 
 const InquiriesPage: React.FC = () => {
@@ -63,12 +64,15 @@ const InquiriesPage: React.FC = () => {
     dateTo: "",
   });
 
+  // For demo purposes, using the same valid UUID as in CreateInquiry
+  const DEMO_SCHOOL_ID = "550e8400-e29b-41d4-a716-446655440000";
+
   const { pageIndex, pageSize, setTotalCount, pageCount, setPageIndex } = usePagination({
     initialPageSize: 10,
   });
 
   const fetchInquiriesOptions = {
-    schoolId: "some-school-id", // Replace with actual school ID from user context or state
+    schoolId: DEMO_SCHOOL_ID, // Use the same valid UUID
     filters: {
       ...filters,
       status: activeTab !== "all" ? activeTab : undefined,
@@ -77,13 +81,17 @@ const InquiriesPage: React.FC = () => {
     pageSize,
   };
 
+  console.log('Fetching inquiries with options:', fetchInquiriesOptions);
+
   const {
     data: inquiriesResponse,
     isLoading,
     refetch,
+    error,
   } = useQuery({
     queryKey: ['inquiries', fetchInquiriesOptions],
     queryFn: async () => {
+      console.log('Query function called with schoolId:', fetchInquiriesOptions.schoolId);
       return getInquiries(
         fetchInquiriesOptions.schoolId,
         fetchInquiriesOptions.filters,
@@ -93,16 +101,20 @@ const InquiriesPage: React.FC = () => {
     },
   });
 
+  console.log('Query response:', inquiriesResponse);
+  console.log('Query error:', error);
+
   useEffect(() => {
     if (inquiriesResponse) {
+      console.log('Setting inquiries data:', inquiriesResponse.data);
       setInquiriesData(inquiriesResponse.data);
       setTotalCount(inquiriesResponse.count);
     }
   }, [inquiriesResponse, setTotalCount]);
 
-  // Calculate status counts directly from inquiriesData array
+  // Calculate status counts from the fetched data
   const statusCounts = {
-    all: inquiriesData.length,
+    all: inquiriesResponse?.count || 0,
     new: inquiriesData.filter(inq => inq.status === 'new').length,
     contacted: inquiriesData.filter(inq => inq.status === 'contacted').length,
     interested: inquiriesData.filter(inq => inq.status === 'interested').length,
@@ -182,14 +194,14 @@ const InquiriesPage: React.FC = () => {
             <FilterDropdown
               filterKey="source"
               filterName="Source"
-              options={['website', 'referral', 'event', 'other']}
+              options={['website', 'referral', 'event', 'social_media', 'advertisement', 'walk_in', 'other']}
               selectedValue={filters.source}
               onFilterChange={handleFilterChange}
             />
             <FilterDropdown
               filterKey="priority"
               filterName="Priority"
-              options={['high', 'medium', 'low']}
+              options={['low', 'medium', 'high', 'urgent']}
               selectedValue={filters.priority}
               onFilterChange={handleFilterChange}
             />
@@ -228,34 +240,44 @@ const InquiriesPage: React.FC = () => {
                   <TableHead>Inquiry Type</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">Loading inquiries...</TableCell>
+                    <TableCell colSpan={8} className="text-center">Loading inquiries...</TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-red-500">
+                      Error loading inquiries: {error.message}
+                    </TableCell>
                   </TableRow>
                 ) : inquiriesData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">No inquiries found.</TableCell>
+                    <TableCell colSpan={8} className="text-center">No inquiries found.</TableCell>
                   </TableRow>
                 ) : (
                   inquiriesData.map((inquiry) => (
                     <TableRow key={inquiry.id}>
-                      <TableCell>{inquiry.name}</TableCell>
+                      <TableCell className="font-medium">{inquiry.name}</TableCell>
                       <TableCell>{inquiry.email}</TableCell>
-                      <TableCell>{inquiry.phone}</TableCell>
-                      <TableCell>{inquiry.inquiry_type}</TableCell>
+                      <TableCell>{inquiry.phone || 'N/A'}</TableCell>
+                      <TableCell className="capitalize">{inquiry.inquiry_type}</TableCell>
                       <TableCell>
-                        <Badge variant={priorityColors[inquiry.priority as keyof typeof priorityColors]}>
+                        <Badge variant={priorityColors[inquiry.priority as keyof typeof priorityColors] || "default"}>
                           {inquiry.priority}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={statusColors[inquiry.status as keyof typeof statusColors]}>
+                        <Badge variant={statusColors[inquiry.status as keyof typeof statusColors] || "default"}>
                           {inquiry.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(inquiry.created_at), 'MMM dd, yyyy')}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -267,22 +289,22 @@ const InquiriesPage: React.FC = () => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleView(inquiry.id)}>
                               <ArrowRight className="mr-2 h-4 w-4" />
-                              View
+                              View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusChange(inquiry.id, 'contacted')}>
-                              Contacted
+                              Mark as Contacted
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusChange(inquiry.id, 'interested')}>
-                              Interested
+                              Mark as Interested
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusChange(inquiry.id, 'scheduled')}>
-                              Scheduled
+                              Mark as Scheduled
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusChange(inquiry.id, 'enrolled')}>
-                              Enrolled
+                              Mark as Enrolled
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusChange(inquiry.id, 'closed')}>
-                              Closed
+                              Mark as Closed
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -294,43 +316,45 @@ const InquiriesPage: React.FC = () => {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between mt-4">
-            <Button
-              onClick={() => setPageIndex(0)}
-              disabled={pageIndex === 0}
-              variant="outline"
-              size="sm"
-            >
-              First
-            </Button>
-            <Button
-              onClick={() => setPageIndex(pageIndex - 1)}
-              disabled={pageIndex === 0}
-              variant="outline"
-              size="sm"
-            >
-              Previous
-            </Button>
-            <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
-            <Button
-              onClick={() => setPageIndex(pageIndex + 1)}
-              disabled={pageIndex >= pageCount - 1}
-              variant="outline"
-              size="sm"
-            >
-              Next
-            </Button>
-            <Button
-              onClick={() => setPageIndex(pageCount - 1)}
-              disabled={pageIndex >= pageCount - 1}
-              variant="outline"
-              size="sm"
-            >
-              Last
-            </Button>
-          </div>
+          {inquiriesResponse && inquiriesResponse.count > pageSize && (
+            <div className="flex items-center justify-between mt-4">
+              <Button
+                onClick={() => setPageIndex(0)}
+                disabled={pageIndex === 0}
+                variant="outline"
+                size="sm"
+              >
+                First
+              </Button>
+              <Button
+                onClick={() => setPageIndex(pageIndex - 1)}
+                disabled={pageIndex === 0}
+                variant="outline"
+                size="sm"
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {pageIndex + 1} of {pageCount} ({inquiriesResponse.count} total)
+              </span>
+              <Button
+                onClick={() => setPageIndex(pageIndex + 1)}
+                disabled={pageIndex >= pageCount - 1}
+                variant="outline"
+                size="sm"
+              >
+                Next
+              </Button>
+              <Button
+                onClick={() => setPageIndex(pageCount - 1)}
+                disabled={pageIndex >= pageCount - 1}
+                variant="outline"
+                size="sm"
+              >
+                Last
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </PageTemplate>
