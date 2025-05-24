@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,6 +51,7 @@ type Administrator = {
 }
 
 const Admins = () => {
+  const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("all-admins");
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,7 +59,6 @@ const Admins = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [schoolOptions, setSchoolOptions] = useState<{id: string, name: string}[]>([]);
   
-  const { user } = useAuth();
   const pagination = usePagination();
   const { page, pageSize, total, setTotal, setPage, setPageSize } = pagination;
 
@@ -77,10 +78,45 @@ const Admins = () => {
     },
   });
 
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <PageTemplate title="Administrators" subtitle="Manage system administrators and their permissions">
+        <div className="flex justify-center items-center py-10">
+          <p>Loading...</p>
+        </div>
+      </PageTemplate>
+    );
+  }
+
+  // Show auth required message if user is not logged in
+  if (!user) {
+    return (
+      <PageTemplate title="Administrators" subtitle="Manage system administrators and their permissions">
+        <div className="flex flex-col justify-center items-center py-10">
+          <h3 className="text-lg font-medium mb-2">Authentication Required</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Please log in to access the administrators management system.
+          </p>
+          <Button onClick={() => window.location.href = '/auth'}>
+            Go to Login
+          </Button>
+        </div>
+      </PageTemplate>
+    );
+  }
+
   // Fetch schools for dropdown
   useEffect(() => {
     async function fetchSchools() {
       try {
+        // Check if user is authenticated before fetching
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('User not authenticated, skipping schools fetch');
+          return;
+        }
+
         const { data, error } = await supabase
           .from('schools')
           .select('id, name')
@@ -94,14 +130,29 @@ const Admins = () => {
       }
     }
 
-    fetchSchools();
-  }, []);
+    if (user) {
+      fetchSchools();
+    }
+  }, [user]);
 
   // Fetch administrators with pagination and search
   useEffect(() => {
     async function fetchAdministrators() {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
+        // Check if user is authenticated before fetching
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('User not authenticated, skipping administrators fetch');
+          setIsLoading(false);
+          return;
+        }
+
         // Create query with type cast to ensure TypeScript knows this is a valid table
         let query = supabase
           .from('administrators')
@@ -162,7 +213,7 @@ const Admins = () => {
     }
     
     fetchAdministrators();
-  }, [searchQuery, page, pageSize]);
+  }, [searchQuery, page, pageSize, user]);
 
   // Handle search input change
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,8 +223,28 @@ const Admins = () => {
 
   // Handle form submission to create new admin
   const onSubmit = async (data: AdminFormValues) => {
+    if (!user) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in to create administrators',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: 'Authentication required',
+          description: 'Please log in to create administrators',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // We'll use the signup method instead of admin.createUser
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
@@ -255,6 +326,15 @@ const Admins = () => {
 
   // Handle deleting an admin
   const handleDeleteAdmin = async (id: string) => {
+    if (!user) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please log in to delete administrators',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (window.confirm('Are you sure you want to delete this administrator?')) {
       try {
         const { error } = await (supabase
