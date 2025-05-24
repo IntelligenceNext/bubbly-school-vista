@@ -31,6 +31,7 @@ import SchoolManagementSettings from "./pages/school-management/Settings";
 // School Routes
 import SchoolHome from "./pages/school/Dashboard";
 import Inquiries from "./pages/school/Inquiries";
+import CreateInquiry from "./pages/school/CreateInquiry";
 import SchoolSettings from "./pages/school/Settings";
 import Logs from "./pages/school/Logs";
 
@@ -156,6 +157,7 @@ const App = () => (
           {/* School Routes */}
           <Route path="/school/dashboard" element={<SchoolHome />} />
           <Route path="/school/inquiries" element={<Inquiries />} />
+          <Route path="/school/inquiries/create" element={<CreateInquiry />} />
           <Route path="/school/settings" element={<SchoolSettings />} />
           <Route path="/school/logs" element={<Logs />} />
           

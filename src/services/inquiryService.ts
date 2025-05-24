@@ -14,6 +14,12 @@ export interface Inquiry {
   status: string;
   source: string | null;
   assigned_to: string | null;
+  student_grade: string | null;
+  parent_name: string | null;
+  student_age: number | null;
+  preferred_contact_method: string | null;
+  follow_up_date: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }

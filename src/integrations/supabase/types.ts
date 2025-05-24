@@ -136,45 +136,63 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           email: string
+          follow_up_date: string | null
           id: string
           inquiry_type: string
           message: string | null
           name: string
+          notes: string | null
+          parent_name: string | null
           phone: string | null
+          preferred_contact_method: string | null
           priority: string
           school_id: string
           source: string | null
           status: string
+          student_age: number | null
+          student_grade: string | null
           updated_at: string
         }
         Insert: {
           assigned_to?: string | null
           created_at?: string
           email: string
+          follow_up_date?: string | null
           id?: string
           inquiry_type: string
           message?: string | null
           name: string
+          notes?: string | null
+          parent_name?: string | null
           phone?: string | null
+          preferred_contact_method?: string | null
           priority: string
           school_id: string
           source?: string | null
           status: string
+          student_age?: number | null
+          student_grade?: string | null
           updated_at?: string
         }
         Update: {
           assigned_to?: string | null
           created_at?: string
           email?: string
+          follow_up_date?: string | null
           id?: string
           inquiry_type?: string
           message?: string | null
           name?: string
+          notes?: string | null
+          parent_name?: string | null
           phone?: string | null
+          preferred_contact_method?: string | null
           priority?: string
           school_id?: string
           source?: string | null
           status?: string
+          student_age?: number | null
+          student_grade?: string | null
           updated_at?: string
         }
         Relationships: []
