@@ -267,6 +267,29 @@ const SessionsPage = () => {
   const onSubmit = async (data: SessionFormValues) => {
     console.log('Form submitted with data:', data);
     
+    // Validate that we have all required fields
+    if (!data.name || !data.start_date || !data.end_date) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate date order
+    const startDate = new Date(data.start_date);
+    const endDate = new Date(data.end_date);
+    
+    if (endDate <= startDate) {
+      toast({
+        title: 'Error',
+        description: 'End date must be after start date.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       if (editingSession) {
         await updateSessionMutation.mutateAsync({
@@ -290,6 +313,16 @@ const SessionsPage = () => {
       }
     } catch (error) {
       console.error('Form submission error:', error);
+    }
+  };
+
+  const handleDateChange = (field: any, date: Date | undefined) => {
+    if (date) {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      console.log('Date changed:', formattedDate);
+      field.onChange(formattedDate);
+    } else {
+      field.onChange('');
     }
   };
   
@@ -397,10 +430,7 @@ const SessionsPage = () => {
                     <FormControl>
                       <DatePickerWithMonthYear
                         date={field.value ? new Date(field.value) : undefined}
-                        onDateChange={(date) => {
-                          console.log('Start date selected:', date);
-                          field.onChange(date ? date.toISOString().split('T')[0] : '');
-                        }}
+                        onDateChange={(date) => handleDateChange(field, date)}
                         placeholder="Select start date"
                         className="w-full"
                       />
@@ -419,10 +449,7 @@ const SessionsPage = () => {
                     <FormControl>
                       <DatePickerWithMonthYear
                         date={field.value ? new Date(field.value) : undefined}
-                        onDateChange={(date) => {
-                          console.log('End date selected:', date);
-                          field.onChange(date ? date.toISOString().split('T')[0] : '');
-                        }}
+                        onDateChange={(date) => handleDateChange(field, date)}
                         placeholder="Select end date"
                         disabled={(date) => {
                           const startDate = form.getValues('start_date');
