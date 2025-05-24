@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
@@ -162,6 +163,7 @@ const SettingsPage = () => {
   const [dynamicForm, setDynamicForm] = useState<any>(null);
 
   useEffect(() => {
+    console.log('useEffect triggered - settingType:', settingType, 'currentEditSetting:', currentEditSetting);
     if (settingType && settingConfigs[settingType as keyof typeof settingConfigs]) {
       const config = settingConfigs[settingType as keyof typeof settingConfigs];
       const schema = getDynamicSchema(settingType as keyof typeof settingConfigs);
@@ -173,7 +175,11 @@ const SettingsPage = () => {
           : config.defaultValue,
       });
       
+      console.log('Setting new dynamic form:', newForm);
       setDynamicForm(newForm);
+    } else {
+      console.log('Clearing dynamic form');
+      setDynamicForm(null);
     }
   }, [settingType, currentEditSetting]);
 
@@ -366,7 +372,17 @@ const SettingsPage = () => {
 
   // Dynamic form rendering based on setting type
   const renderDynamicForm = () => {
-    if (!settingType) return null;
+    console.log('renderDynamicForm called - settingType:', settingType, 'dynamicForm:', dynamicForm);
+    
+    if (!settingType) {
+      console.log('No setting type selected');
+      return null;
+    }
+    
+    if (!dynamicForm) {
+      console.log('Dynamic form not initialized yet');
+      return <div>Loading form...</div>;
+    }
     
     const config = settingConfigs[settingType as keyof typeof settingConfigs];
     
