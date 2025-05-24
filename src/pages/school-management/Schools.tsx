@@ -50,6 +50,7 @@ const schoolSchema = z.object({
 type SchoolFormValues = z.infer<typeof schoolSchema>;
 
 const SchoolsPage = () => {
+  // ALL HOOKS MUST BE CALLED AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
   const { user, loading: authLoading } = useAuth();
   const [isSchoolDialogOpen, setIsSchoolDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
@@ -78,7 +79,22 @@ const SchoolsPage = () => {
     },
   });
 
-  // Show loading while checking auth
+  const { data: schoolsData, isLoading, refetch } = useQuery({
+    queryKey: ['schools', filters, page, pageSize],
+    queryFn: async () => {
+      const result = await getSchools({
+        ...filters,
+        page,
+        pageSize,
+        status: filters.status as "active" | "inactive" | undefined,
+      });
+      setTotal(result.count);
+      return result.data;
+    },
+    enabled: !!user, // Only run query if user is authenticated
+  });
+
+  // NOW HANDLE CONDITIONAL RENDERING AFTER ALL HOOKS ARE CALLED
   if (authLoading) {
     return (
       <PageTemplate title="Schools" subtitle="Manage all schools in the system">
@@ -89,7 +105,6 @@ const SchoolsPage = () => {
     );
   }
 
-  // Show auth required message if user is not logged in
   if (!user) {
     return (
       <PageTemplate title="Schools" subtitle="Manage all schools in the system">
@@ -106,20 +121,7 @@ const SchoolsPage = () => {
     );
   }
 
-  const { data: schoolsData, isLoading, refetch } = useQuery({
-    queryKey: ['schools', filters, page, pageSize],
-    queryFn: async () => {
-      const result = await getSchools({
-        ...filters,
-        page,
-        pageSize,
-        status: filters.status as "active" | "inactive" | undefined,
-      });
-      setTotal(result.count);
-      return result.data;
-    },
-    enabled: !!user, // Only run query if user is authenticated
-  });
+  // ... keep existing code (all the remaining functions and JSX rendering logic)
 
   const columns: Column<School>[] = [
     {
