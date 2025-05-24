@@ -36,6 +36,7 @@ import usePagination from '@/hooks/usePagination';
 import FileUpload from '@/components/FileUpload';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const schoolSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -49,6 +50,7 @@ const schoolSchema = z.object({
 type SchoolFormValues = z.infer<typeof schoolSchema>;
 
 const SchoolsPage = () => {
+  const { user, loading: authLoading } = useAuth();
   const [isSchoolDialogOpen, setIsSchoolDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
@@ -76,6 +78,34 @@ const SchoolsPage = () => {
     },
   });
 
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <PageTemplate title="Schools" subtitle="Manage all schools in the system">
+        <div className="flex justify-center items-center py-10">
+          <p>Loading...</p>
+        </div>
+      </PageTemplate>
+    );
+  }
+
+  // Show auth required message if user is not logged in
+  if (!user) {
+    return (
+      <PageTemplate title="Schools" subtitle="Manage all schools in the system">
+        <div className="flex flex-col justify-center items-center py-10">
+          <h3 className="text-lg font-medium mb-2">Authentication Required</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Please log in to access the schools management system.
+          </p>
+          <Button onClick={() => window.location.href = '/auth'}>
+            Go to Login
+          </Button>
+        </div>
+      </PageTemplate>
+    );
+  }
+
   const { data: schoolsData, isLoading, refetch } = useQuery({
     queryKey: ['schools', filters, page, pageSize],
     queryFn: async () => {
@@ -88,6 +118,7 @@ const SchoolsPage = () => {
       setTotal(result.count);
       return result.data;
     },
+    enabled: !!user, // Only run query if user is authenticated
   });
 
   const columns: Column<School>[] = [

@@ -96,8 +96,19 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
   const { name, status, created_at_start, created_at_end, page, pageSize } = params;
 
   try {
-    // Log the supabase instance to verify it's properly initialized
-    console.log('Supabase client:', supabase);
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error('User not authenticated');
+      toast({
+        title: "Authentication required",
+        description: "Please log in to access schools data",
+        variant: "destructive",
+      });
+      return { data: [], count: 0 };
+    }
+
+    console.log('User is authenticated, proceeding with query');
     
     let query = supabase
       .from('schools')
@@ -165,7 +176,20 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
 
 export const createSchool = async (school: Omit<School, 'id' | 'created_at' | 'updated_at'>): Promise<School | null> => {
   try {
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error('User not authenticated');
+      toast({
+        title: "Authentication required",
+        description: "Please log in to create schools",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     console.log('Creating school with data:', school);
+    console.log('User is authenticated:', session.user.email);
     
     // Make sure we have the correct column names matching the database
     const schoolData = {
