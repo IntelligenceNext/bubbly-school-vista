@@ -27,10 +27,17 @@ const DEFAULT_SCHOOL_ID = 'your_school_id';
 
 const sessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  start_date: z.string(),
-  end_date: z.string(),
+  start_date: z.string().min(1, "Start date is required"),
+  end_date: z.string().min(1, "End date is required"),
   status: z.string().default("active"),
   school_id: z.string().uuid(),
+}).refine((data) => {
+  const startDate = new Date(data.start_date);
+  const endDate = new Date(data.end_date);
+  return endDate > startDate;
+}, {
+  message: "End date must be after start date",
+  path: ["end_date"],
 });
 
 type SessionFormValues = z.infer<typeof sessionSchema>;
@@ -82,6 +89,7 @@ const SessionsPage = () => {
       form.reset();
     },
     onError: (error: any) => {
+      console.error('Create session error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to create session.',
@@ -101,8 +109,10 @@ const SessionsPage = () => {
       });
       setIsSessionDialogOpen(false);
       setEditingSession(null);
+      form.reset();
     },
     onError: (error: any) => {
+      console.error('Update session error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to update session.',
@@ -123,6 +133,7 @@ const SessionsPage = () => {
       setSelectedSession(null);
     },
     onError: (error: any) => {
+      console.error('Delete session error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete session.',
@@ -238,32 +249,35 @@ const SessionsPage = () => {
   };
 
   const handleBulkStatusChange = async (sessions: Session[], status: string) => {
-    // Implement bulk status change logic here
     console.log('Bulk status change:', sessions, status);
   };
 
   const onSubmit = async (data: SessionFormValues) => {
     console.log('Form submitted with data:', data);
     
-    if (editingSession) {
-      updateSessionMutation.mutate({
-        id: editingSession.id,
-        data: {
+    try {
+      if (editingSession) {
+        updateSessionMutation.mutate({
+          id: editingSession.id,
+          data: {
+            name: data.name,
+            start_date: data.start_date,
+            end_date: data.end_date,
+            status: data.status,
+            school_id: data.school_id,
+          }
+        });
+      } else {
+        createSessionMutation.mutate({
           name: data.name,
           start_date: data.start_date,
           end_date: data.end_date,
           status: data.status,
           school_id: data.school_id,
-        }
-      });
-    } else {
-      createSessionMutation.mutate({
-        name: data.name,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        status: data.status,
-        school_id: data.school_id,
-      });
+        });
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
     }
   };
   
@@ -371,7 +385,10 @@ const SessionsPage = () => {
                     <FormControl>
                       <DatePickerWithMonthYear
                         date={field.value ? new Date(field.value) : undefined}
-                        onDateChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                        onDateChange={(date) => {
+                          console.log('Start date selected:', date);
+                          field.onChange(date ? date.toISOString().split('T')[0] : '');
+                        }}
                         placeholder="Select start date"
                         className="w-full"
                       />
@@ -390,7 +407,10 @@ const SessionsPage = () => {
                     <FormControl>
                       <DatePickerWithMonthYear
                         date={field.value ? new Date(field.value) : undefined}
-                        onDateChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                        onDateChange={(date) => {
+                          console.log('End date selected:', date);
+                          field.onChange(date ? date.toISOString().split('T')[0] : '');
+                        }}
                         placeholder="Select end date"
                         disabled={(date) => {
                           const startDate = form.getValues('start_date');
@@ -412,7 +432,7 @@ const SessionsPage = () => {
                     <FormLabel>Status</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -442,11 +462,17 @@ const SessionsPage = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsSessionDialogOpen(false)}
+                  onClick={() => {
+                    setIsSessionDialogOpen(false);
+                    form.reset();
+                  }}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createSessionMutation.isPending || updateSessionMutation.isPending}>
+                <Button 
+                  type="submit" 
+                  disabled={createSessionMutation.isPending || updateSessionMutation.isPending}
+                >
                   {createSessionMutation.isPending || updateSessionMutation.isPending 
                     ? 'Saving...' 
                     : editingSession ? "Update Session" : "Create Session"
