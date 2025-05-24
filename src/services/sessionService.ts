@@ -6,10 +6,12 @@ export interface Session {
   name: string;
   start_date: string;
   end_date: string;
-  status: 'active' | 'inactive';
+  status: string;
   school_id: string;
   created_at: string;
   updated_at: string | null;
+  is_active: boolean | null;
+  is_current: boolean | null;
 }
 
 export const getSessions = async () => {
@@ -27,7 +29,7 @@ export const getSessions = async () => {
   }
 };
 
-export const createSession = async (sessionData: Omit<Session, 'id' | 'created_at' | 'updated_at'>) => {
+export const createSession = async (sessionData: Omit<Session, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'is_current'>) => {
   try {
     const { data, error } = await supabase
       .from('sessions')

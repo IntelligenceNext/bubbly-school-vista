@@ -29,7 +29,7 @@ const sessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   start_date: z.string(),
   end_date: z.string(),
-  status: z.enum(["active", "inactive"]).default("active"),
+  status: z.string().default("active"),
   school_id: z.string().uuid(),
 });
 
@@ -183,11 +183,11 @@ const SessionsPage = () => {
   const bulkActions = [
     {
       label: 'Activate',
-      onClick: (sessions: Session[]) => handleBulkStatusChange(sessions, 'active'),
+      onClick: async (sessions: Session[]) => handleBulkStatusChange(sessions, 'active'),
     },
     {
       label: 'Deactivate',
-      onClick: (sessions: Session[]) => handleBulkStatusChange(sessions, 'inactive'),
+      onClick: async (sessions: Session[]) => handleBulkStatusChange(sessions, 'inactive'),
     },
   ];
 
@@ -237,7 +237,7 @@ const SessionsPage = () => {
     deleteSessionMutation.mutate(selectedSession.id);
   };
 
-  const handleBulkStatusChange = async (sessions: Session[], status: 'active' | 'inactive') => {
+  const handleBulkStatusChange = async (sessions: Session[], status: string) => {
     // Implement bulk status change logic here
     console.log('Bulk status change:', sessions, status);
   };
