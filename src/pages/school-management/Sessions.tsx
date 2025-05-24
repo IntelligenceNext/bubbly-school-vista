@@ -29,7 +29,7 @@ const sessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
-  status: z.string().default("active"),
+  status: z.enum(["active", "inactive"]).default("active"),
   school_id: z.string().uuid(),
 }).refine((data) => {
   const startDate = new Date(data.start_date);
@@ -86,7 +86,13 @@ const SessionsPage = () => {
         description: 'Session created successfully.',
       });
       setIsSessionDialogOpen(false);
-      form.reset();
+      form.reset({
+        name: '',
+        start_date: '',
+        end_date: '',
+        status: 'active',
+        school_id: DEFAULT_SCHOOL_ID,
+      });
     },
     onError: (error: any) => {
       console.error('Create session error:', error);
@@ -109,7 +115,13 @@ const SessionsPage = () => {
       });
       setIsSessionDialogOpen(false);
       setEditingSession(null);
-      form.reset();
+      form.reset({
+        name: '',
+        start_date: '',
+        end_date: '',
+        status: 'active',
+        school_id: DEFAULT_SCHOOL_ID,
+      });
     },
     onError: (error: any) => {
       console.error('Update session error:', error);
@@ -257,7 +269,7 @@ const SessionsPage = () => {
     
     try {
       if (editingSession) {
-        updateSessionMutation.mutate({
+        await updateSessionMutation.mutateAsync({
           id: editingSession.id,
           data: {
             name: data.name,
@@ -268,7 +280,7 @@ const SessionsPage = () => {
           }
         });
       } else {
-        createSessionMutation.mutate({
+        await createSessionMutation.mutateAsync({
           name: data.name,
           start_date: data.start_date,
           end_date: data.end_date,
@@ -464,7 +476,13 @@ const SessionsPage = () => {
                   variant="outline"
                   onClick={() => {
                     setIsSessionDialogOpen(false);
-                    form.reset();
+                    form.reset({
+                      name: '',
+                      start_date: '',
+                      end_date: '',
+                      status: 'active',
+                      school_id: DEFAULT_SCHOOL_ID,
+                    });
                   }}
                 >
                   Cancel
