@@ -68,6 +68,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_active: boolean | null
           name: string
           school_id: string
           status: string
@@ -78,6 +79,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_active?: boolean | null
           name: string
           school_id: string
           status?: string
@@ -88,6 +90,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_active?: boolean | null
           name?: string
           school_id?: string
           status?: string
@@ -232,6 +235,8 @@ export type Database = {
           created_at: string
           end_date: string
           id: string
+          is_active: boolean | null
+          is_current: boolean | null
           name: string
           school_id: string
           start_date: string
@@ -242,6 +247,8 @@ export type Database = {
           created_at?: string
           end_date: string
           id?: string
+          is_active?: boolean | null
+          is_current?: boolean | null
           name: string
           school_id: string
           start_date: string
@@ -252,11 +259,40 @@ export type Database = {
           created_at?: string
           end_date?: string
           id?: string
+          is_active?: boolean | null
+          is_current?: boolean | null
           name?: string
           school_id?: string
           start_date?: string
           status?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          school_id: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          school_id: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          school_id?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }

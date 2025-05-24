@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -22,6 +23,7 @@ export interface Class {
   code: string;
   description: string | null;
   is_active: boolean;
+  status: string;
   created_at: string;
   updated_at: string;
   schools?: { name: string };
@@ -35,6 +37,7 @@ export interface Session {
   end_date: string;
   is_current: boolean;
   is_active: boolean;
+  status: string;
   created_at: string;
   updated_at: string;
   schools?: { name: string };
@@ -273,7 +276,7 @@ export const getClasses = async (params: GetClassesParams = {}): Promise<Paginat
   try {
     let query = supabase
       .from('classes')
-      .select('*, schools(name)', { count: 'exact' });
+      .select('*', { count: 'exact' });
     
     if (school_id) {
       query = query.eq('school_id', school_id);
@@ -304,7 +307,7 @@ export const getClasses = async (params: GetClassesParams = {}): Promise<Paginat
     }
     
     return {
-      data: data || [],
+      data: (data || []) as Class[],
       count: count || 0
     };
   } catch (error) {
@@ -324,7 +327,7 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
   try {
     let query = supabase
       .from('sessions')
-      .select('*, schools(name)', { count: 'exact' });
+      .select('*', { count: 'exact' });
     
     if (school_id) {
       query = query.eq('school_id', school_id);
@@ -355,7 +358,7 @@ export const getSessions = async (params: GetSessionsParams = {}): Promise<Pagin
     }
     
     return {
-      data: data || [],
+      data: (data || []) as Session[],
       count: count || 0
     };
   } catch (error) {
@@ -486,7 +489,7 @@ export const getSettings = async (params: GetSettingsParams): Promise<Setting[]>
       throw error;
     }
     
-    return data || [];
+    return (data || []) as Setting[];
   } catch (error: any) {
     console.error('Error in getSettings:', error);
     toast({
@@ -537,7 +540,7 @@ export const createOrUpdateSetting = async (
         throw error;
       }
       
-      return data;
+      return data as Setting;
     } else {
       // Create
       const { data, error } = await supabase
@@ -557,7 +560,7 @@ export const createOrUpdateSetting = async (
         throw error;
       }
       
-      return data;
+      return data as Setting;
     }
   } catch (error: any) {
     console.error('Error in createOrUpdateSetting:', error);
