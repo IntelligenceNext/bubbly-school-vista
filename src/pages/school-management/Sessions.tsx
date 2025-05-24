@@ -63,7 +63,7 @@ const SessionsPage = () => {
       name: '',
       start_date: '',
       end_date: '',
-      status: 'active' as const,
+      status: 'active',
       school_id: DEFAULT_SCHOOL_ID,
     },
   });
@@ -90,7 +90,7 @@ const SessionsPage = () => {
         name: '',
         start_date: '',
         end_date: '',
-        status: 'active' as const,
+        status: 'active',
         school_id: DEFAULT_SCHOOL_ID,
       });
     },
@@ -119,7 +119,7 @@ const SessionsPage = () => {
         name: '',
         start_date: '',
         end_date: '',
-        status: 'active' as const,
+        status: 'active',
         school_id: DEFAULT_SCHOOL_ID,
       });
     },
@@ -232,12 +232,13 @@ const SessionsPage = () => {
   };
 
   const handleCreateSession = () => {
+    console.log('Create Session button clicked');
     setEditingSession(null);
     form.reset({
       name: '',
       start_date: '',
       end_date: '',
-      status: 'active' as const,
+      status: 'active',
       school_id: DEFAULT_SCHOOL_ID,
     });
     setIsSessionDialogOpen(true);
@@ -292,6 +293,7 @@ const SessionsPage = () => {
     
     try {
       if (editingSession) {
+        console.log('Updating session:', editingSession.id);
         await updateSessionMutation.mutateAsync({
           id: editingSession.id,
           data: {
@@ -303,6 +305,7 @@ const SessionsPage = () => {
           }
         });
       } else {
+        console.log('Creating new session with data:', data);
         await createSessionMutation.mutateAsync({
           name: data.name,
           start_date: data.start_date,
@@ -507,7 +510,7 @@ const SessionsPage = () => {
                       name: '',
                       start_date: '',
                       end_date: '',
-                      status: 'active' as const,
+                      status: 'active',
                       school_id: DEFAULT_SCHOOL_ID,
                     });
                   }}
