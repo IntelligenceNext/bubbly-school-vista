@@ -51,18 +51,12 @@ type Administrator = {
 }
 
 const Admins = () => {
+  // ALL HOOKS MUST BE CALLED AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("all-admins");
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [administrators, setAdministrators] = useState<Administrator[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [schoolOptions, setSchoolOptions] = useState<{id: string, name: string}[]>([]);
-  
   const pagination = usePagination();
   const { page, pageSize, total, setTotal, setPage, setPageSize } = pagination;
 
-  // Initialize the form
+  // Initialize the form - MUST be called before any returns
   const form = useForm<AdminFormValues>({
     resolver: zodResolver(adminSchema),
     defaultValues: {
@@ -78,33 +72,13 @@ const Admins = () => {
     },
   });
 
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <PageTemplate title="Administrators" subtitle="Manage system administrators and their permissions">
-        <div className="flex justify-center items-center py-10">
-          <p>Loading...</p>
-        </div>
-      </PageTemplate>
-    );
-  }
-
-  // Show auth required message if user is not logged in
-  if (!user) {
-    return (
-      <PageTemplate title="Administrators" subtitle="Manage system administrators and their permissions">
-        <div className="flex flex-col justify-center items-center py-10">
-          <h3 className="text-lg font-medium mb-2">Authentication Required</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Please log in to access the administrators management system.
-          </p>
-          <Button onClick={() => window.location.href = '/auth'}>
-            Go to Login
-          </Button>
-        </div>
-      </PageTemplate>
-    );
-  }
+  // ALL STATE HOOKS MUST BE AT THE TOP
+  const [activeTab, setActiveTab] = useState("all-admins");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [administrators, setAdministrators] = useState<Administrator[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [schoolOptions, setSchoolOptions] = useState<{id: string, name: string}[]>([]);
 
   // Fetch schools for dropdown
   useEffect(() => {
@@ -360,6 +334,35 @@ const Admins = () => {
       }
     }
   };
+
+  // NOW WE CAN HAVE CONDITIONAL RETURNS - AFTER ALL HOOKS ARE CALLED
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <PageTemplate title="Administrators" subtitle="Manage system administrators and their permissions">
+        <div className="flex justify-center items-center py-10">
+          <p>Loading...</p>
+        </div>
+      </PageTemplate>
+    );
+  }
+
+  // Show auth required message if user is not logged in
+  if (!user) {
+    return (
+      <PageTemplate title="Administrators" subtitle="Manage system administrators and their permissions">
+        <div className="flex flex-col justify-center items-center py-10">
+          <h3 className="text-lg font-medium mb-2">Authentication Required</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Please log in to access the administrators management system.
+          </p>
+          <Button onClick={() => window.location.href = '/auth'}>
+            Go to Login
+          </Button>
+        </div>
+      </PageTemplate>
+    );
+  }
 
   return (
     <PageTemplate title="Administrators" subtitle="Manage system administrators and their permissions">
