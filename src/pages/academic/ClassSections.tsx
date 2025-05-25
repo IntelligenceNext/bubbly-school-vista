@@ -33,7 +33,7 @@ const ClassSections = () => {
   useEffect(() => {
     fetchSections();
     
-    // Set up real-time subscription for sections
+    // Set up real-time subscription for sections and student assignments
     const sectionsChannel = supabase
       .channel('sections-changes')
       .on(
@@ -106,11 +106,13 @@ const ClassSections = () => {
         const success = await updateSection(selectedSection.id, data);
         if (success) {
           await fetchSections();
+          setIsFormOpen(false);
         }
       } else {
         const newSection = await createSection(data);
         if (newSection) {
           await fetchSections();
+          setIsFormOpen(false);
         }
       }
     } catch (error) {
@@ -125,6 +127,7 @@ const ClassSections = () => {
       const success = await assignTeacher(selectedSection.id, teacherId);
       if (success) {
         await fetchSections();
+        setIsTeacherModalOpen(false);
       }
     }
   };

@@ -180,7 +180,7 @@ export const assignTeacher = async (sectionId: string, teacherId: string): Promi
   try {
     const { error } = await supabase
       .from('sections')
-      .update({ teacher_id: teacherId })
+      .update({ teacher_id: teacherId || null })
       .eq('id', sectionId);
 
     if (error) {
@@ -194,8 +194,8 @@ export const assignTeacher = async (sectionId: string, teacherId: string): Promi
     }
 
     toast({
-      title: "Teacher assigned successfully",
-      description: "The teacher has been assigned to the section",
+      title: teacherId ? "Teacher assigned successfully" : "Teacher assignment removed",
+      description: teacherId ? "The teacher has been assigned to the section" : "The teacher assignment has been removed from the section",
     });
 
     return true;
