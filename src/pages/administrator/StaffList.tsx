@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, Users, UserCheck, UserX } from 'lucide-react';
 import PageTemplate from '@/components/PageTemplate';
@@ -24,19 +23,21 @@ const StaffList = () => {
   const paginationState = usePagination({
     initialPage: 1,
     initialPageSize: 10,
-    total: staff.length,
   });
 
   useEffect(() => {
     fetchStaff();
   }, []);
 
+  useEffect(() => {
+    paginationState.setTotal(staff.length);
+  }, [staff.length, paginationState]);
+
   const fetchStaff = async () => {
     setIsLoading(true);
     try {
       const data = await getStaff();
       setStaff(data);
-      paginationState.setTotal(data.length);
     } catch (error) {
       console.error('Error fetching staff:', error);
     } finally {

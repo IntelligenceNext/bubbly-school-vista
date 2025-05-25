@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,6 +32,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { CreateStaffRequest, Staff } from '@/services/staffService';
+import { getRoles, Role } from '@/services/roleService';
 
 const staffSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -45,8 +47,6 @@ const staffSchema = z.object({
   designation: z.string().optional(),
   qualification: z.string().optional(),
   note_description: z.string().optional(),
-  class_id: z.string().optional(),
-  section: z.string().optional(),
   is_bus_incharge: z.boolean().default(false),
   username: z.string().optional(),
   login_email: z.string().email('Invalid email').optional().or(z.literal('')),
@@ -78,6 +78,26 @@ const StaffForm: React.FC<StaffFormProps> = ({
   isLoading = false,
 }) => {
   const [activeTab, setActiveTab] = useState('personal');
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      setIsLoadingRoles(true);
+      try {
+        const rolesData = await getRoles();
+        setRoles(rolesData);
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+      } finally {
+        setIsLoadingRoles(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchRoles();
+    }
+  }, [isOpen]);
 
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffSchema),
@@ -94,8 +114,6 @@ const StaffForm: React.FC<StaffFormProps> = ({
       designation: staff?.designation || '',
       qualification: staff?.qualification || '',
       note_description: staff?.note_description || '',
-      class_id: staff?.class_id || '',
-      section: staff?.section || '',
       is_bus_incharge: staff?.is_bus_incharge || false,
       username: staff?.username || '',
       login_email: staff?.login_email || '',
@@ -125,8 +143,6 @@ const StaffForm: React.FC<StaffFormProps> = ({
       designation: data.designation,
       qualification: data.qualification,
       note_description: data.note_description,
-      class_id: data.class_id,
-      section: data.section,
       is_bus_incharge: data.is_bus_incharge,
       username: data.username,
       login_email: data.login_email,
@@ -303,9 +319,20 @@ const StaffForm: React.FC<StaffFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Role</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter role" {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingRoles}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={isLoadingRoles ? "Loading roles..." : "Select role"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {roles.map((role) => (
+                              <SelectItem key={role.id} value={role.name}>
+                                {role.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -383,36 +410,6 @@ const StaffForm: React.FC<StaffFormProps> = ({
               </TabsContent>
 
               <TabsContent value="assignments" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="class_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Class</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Class assignment" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="section"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Section</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Section assignment" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <FormField
                   control={form.control}
                   name="is_bus_incharge"
