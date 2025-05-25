@@ -463,6 +463,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sections: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          medium: string
+          section_name: string
+          teacher_id: string | null
+          total_capacity: number
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          medium?: string
+          section_name: string
+          teacher_id?: string | null
+          total_capacity?: number
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          medium?: string
+          section_name?: string
+          teacher_id?: string | null
+          total_capacity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sections_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sections_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           created_at: string
@@ -658,6 +706,45 @@ export type Database = {
           },
         ]
       }
+      student_section_assignments: {
+        Row: {
+          enrolled_at: string
+          gender: string | null
+          id: string
+          section_id: string
+          student_id: string
+        }
+        Insert: {
+          enrolled_at?: string
+          gender?: string | null
+          id?: string
+          section_id: string
+          student_id: string
+        }
+        Update: {
+          enrolled_at?: string
+          gender?: string | null
+          id?: string
+          section_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_section_assignments_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "section_capacity_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_section_assignments_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           code: string
@@ -760,7 +847,40 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      section_capacity_view: {
+        Row: {
+          capacity_percentage: number | null
+          class_id: string | null
+          class_name: string | null
+          female_students: number | null
+          id: string | null
+          male_students: number | null
+          medium: string | null
+          other_gender_students: number | null
+          section_name: string | null
+          teacher_designation: string | null
+          teacher_id: string | null
+          teacher_name: string | null
+          total_capacity: number | null
+          total_enrolled: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sections_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sections_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       user_has_permission: {
