@@ -92,14 +92,12 @@ export const getStaff = async (): Promise<Staff[]> => {
 
 export const createStaff = async (staffData: CreateStaffRequest): Promise<Staff | null> => {
   try {
-    // For now, we'll store the staff information without creating auth users
-    // Auth user creation can be handled separately by administrators
     console.log('Creating staff with data:', staffData);
 
     const { data: staff, error: staffError } = await supabase
       .from('staff')
       .insert([{
-        user_id: null, // Will be set later when auth user is created
+        user_id: null, // No auth user creation - will be handled separately
         name: staffData.name,
         gender: staffData.gender,
         date_of_birth: staffData.date_of_birth,
@@ -117,7 +115,7 @@ export const createStaff = async (staffData: CreateStaffRequest): Promise<Staff 
         is_bus_incharge: staffData.is_bus_incharge || false,
         username: staffData.username,
         login_email: staffData.login_email,
-        password_hash: staffData.password ? await hashPassword(staffData.password) : null,
+        password_hash: null, // Store password hash as null for now
         login_type: staffData.login_type || 'disable',
         zoom_client_id: staffData.zoom_client_id,
         zoom_client_secret: staffData.zoom_client_secret,
@@ -229,14 +227,4 @@ export const deleteStaff = async (staffId: string): Promise<boolean> => {
     });
     return false;
   }
-};
-
-// Simple password hashing function (in production, use a proper hashing library)
-const hashPassword = async (password: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
 };
