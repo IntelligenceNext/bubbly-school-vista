@@ -72,6 +72,89 @@ export type Database = {
           },
         ]
       }
+      bus_assignments: {
+        Row: {
+          bus_route: string | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          staff_id: string | null
+          start_date: string | null
+        }
+        Insert: {
+          bus_route?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          staff_id?: string | null
+          start_date?: string | null
+        }
+        Update: {
+          bus_route?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          staff_id?: string | null
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_assignments: {
+        Row: {
+          academic_year: string | null
+          class_id: string | null
+          created_at: string | null
+          id: string
+          is_primary_teacher: boolean | null
+          section: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          academic_year?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary_teacher?: boolean | null
+          section?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          academic_year?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary_teacher?: boolean | null
+          section?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           code: string
@@ -291,6 +374,44 @@ export type Database = {
         }
         Relationships: []
       }
+      salary_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_salary: number | null
+          previous_salary: number | null
+          staff_id: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_salary?: number | null
+          previous_salary?: number | null
+          staff_id?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_salary?: number | null
+          previous_salary?: number | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_history_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           address: string
@@ -407,6 +528,135 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      staff: {
+        Row: {
+          address: string | null
+          class_id: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          designation: string | null
+          email: string
+          gender: string | null
+          id: string
+          is_bus_incharge: boolean | null
+          joining_date: string | null
+          login_email: string | null
+          login_type: string | null
+          name: string
+          note_description: string | null
+          password_hash: string | null
+          phone: string | null
+          qualification: string | null
+          role: string | null
+          salary: number | null
+          section: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+          zoom_client_id: string | null
+          zoom_client_secret: string | null
+          zoom_redirect_url: string | null
+          zoom_sdk_key: string | null
+          zoom_sdk_secret: string | null
+        }
+        Insert: {
+          address?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          designation?: string | null
+          email: string
+          gender?: string | null
+          id?: string
+          is_bus_incharge?: boolean | null
+          joining_date?: string | null
+          login_email?: string | null
+          login_type?: string | null
+          name: string
+          note_description?: string | null
+          password_hash?: string | null
+          phone?: string | null
+          qualification?: string | null
+          role?: string | null
+          salary?: number | null
+          section?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+          zoom_client_id?: string | null
+          zoom_client_secret?: string | null
+          zoom_redirect_url?: string | null
+          zoom_sdk_key?: string | null
+          zoom_sdk_secret?: string | null
+        }
+        Update: {
+          address?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          designation?: string | null
+          email?: string
+          gender?: string | null
+          id?: string
+          is_bus_incharge?: boolean | null
+          joining_date?: string | null
+          login_email?: string | null
+          login_type?: string | null
+          name?: string
+          note_description?: string | null
+          password_hash?: string | null
+          phone?: string | null
+          qualification?: string | null
+          role?: string | null
+          salary?: number | null
+          section?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+          zoom_client_id?: string | null
+          zoom_client_secret?: string | null
+          zoom_redirect_url?: string | null
+          zoom_sdk_key?: string | null
+          zoom_sdk_secret?: string | null
+        }
+        Relationships: []
+      }
+      staff_roles: {
+        Row: {
+          assigned_date: string | null
+          role_id: string
+          staff_id: string
+        }
+        Insert: {
+          assigned_date?: string | null
+          role_id: string
+          staff_id: string
+        }
+        Update: {
+          assigned_date?: string | null
+          role_id?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_roles_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subjects: {
         Row: {
