@@ -56,16 +56,6 @@ const Register = () => {
     setRegistrationError(null);
     
     try {
-      // First check if the administrators table exists in the database
-      // to avoid errors if the table doesn't exist yet
-      const { data: adminData, error: adminError } = await (supabase
-        .from('administrators')
-        .select('id')
-        .limit(1) as any);
-        
-      // If there's an error checking the administrators table, it probably doesn't exist yet
-      // We should proceed with just creating the auth user
-      
       // Sign up the user with Supabase Auth
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
@@ -83,28 +73,39 @@ const Register = () => {
         throw new Error('User creation failed');
       }
       
-      // If we already confirmed the administrators table exists, try to create an admin record
-      if (!adminError && authData.user) {
-        try {
-          const { error: adminInsertError } = await (supabase
+      // Try to get a default role_id for new registrations
+      try {
+        // First, try to get an 'admin' role or any available role
+        const { data: roleData, error: roleError } = await supabase
+          .from('roles')
+          .select('id')
+          .or('name.eq.admin,name.eq.user,name.eq.Administrator')
+          .limit(1);
+        
+        if (!roleError && roleData && roleData.length > 0) {
+          // Create administrator record with role_id
+          const { error: adminInsertError } = await supabase
             .from('administrators')
             .insert({
               user_id: authData.user.id,
               full_name: data.fullName,
               email: data.email,
               username: data.email.split('@')[0], // Generate a username from email
-              role: 'admin', // Default role
+              role: 'admin', // Keep for backwards compatibility
+              role_id: roleData[0].id, // Use the found role_id
               status: 'Active',
-            }) as any);
+            });
           
           if (adminInsertError) {
             console.error('Error creating admin record:', adminInsertError);
-            // We don't throw here because the auth user was created successfully
+            // Don't throw here because the auth user was created successfully
           }
-        } catch (err) {
-          console.error('Error in admin creation:', err);
-          // Just log the error, don't prevent user creation
+        } else {
+          console.log('No default role found, skipping administrator record creation');
         }
+      } catch (err) {
+        console.error('Error in admin creation:', err);
+        // Just log the error, don't prevent user creation
       }
       
       toast({
