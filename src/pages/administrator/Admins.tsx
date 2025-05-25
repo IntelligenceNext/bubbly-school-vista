@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import usePagination from '@/hooks/usePagination';
+import { getRoles } from '@/services/roleService';
 
 // Admin schema for form validation
 const adminSchema = z.object({
@@ -28,7 +30,7 @@ const adminSchema = z.object({
   phone: z.string().optional(),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-  role: z.string().min(1, 'Role is required'),
+  role_id: z.string().min(1, 'Role is required'),
   school_id: z.string().optional(),
   send_invitation: z.boolean().default(false),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -65,7 +67,7 @@ const Admins = () => {
       phone: '',
       password: '',
       confirmPassword: '',
-      role: '',
+      role_id: '',
       school_id: '',
       send_invitation: false
     },
@@ -78,6 +80,7 @@ const Admins = () => {
   const [administrators, setAdministrators] = useState<Administrator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [schoolOptions, setSchoolOptions] = useState<{id: string, name: string}[]>([]);
+  const [roleOptions, setRoleOptions] = useState<{id: string, name: string}[]>([]);
 
   // Fetch schools for dropdown
   useEffect(() => {
@@ -105,6 +108,22 @@ const Admins = () => {
     fetchSchools();
   }, []);
 
+  // Fetch roles for dropdown
+  useEffect(() => {
+    async function fetchRoles() {
+      try {
+        console.log('Fetching roles...');
+        const roles = await getRoles();
+        console.log('Roles fetched:', roles);
+        setRoleOptions(roles.map(role => ({ id: role.id, name: role.name })));
+      } catch (error: any) {
+        console.error('Error fetching roles:', error.message);
+      }
+    }
+
+    fetchRoles();
+  }, []);
+
   // Fetch administrators with pagination and search
   useEffect(() => {
     async function fetchAdministrators() {
@@ -112,7 +131,7 @@ const Admins = () => {
       try {
         console.log('Fetching administrators...');
         
-        // Build the query with joins to get school names
+        // Build the query with joins to get school names and role names
         let query = supabase
           .from('administrators')
           .select(`
@@ -124,7 +143,9 @@ const Admins = () => {
             status, 
             last_login,
             school_id,
-            schools!administrators_school_id_fkey(name)
+            role_id,
+            schools!administrators_school_id_fkey(name),
+            roles!administrators_role_id_fkey(name)
           `, { count: 'exact' });
         
         // Add search condition if searchQuery exists
@@ -157,7 +178,7 @@ const Admins = () => {
           id: admin.id,
           name: admin.full_name,
           email: admin.email,
-          role: admin.role,
+          role: admin.roles?.name || admin.role || 'Unknown Role',
           username: admin.username,
           status: admin.status || 'Inactive',
           lastLogin: admin.last_login,
@@ -221,6 +242,9 @@ const Admins = () => {
       // Determine if school_id should be null (for all schools access)
       const schoolId = data.school_id === 'all_schools' ? null : data.school_id || null;
       
+      // Get the role name for the text field (backwards compatibility)
+      const selectedRole = roleOptions.find(role => role.id === data.role_id);
+      
       // Then create the administrator record
       const { error: adminError } = await supabase
         .from('administrators')
@@ -230,7 +254,8 @@ const Admins = () => {
           username: data.username,
           email: data.email,
           phone: data.phone || null,
-          role: data.role,
+          role: selectedRole?.name || 'Unknown',
+          role_id: data.role_id,
           school_id: schoolId,
           status: 'Active',
         });
@@ -244,7 +269,7 @@ const Admins = () => {
           .insert({
             user_id: authData.user.id,
             school_id: schoolId,
-            role: data.role,
+            role: selectedRole?.name || 'Unknown',
           });
           
         if (relationError) throw relationError;
@@ -598,7 +623,7 @@ const Admins = () => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="role"
+                      name="role_id"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Role</FormLabel>
@@ -609,11 +634,9 @@ const Admins = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="super_admin">Super Admin</SelectItem>
-                              <SelectItem value="principal">Principal</SelectItem>
-                              <SelectItem value="registrar">Registrar</SelectItem>
-                              <SelectItem value="admin_clerk">Admin Clerk</SelectItem>
-                              <SelectItem value="it_admin">IT Admin</SelectItem>
+                              {roleOptions.map(role => (
+                                <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />

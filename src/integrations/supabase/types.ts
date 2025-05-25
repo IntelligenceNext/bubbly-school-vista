@@ -18,6 +18,7 @@ export type Database = {
           last_login: string | null
           phone: string | null
           role: string
+          role_id: string
           school_id: string | null
           status: string
           updated_at: string | null
@@ -32,6 +33,7 @@ export type Database = {
           last_login?: string | null
           phone?: string | null
           role: string
+          role_id: string
           school_id?: string | null
           status?: string
           updated_at?: string | null
@@ -46,6 +48,7 @@ export type Database = {
           last_login?: string | null
           phone?: string | null
           role?: string
+          role_id?: string
           school_id?: string | null
           status?: string
           updated_at?: string | null
@@ -53,6 +56,13 @@ export type Database = {
           username?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "administrators_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "administrators_school_id_fkey"
             columns: ["school_id"]
