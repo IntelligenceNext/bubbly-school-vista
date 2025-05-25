@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -93,39 +92,14 @@ export const getStaff = async (): Promise<Staff[]> => {
 
 export const createStaff = async (staffData: CreateStaffRequest): Promise<Staff | null> => {
   try {
-    let user_id = null;
-
-    // Create auth user if login is enabled
-    if (staffData.login_type === 'new' && staffData.login_email && staffData.password) {
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: staffData.login_email,
-        password: staffData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: staffData.name,
-        },
-      });
-
-      if (authError) {
-        toast({
-          title: "Failed to create user account",
-          description: authError.message,
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      user_id = authData.user?.id;
-    }
-
-    // Hash password if provided (for security)
-    const password_hash = staffData.password ? 
-      await hashPassword(staffData.password) : undefined;
+    // For now, we'll store the staff information without creating auth users
+    // Auth user creation can be handled separately by administrators
+    console.log('Creating staff with data:', staffData);
 
     const { data: staff, error: staffError } = await supabase
       .from('staff')
       .insert([{
-        user_id,
+        user_id: null, // Will be set later when auth user is created
         name: staffData.name,
         gender: staffData.gender,
         date_of_birth: staffData.date_of_birth,
@@ -143,7 +117,7 @@ export const createStaff = async (staffData: CreateStaffRequest): Promise<Staff 
         is_bus_incharge: staffData.is_bus_incharge || false,
         username: staffData.username,
         login_email: staffData.login_email,
-        password_hash,
+        password_hash: staffData.password ? await hashPassword(staffData.password) : null,
         login_type: staffData.login_type || 'disable',
         zoom_client_id: staffData.zoom_client_id,
         zoom_client_secret: staffData.zoom_client_secret,

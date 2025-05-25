@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,6 +30,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
 import { CreateStaffRequest, Staff } from '@/services/staffService';
 import { getRoles, Role } from '@/services/roleService';
 
@@ -178,10 +179,9 @@ const StaffForm: React.FC<StaffFormProps> = ({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="personal">Personal</TabsTrigger>
                 <TabsTrigger value="joining">Joining</TabsTrigger>
-                <TabsTrigger value="assignments">Assignments</TabsTrigger>
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="zoom">Zoom</TabsTrigger>
               </TabsList>
@@ -407,9 +407,7 @@ const StaffForm: React.FC<StaffFormProps> = ({
                     </FormItem>
                   )}
                 />
-              </TabsContent>
 
-              <TabsContent value="assignments" className="space-y-4">
                 <FormField
                   control={form.control}
                   name="is_bus_incharge"
@@ -454,6 +452,15 @@ const StaffForm: React.FC<StaffFormProps> = ({
                     </FormItem>
                   )}
                 />
+
+                {loginType === 'new' && (
+                  <Alert>
+                    <InfoIcon className="h-4 w-4" />
+                    <AlertDescription>
+                      Note: User login credentials will be stored but the actual user account will need to be created separately by an administrator.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 {loginType !== 'disable' && (
                   <div className="grid grid-cols-2 gap-4">
