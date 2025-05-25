@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -120,18 +119,16 @@ const SectionForm: React.FC<SectionFormProps> = ({
   };
 
   const handleSubmit = async (data: SectionFormValues) => {
-    // Ensure all required fields are present
+    // Ensure all required fields are present and properly typed
     const sectionData: CreateSectionRequest = {
-      class_id: data.class_id,
-      section_name: data.section_name,
+      class_id: data.class_id!,
+      section_name: data.section_name!,
       teacher_id: data.teacher_id || undefined,
-      medium: data.medium,
-      total_capacity: data.total_capacity,
+      medium: data.medium!,
+      total_capacity: data.total_capacity!,
     };
     
     await onSubmit(sectionData);
-    form.reset();
-    onClose();
   };
 
   return (

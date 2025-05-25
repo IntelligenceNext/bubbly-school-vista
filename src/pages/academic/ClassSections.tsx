@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '@/components/PageTemplate';
 import { Button } from '@/components/ui/button';
@@ -103,7 +102,7 @@ const ClassSections = () => {
     setIsSubmitting(true);
     try {
       if (selectedSection) {
-        const success = await updateSection(selectedSection.id, data);
+        const success = await updateSection(selectedSection.id!, data);
         if (success) {
           await fetchSections();
           setIsFormOpen(false);
@@ -124,7 +123,7 @@ const ClassSections = () => {
 
   const handleTeacherAssignment = async (teacherId: string) => {
     if (selectedSection) {
-      const success = await assignTeacher(selectedSection.id, teacherId);
+      const success = await assignTeacher(selectedSection.id!, teacherId);
       if (success) {
         await fetchSections();
         setIsTeacherModalOpen(false);
@@ -134,7 +133,7 @@ const ClassSections = () => {
 
   const confirmDelete = async () => {
     if (sectionToDelete) {
-      const success = await deleteSection(sectionToDelete.id);
+      const success = await deleteSection(sectionToDelete.id!);
       if (success) {
         await fetchSections();
       }
@@ -262,8 +261,8 @@ const ClassSections = () => {
                         </div>
                         <div className="w-32 h-2 bg-gray-200 rounded-full mt-1.5">
                           <div 
-                            className={`h-2 rounded-full ${getCapacityColor(section.capacity_percentage)}`} 
-                            style={{ width: `${Math.min(section.capacity_percentage, 100)}%` }}
+                            className={`h-2 rounded-full ${getCapacityColor(section.capacity_percentage!)}`} 
+                            style={{ width: `${Math.min(section.capacity_percentage!, 100)}%` }}
                           ></div>
                         </div>
                         <span className="text-xs text-muted-foreground mt-1">
