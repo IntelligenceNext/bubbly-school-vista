@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -112,7 +111,36 @@ const StaffForm: React.FC<StaffFormProps> = ({
   });
 
   const handleSubmit = async (data: StaffFormValues) => {
-    await onSubmit(data);
+    // Ensure name is provided - this satisfies the CreateStaffRequest interface
+    const staffData: CreateStaffRequest = {
+      name: data.name, // This is guaranteed to be a string from schema validation
+      gender: data.gender,
+      date_of_birth: data.date_of_birth,
+      address: data.address,
+      phone: data.phone,
+      email: data.email,
+      joining_date: data.joining_date,
+      role: data.role,
+      salary: data.salary,
+      designation: data.designation,
+      qualification: data.qualification,
+      note_description: data.note_description,
+      class_id: data.class_id,
+      section: data.section,
+      is_bus_incharge: data.is_bus_incharge,
+      username: data.username,
+      login_email: data.login_email,
+      password: data.password,
+      login_type: data.login_type,
+      zoom_client_id: data.zoom_client_id,
+      zoom_client_secret: data.zoom_client_secret,
+      zoom_redirect_url: data.zoom_redirect_url,
+      zoom_sdk_key: data.zoom_sdk_key,
+      zoom_sdk_secret: data.zoom_sdk_secret,
+      status: data.status,
+    };
+
+    await onSubmit(staffData);
     form.reset();
     onClose();
   };

@@ -10,7 +10,7 @@ import DeleteConfirmationDialog from '@/components/common/DeleteConfirmationDial
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getStaff, createStaff, updateStaff, deleteStaff, Staff, CreateStaffRequest } from '@/services/staffService';
 import { toast } from '@/hooks/use-toast';
-import { usePagination } from '@/hooks/usePagination';
+import usePagination from '@/hooks/usePagination';
 
 const StaffList = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -311,8 +311,8 @@ const StaffList = () => {
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
         onConfirm={confirmDelete}
         title="Delete Staff Member"
         description={`Are you sure you want to delete ${staffToDelete?.name}? This action cannot be undone.`}

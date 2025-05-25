@@ -74,7 +74,12 @@ export const getStaff = async (): Promise<Staff[]> => {
       throw error;
     }
 
-    return data || [];
+    // Type assertion to ensure proper typing from Supabase
+    return (data || []).map(item => ({
+      ...item,
+      login_type: item.login_type as 'disable' | 'existing' | 'new',
+      status: item.status as 'Active' | 'Inactive'
+    }));
   } catch (error) {
     console.error('Error in getStaff:', error);
     toast({
@@ -160,12 +165,19 @@ export const createStaff = async (staffData: CreateStaffRequest): Promise<Staff 
       return null;
     }
 
+    // Type assertion for return value
+    const typedStaff = {
+      ...staff,
+      login_type: staff.login_type as 'disable' | 'existing' | 'new',
+      status: staff.status as 'Active' | 'Inactive'
+    };
+
     toast({
       title: "Staff created successfully",
       description: `${staffData.name} has been added to the system`,
     });
 
-    return staff;
+    return typedStaff;
   } catch (error) {
     console.error('Error in createStaff:', error);
     toast({
