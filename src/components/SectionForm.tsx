@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CreateSectionRequest, Section } from '@/services/sectionService';
+import { CreateSectionRequest, SectionCapacityView } from '@/services/sectionService';
 import { getClasses } from '@/services/classService';
 import { getStaff, Staff } from '@/services/staffService';
 
@@ -45,7 +45,7 @@ interface SectionFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CreateSectionRequest) => Promise<void>;
-  section?: Section | null;
+  section?: SectionCapacityView | null;
   isLoading?: boolean;
 }
 
@@ -86,6 +86,14 @@ const SectionForm: React.FC<SectionFormProps> = ({
         medium: section.medium,
         total_capacity: section.total_capacity,
       });
+    } else {
+      form.reset({
+        class_id: '',
+        section_name: '',
+        teacher_id: '',
+        medium: 'English',
+        total_capacity: 30,
+      });
     }
   }, [section, form]);
 
@@ -112,7 +120,16 @@ const SectionForm: React.FC<SectionFormProps> = ({
   };
 
   const handleSubmit = async (data: SectionFormValues) => {
-    await onSubmit(data);
+    // Ensure all required fields are present
+    const sectionData: CreateSectionRequest = {
+      class_id: data.class_id,
+      section_name: data.section_name,
+      teacher_id: data.teacher_id || undefined,
+      medium: data.medium,
+      total_capacity: data.total_capacity,
+    };
+    
+    await onSubmit(sectionData);
     form.reset();
     onClose();
   };
