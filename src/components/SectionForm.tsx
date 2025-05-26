@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -64,7 +65,7 @@ const SectionForm: React.FC<SectionFormProps> = ({
     defaultValues: {
       class_id: section?.class_id || '',
       section_name: section?.section_name || '',
-      teacher_id: section?.teacher_id || '',
+      teacher_id: section?.teacher_id || undefined,
       medium: section?.medium || 'English',
       total_capacity: section?.total_capacity || 30,
     },
@@ -81,7 +82,7 @@ const SectionForm: React.FC<SectionFormProps> = ({
       form.reset({
         class_id: section.class_id,
         section_name: section.section_name,
-        teacher_id: section.teacher_id || '',
+        teacher_id: section.teacher_id || "none",
         medium: section.medium,
         total_capacity: section.total_capacity,
       });
@@ -89,7 +90,7 @@ const SectionForm: React.FC<SectionFormProps> = ({
       form.reset({
         class_id: '',
         section_name: '',
-        teacher_id: '',
+        teacher_id: "none",
         medium: 'English',
         total_capacity: 30,
       });
@@ -123,7 +124,7 @@ const SectionForm: React.FC<SectionFormProps> = ({
     const sectionData: CreateSectionRequest = {
       class_id: data.class_id!,
       section_name: data.section_name!,
-      teacher_id: data.teacher_id || undefined,
+      teacher_id: data.teacher_id === "none" ? undefined : data.teacher_id,
       medium: data.medium!,
       total_capacity: data.total_capacity!,
     };
@@ -190,14 +191,14 @@ const SectionForm: React.FC<SectionFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign Teacher</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingData}>
+                  <Select onValueChange={field.onChange} value={field.value || "none"} disabled={isLoadingData}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={isLoadingData ? "Loading teachers..." : "Select teacher (optional)"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No teacher assigned</SelectItem>
+                      <SelectItem value="none">No teacher assigned</SelectItem>
                       {teachers.map((teacher) => (
                         <SelectItem key={teacher.id} value={teacher.id}>
                           {teacher.name} - {teacher.designation || 'Teacher'}
