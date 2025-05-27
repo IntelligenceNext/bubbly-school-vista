@@ -13,16 +13,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { DatePickerWithMonthYear } from '@/components/ui/DatePickerWithMonthYear';
-import { Plus } from 'lucide-react';
+import { Plus, Crown, CheckCircle } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
 import { Session, getSessions, createSession, updateSession, deleteSession } from '@/services/sessionService';
-
-// Define a default school_id to use throughout the application
-const DEFAULT_SCHOOL_ID = 'your_school_id';
+import { evaluateSessionsStatus, evaluateSessionStatus, getCurrentActiveSession } from '@/utils/sessionUtils';
 
 const sessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -46,6 +44,7 @@ const SessionsPage = () => {
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     name: '',
     status: '',
@@ -73,8 +72,13 @@ const SessionsPage = () => {
       console.log('Fetching sessions...');
       const sessions = await getSessions();
       console.log('Sessions fetched:', sessions);
-      setTotal(sessions.length);
-      return sessions;
+      
+      // Evaluate session status based on current date
+      const evaluatedSessions = evaluateSessionsStatus(sessions);
+      console.log('Sessions with evaluated status:', evaluatedSessions);
+      
+      setTotal(evaluatedSessions.length);
+      return evaluatedSessions;
     },
   });
 
@@ -85,7 +89,9 @@ const SessionsPage = () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       toast({
         title: 'Success',
-        description: 'Session created successfully.',
+        description: data.status === 'active' 
+          ? 'Session created and activated successfully. This is now the current session.'
+          : 'Session created successfully.',
       });
       setIsSessionDialogOpen(false);
       setEditingSession(null);
@@ -104,14 +110,18 @@ const SessionsPage = () => {
   const updateSessionMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Omit<Session, 'id' | 'created_at' | 'updated_at'>> }) =>
       updateSession(id, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       toast({
         title: 'Success',
-        description: 'Session updated successfully.',
+        description: data?.status === 'active' 
+          ? 'Session updated and activated successfully. This is now the current session.'
+          : 'Session updated successfully.',
       });
       setIsSessionDialogOpen(false);
       setEditingSession(null);
+      setIsActivateDialogOpen(false);
+      setSelectedSession(null);
       form.reset();
     },
     onError: (error: any) => {
@@ -150,7 +160,14 @@ const SessionsPage = () => {
     {
       id: 'name',
       header: 'Name',
-      cell: (sessionItem) => <div className="font-medium">{sessionItem.name}</div>,
+      cell: (sessionItem) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{sessionItem.name}</span>
+          {sessionItem.is_current && (
+            <Crown className="h-4 w-4 text-yellow-500" />
+          )}
+        </div>
+      ),
       isSortable: true,
       sortKey: 'name',
     },
@@ -165,12 +182,37 @@ const SessionsPage = () => {
       cell: (sessionItem) => <div>{format(new Date(sessionItem.end_date), 'MMM d, yyyy')}</div>,
     },
     {
+      id: 'computed_status',
+      header: 'Date Status',
+      cell: (sessionItem) => {
+        const computedStatus = evaluateSessionStatus(sessionItem);
+        const badgeVariant = computedStatus === 'Active Session' 
+          ? 'success' 
+          : computedStatus === 'Inactive - Past Session' 
+          ? 'secondary' 
+          : 'outline';
+        
+        return (
+          <Badge variant={badgeVariant} className="text-xs">
+            {computedStatus}
+          </Badge>
+        );
+      },
+    },
+    {
       id: 'status',
-      header: 'Status',
+      header: 'System Status',
       cell: (sessionItem) => (
-        <Badge variant={sessionItem.status === 'active' ? 'success' : 'secondary'}>
-          {sessionItem.status === 'active' ? 'Active' : 'Inactive'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={sessionItem.status === 'active' ? 'success' : 'secondary'}>
+            {sessionItem.status === 'active' ? 'Active' : 'Inactive'}
+          </Badge>
+          {sessionItem.is_current && (
+            <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+              Current
+            </Badge>
+          )}
+        </div>
       ),
     },
     {
@@ -186,6 +228,20 @@ const SessionsPage = () => {
       onClick: (sessionItem: Session) => handleEditSession(sessionItem),
     },
     {
+      label: 'Activate',
+      onClick: (sessionItem: Session) => {
+        setSelectedSession(sessionItem);
+        setIsActivateDialogOpen(true);
+      },
+      isVisible: (sessionItem: Session) => sessionItem.status !== 'active',
+    },
+    {
+      label: 'Deactivate',
+      onClick: (sessionItem: Session) => handleDeactivateSession(sessionItem),
+      isVisible: (sessionItem: Session) => sessionItem.status === 'active',
+      variant: 'secondary' as const,
+    },
+    {
       label: 'Delete',
       onClick: (sessionItem: Session) => {
         setSelectedSession(sessionItem);
@@ -197,11 +253,7 @@ const SessionsPage = () => {
 
   const bulkActions = [
     {
-      label: 'Activate',
-      onClick: async (sessions: Session[]) => handleBulkStatusChange(sessions, 'active'),
-    },
-    {
-      label: 'Deactivate',
+      label: 'Deactivate Selected',
       onClick: async (sessions: Session[]) => handleBulkStatusChange(sessions, 'inactive'),
     },
   ];
@@ -231,7 +283,7 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: 'temp', // We'll generate a proper UUID when submitting
+      school_id: 'temp',
     });
     setIsSessionDialogOpen(true);
   };
@@ -248,6 +300,28 @@ const SessionsPage = () => {
     setIsSessionDialogOpen(true);
   };
 
+  const handleActivateSession = async () => {
+    if (!selectedSession) return;
+    
+    updateSessionMutation.mutate({
+      id: selectedSession.id,
+      data: {
+        status: 'active',
+        is_active: true,
+      }
+    });
+  };
+
+  const handleDeactivateSession = async (sessionItem: Session) => {
+    updateSessionMutation.mutate({
+      id: sessionItem.id,
+      data: {
+        status: 'inactive',
+        is_active: false,
+      }
+    });
+  };
+
   const handleDeleteSession = async () => {
     if (!selectedSession) return;
     deleteSessionMutation.mutate(selectedSession.id);
@@ -255,16 +329,25 @@ const SessionsPage = () => {
 
   const handleBulkStatusChange = async (sessions: Session[], status: string) => {
     console.log('Bulk status change:', sessions, status);
+    for (const session of sessions) {
+      await updateSessionMutation.mutateAsync({
+        id: session.id,
+        data: {
+          status: status as 'active' | 'inactive',
+          is_active: status === 'active',
+        }
+      });
+    }
   };
 
   const onSubmit = async (data: SessionFormValues) => {
     console.log('Form submitted with data:', data);
     
     try {
-      // Generate a random UUID for school_id if creating new session
       const sessionData = {
         ...data,
         school_id: editingSession ? editingSession.school_id : crypto.randomUUID(),
+        is_active: data.status === 'active',
       };
 
       if (editingSession) {
@@ -277,6 +360,7 @@ const SessionsPage = () => {
             end_date: sessionData.end_date,
             status: sessionData.status,
             school_id: sessionData.school_id,
+            is_active: sessionData.is_active,
           }
         });
       } else {
@@ -319,7 +403,7 @@ const SessionsPage = () => {
     <PageTemplate title="Sessions" subtitle="Manage sessions">
       <PageHeader
         title="Sessions"
-        description="Create and manage sessions"
+        description="Create and manage sessions. Only one session can be active at a time."
         primaryAction={{
           label: "Add Session",
           onClick: handleCreateSession,
@@ -468,7 +552,7 @@ const SessionsPage = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="active">Active (Will become current session)</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
@@ -509,6 +593,51 @@ const SessionsPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Activate Confirmation Dialog */}
+      <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Activate Session
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>
+              Are you sure you want to activate{" "}
+              <span className="font-semibold">{selectedSession?.name}</span>?
+            </p>
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-800">
+                <strong>Note:</strong> Activating this session will automatically:
+              </p>
+              <ul className="text-sm text-yellow-800 mt-1 ml-4 list-disc">
+                <li>Deactivate all other sessions</li>
+                <li>Make this session the current session</li>
+                <li>All school data will be associated with this session</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsActivateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleActivateSession}
+              disabled={updateSessionMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {updateSessionMutation.isPending ? 'Activating...' : 'Activate Session'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -524,6 +653,13 @@ const SessionsPage = () => {
               This action cannot be undone. This will permanently delete the
               session and all associated data.
             </p>
+            {selectedSession?.is_current && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-800">
+                  <strong>Warning:</strong> This is the current active session. Deleting it will affect all school operations.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
