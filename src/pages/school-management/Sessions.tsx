@@ -210,12 +210,12 @@ const SessionsPage = () => {
         setSelectedSession(sessionItem);
         setIsActivateDialogOpen(true);
       },
-      condition: (sessionItem: Session) => sessionItem.status !== 'active',
+      isVisible: (sessionItem: Session) => sessionItem.status !== 'active',
     },
     {
       label: 'Deactivate',
       onClick: (sessionItem: Session) => handleDeactivateSession(sessionItem),
-      condition: (sessionItem: Session) => sessionItem.status === 'active',
+      isVisible: (sessionItem: Session) => sessionItem.status === 'active',
       variant: 'secondary' as const,
     },
     {
