@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -64,7 +63,7 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: DEFAULT_SCHOOL_ID,
+      school_id: '',
     },
   });
 
@@ -146,6 +145,7 @@ const SessionsPage = () => {
     },
   });
 
+  // Define columns for the DataTable
   const columns: Column<Session>[] = [
     {
       id: 'name',
@@ -231,7 +231,7 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: DEFAULT_SCHOOL_ID,
+      school_id: 'temp', // We'll generate a proper UUID when submitting
     });
     setIsSessionDialogOpen(true);
   };
@@ -243,7 +243,7 @@ const SessionsPage = () => {
       start_date: sessionItem.start_date,
       end_date: sessionItem.end_date,
       status: sessionItem.status as 'active' | 'inactive',
-      school_id: sessionItem.school_id || DEFAULT_SCHOOL_ID,
+      school_id: sessionItem.school_id,
     });
     setIsSessionDialogOpen(true);
   };
@@ -261,26 +261,32 @@ const SessionsPage = () => {
     console.log('Form submitted with data:', data);
     
     try {
+      // Generate a random UUID for school_id if creating new session
+      const sessionData = {
+        ...data,
+        school_id: editingSession ? editingSession.school_id : crypto.randomUUID(),
+      };
+
       if (editingSession) {
         console.log('Updating session:', editingSession.id);
         await updateSessionMutation.mutateAsync({
           id: editingSession.id,
           data: {
-            name: data.name,
-            start_date: data.start_date,
-            end_date: data.end_date,
-            status: data.status,
-            school_id: data.school_id,
+            name: sessionData.name,
+            start_date: sessionData.start_date,
+            end_date: sessionData.end_date,
+            status: sessionData.status,
+            school_id: sessionData.school_id,
           }
         });
       } else {
         console.log('Creating new session');
         await createSessionMutation.mutateAsync({
-          name: data.name,
-          start_date: data.start_date,
-          end_date: data.end_date,
-          status: data.status,
-          school_id: data.school_id,
+          name: sessionData.name,
+          start_date: sessionData.start_date,
+          end_date: sessionData.end_date,
+          status: sessionData.status,
+          school_id: sessionData.school_id,
         });
       }
     } catch (error) {
@@ -305,7 +311,7 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: DEFAULT_SCHOOL_ID,
+      school_id: '',
     });
   };
   
