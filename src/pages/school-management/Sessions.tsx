@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -21,6 +20,7 @@ import * as z from 'zod';
 import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
 import { Session, getSessions, createSession, updateSession, deleteSession } from '@/services/sessionService';
+import { evaluateSessionsStatus, evaluateSessionStatus, getCurrentActiveSession } from '@/utils/sessionUtils';
 
 const sessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -72,8 +72,13 @@ const SessionsPage = () => {
       console.log('Fetching sessions...');
       const sessions = await getSessions();
       console.log('Sessions fetched:', sessions);
-      setTotal(sessions.length);
-      return sessions;
+      
+      // Evaluate session status based on current date
+      const evaluatedSessions = evaluateSessionsStatus(sessions);
+      console.log('Sessions with evaluated status:', evaluatedSessions);
+      
+      setTotal(evaluatedSessions.length);
+      return evaluatedSessions;
     },
   });
 
@@ -177,8 +182,26 @@ const SessionsPage = () => {
       cell: (sessionItem) => <div>{format(new Date(sessionItem.end_date), 'MMM d, yyyy')}</div>,
     },
     {
+      id: 'computed_status',
+      header: 'Date Status',
+      cell: (sessionItem) => {
+        const computedStatus = evaluateSessionStatus(sessionItem);
+        const badgeVariant = computedStatus === 'Active Session' 
+          ? 'success' 
+          : computedStatus === 'Inactive - Past Session' 
+          ? 'secondary' 
+          : 'outline';
+        
+        return (
+          <Badge variant={badgeVariant} className="text-xs">
+            {computedStatus}
+          </Badge>
+        );
+      },
+    },
+    {
       id: 'status',
-      header: 'Status',
+      header: 'System Status',
       cell: (sessionItem) => (
         <div className="flex items-center gap-2">
           <Badge variant={sessionItem.status === 'active' ? 'success' : 'secondary'}>

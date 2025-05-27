@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { evaluateSessionsStatus, type SessionStatus } from '@/utils/sessionUtils';
 
 export interface Session {
   id: string;
@@ -12,6 +13,7 @@ export interface Session {
   updated_at: string | null;
   is_active: boolean | null;
   is_current: boolean | null;
+  computed_status?: SessionStatus; // Add computed status field
 }
 
 export const getSessions = async () => {
@@ -22,7 +24,14 @@ export const getSessions = async () => {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    // Evaluate sessions with computed status based on current date
+    const sessionsWithStatus = evaluateSessionsStatus(data || []);
+    
+    return sessionsWithStatus.map(session => ({
+      ...session,
+      computed_status: session.status as SessionStatus
+    }));
   } catch (error) {
     console.error('Error fetching sessions:', error);
     throw error;
