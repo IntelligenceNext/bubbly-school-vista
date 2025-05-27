@@ -220,7 +220,7 @@ const Schools = () => {
                           {school.enrollment_prefix && (
                             <div>Prefix: {school.enrollment_prefix}</div>
                           )}
-                          {school.enrollment_base_number !== undefined && (
+                          {school.enrollment_base_number !== undefined && school.enrollment_base_number !== null && (
                             <div>Base: {school.enrollment_base_number}</div>
                           )}
                         </div>
@@ -230,7 +230,7 @@ const Schools = () => {
                           {school.admission_prefix && (
                             <div>Prefix: {school.admission_prefix}</div>
                           )}
-                          {school.admission_base_number !== undefined && (
+                          {school.admission_base_number !== undefined && school.admission_base_number !== null && (
                             <div>Base: {school.admission_base_number}</div>
                           )}
                         </div>
@@ -275,7 +275,7 @@ const Schools = () => {
 
         {/* Delete Confirmation Dialog */}
         <DeleteConfirmationDialog
-          isOpen={isDeleteDialogOpen}
+          open={isDeleteDialogOpen}
           onClose={() => {
             setIsDeleteDialogOpen(false);
             setSchoolToDelete(null);

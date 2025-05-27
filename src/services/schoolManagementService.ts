@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -12,6 +11,13 @@ export interface School {
   address: string | null;
   status: 'active' | 'inactive';
   logo_url: string | null;
+  description: string | null;
+  enrollment_prefix: string | null;
+  enrollment_base_number: number | null;
+  enrollment_base_padding: number | null;
+  admission_prefix: string | null;
+  admission_base_number: number | null;
+  admission_base_padding: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -67,6 +73,7 @@ export interface GetSchoolsParams {
   created_at_end?: string;
   page?: number;
   pageSize?: number;
+  search?: string;
 }
 
 export interface GetClassesParams {
@@ -93,7 +100,7 @@ export interface GetSettingsParams {
 // School management APIs
 export const getSchools = async (params: GetSchoolsParams = {}): Promise<PaginatedResponse<School>> => {
   console.log('Fetching schools with params:', params);
-  const { name, status, created_at_start, created_at_end, page, pageSize } = params;
+  const { name, status, created_at_start, created_at_end, page, pageSize, search } = params;
 
   try {
     // Check if user is authenticated
@@ -118,6 +125,10 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
     
     if (name) {
       query = query.ilike('name', `%${name}%`);
+    }
+    
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
     }
     
     if (status) {
@@ -200,6 +211,13 @@ export const createSchool = async (school: Omit<School, 'id' | 'created_at' | 'u
       address: school.address || null,
       status: school.status || 'active',
       logo_url: school.logo_url || null,
+      description: school.description || null,
+      enrollment_prefix: school.enrollment_prefix || null,
+      enrollment_base_number: school.enrollment_base_number || 0,
+      enrollment_base_padding: school.enrollment_base_padding || 6,
+      admission_prefix: school.admission_prefix || null,
+      admission_base_number: school.admission_base_number || 0,
+      admission_base_padding: school.admission_base_padding || 6,
     };
     
     console.log('Prepared school data for insertion:', schoolData);
