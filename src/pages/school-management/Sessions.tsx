@@ -159,7 +159,7 @@ const SessionsPage = () => {
         <div className="flex items-center gap-2">
           <span className="font-medium">{sessionItem.name}</span>
           {sessionItem.is_current && (
-            <Crown className="h-4 w-4 text-yellow-500" title="Current Session" />
+            <Crown className="h-4 w-4 text-yellow-500" />
           )}
         </div>
       ),
