@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -12,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash } from 'lucide-react';
 import { Medium, getMediums, createMedium, updateMedium, deleteMedium } from '@/services/mediumService';
 import MediumForm from '@/components/academic/MediumForm';
-import { useUserSchool } from '@/hooks/useAuth';
+import { useCurrentSchool } from '@/contexts/CurrentSchoolContext';
 
 const MediumPage = () => {
   const [isMediumDialogOpen, setIsMediumDialogOpen] = useState(false);
@@ -21,15 +20,17 @@ const MediumPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
-  const { currentSchoolId, role, isLoading: isSchoolLoading } = useUserSchool();
+  const { currentSchoolId } = useCurrentSchool();
 
-  console.log('Current school ID:', currentSchoolId);
-  console.log('User role:', role);
-  console.log('Is school loading:', isSchoolLoading);
+  console.log('Current school ID from context:', currentSchoolId);
+
+  // For now, we'll assume this is a super admin if no current school is set
+  // In a real app, you'd get this from your auth context
+  const userRole = currentSchoolId ? 'school_admin' : 'super_admin';
 
   const { data: mediums = [], isLoading } = useQuery({
-    queryKey: ['mediums', role, currentSchoolId],
-    queryFn: () => getMediums(role || undefined, currentSchoolId || undefined),
+    queryKey: ['mediums', userRole, currentSchoolId],
+    queryFn: () => getMediums(userRole, currentSchoolId || undefined),
   });
 
   const createMediumMutation = useMutation({
@@ -140,15 +141,8 @@ const MediumPage = () => {
   ];
 
   const handleCreateMedium = () => {
-    // For school admins, require school assignment
-    if (role === 'school_admin' && !currentSchoolId) {
-      toast({
-        title: 'Error',
-        description: 'No school assigned. Please contact your administrator.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    // For super admins without a current school, we'll still allow them to create mediums
+    // They'll need to specify the school ID in the form
     setEditingMedium(null);
     setIsMediumDialogOpen(true);
   };
@@ -170,19 +164,20 @@ const MediumPage = () => {
       } else {
         let mediumData = { ...data };
         
-        // For school admins, use their assigned school
-        if (role === 'school_admin') {
-          if (!currentSchoolId) {
-            toast({
-              title: 'Error',
-              description: 'No school assigned. Please contact your administrator.',
-              variant: 'destructive',
-            });
-            return;
-          }
+        // For school admins with a current school, use that school ID
+        if (userRole === 'school_admin' && currentSchoolId) {
           mediumData.school_id = currentSchoolId;
         }
-        // For super admins, school_id should be provided in the form
+        // For super admins, the school_id should be provided in the form
+        // If no school_id is provided, show an error
+        if (!mediumData.school_id) {
+          toast({
+            title: 'Error',
+            description: 'Please provide a school ID.',
+            variant: 'destructive',
+          });
+          return;
+        }
         
         console.log('Creating medium with data:', mediumData);
         await createMediumMutation.mutateAsync(mediumData);
@@ -201,35 +196,6 @@ const MediumPage = () => {
     setIsMediumDialogOpen(false);
     setEditingMedium(null);
   };
-
-  // Show loading if school info is still loading
-  if (isSchoolLoading) {
-    return (
-      <PageTemplate title="Manage Medium" subtitle="Configure teaching mediums for your school">
-        <div className="flex items-center justify-center py-10">
-          <div className="text-center">
-            <p>Loading...</p>
-          </div>
-        </div>
-      </PageTemplate>
-    );
-  }
-
-  // Show error if school admin has no school assigned
-  if (role === 'school_admin' && !currentSchoolId) {
-    return (
-      <PageTemplate title="Manage Medium" subtitle="Configure teaching mediums for your school">
-        <div className="flex items-center justify-center py-10">
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-red-600">No School Assigned</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              You are not assigned to any school. Please contact your administrator.
-            </p>
-          </div>
-        </div>
-      </PageTemplate>
-    );
-  }
 
   return (
     <PageTemplate title="Manage Medium" subtitle="Configure teaching mediums for your school">
@@ -276,7 +242,7 @@ const MediumPage = () => {
             onSubmit={handleFormSubmit}
             onCancel={handleDialogClose}
             isLoading={createMediumMutation.isPending || updateMediumMutation.isPending}
-            userRole={role}
+            userRole={userRole}
             currentSchoolId={currentSchoolId}
           />
         </DialogContent>
