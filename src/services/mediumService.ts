@@ -11,12 +11,16 @@ export interface Medium {
   updated_at: string | null;
 }
 
-export const getMediums = async () => {
+export const getMediums = async (userRole?: string, schoolId?: string) => {
   console.log('Fetching mediums...');
-  const { data, error } = await supabase
-    .from('mediums')
-    .select('*')
-    .order('created_at', { ascending: false });
+  let query = supabase.from('mediums').select('*');
+  
+  // If user is not a super admin, filter by school
+  if (userRole !== 'super_admin' && schoolId) {
+    query = query.eq('school_id', schoolId);
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
   
   if (error) {
     console.error('Error fetching mediums:', error);

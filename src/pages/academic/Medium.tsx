@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -20,14 +21,15 @@ const MediumPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
-  const { currentSchoolId, isLoading: isSchoolLoading } = useUserSchool();
+  const { currentSchoolId, role, isLoading: isSchoolLoading } = useUserSchool();
 
   console.log('Current school ID:', currentSchoolId);
+  console.log('User role:', role);
   console.log('Is school loading:', isSchoolLoading);
 
   const { data: mediums = [], isLoading } = useQuery({
-    queryKey: ['mediums'],
-    queryFn: getMediums,
+    queryKey: ['mediums', role, currentSchoolId],
+    queryFn: () => getMediums(role || undefined, currentSchoolId || undefined),
   });
 
   const createMediumMutation = useMutation({
@@ -138,7 +140,8 @@ const MediumPage = () => {
   ];
 
   const handleCreateMedium = () => {
-    if (!currentSchoolId) {
+    // For school admins, require school assignment
+    if (role === 'school_admin' && !currentSchoolId) {
       toast({
         title: 'Error',
         description: 'No school assigned. Please contact your administrator.',
@@ -158,15 +161,6 @@ const MediumPage = () => {
   const handleFormSubmit = async (data: any) => {
     console.log('Form submitted with data:', data);
     
-    if (!currentSchoolId) {
-      toast({
-        title: 'Error',
-        description: 'No school assigned. Please contact your administrator.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     try {
       if (editingMedium) {
         await updateMediumMutation.mutateAsync({
@@ -174,10 +168,22 @@ const MediumPage = () => {
           data,
         });
       } else {
-        const mediumData = {
-          ...data,
-          school_id: currentSchoolId,
-        };
+        let mediumData = { ...data };
+        
+        // For school admins, use their assigned school
+        if (role === 'school_admin') {
+          if (!currentSchoolId) {
+            toast({
+              title: 'Error',
+              description: 'No school assigned. Please contact your administrator.',
+              variant: 'destructive',
+            });
+            return;
+          }
+          mediumData.school_id = currentSchoolId;
+        }
+        // For super admins, school_id should be provided in the form
+        
         console.log('Creating medium with data:', mediumData);
         await createMediumMutation.mutateAsync(mediumData);
       }
@@ -209,8 +215,8 @@ const MediumPage = () => {
     );
   }
 
-  // Show error if no school is assigned
-  if (!currentSchoolId) {
+  // Show error if school admin has no school assigned
+  if (role === 'school_admin' && !currentSchoolId) {
     return (
       <PageTemplate title="Manage Medium" subtitle="Configure teaching mediums for your school">
         <div className="flex items-center justify-center py-10">
@@ -270,6 +276,8 @@ const MediumPage = () => {
             onSubmit={handleFormSubmit}
             onCancel={handleDialogClose}
             isLoading={createMediumMutation.isPending || updateMediumMutation.isPending}
+            userRole={role}
+            currentSchoolId={currentSchoolId}
           />
         </DialogContent>
       </Dialog>
