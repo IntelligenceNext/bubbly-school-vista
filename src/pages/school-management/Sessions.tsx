@@ -69,16 +69,12 @@ const SessionsPage = () => {
   const { data: sessionsData, isLoading, refetch } = useQuery({
     queryKey: ['sessions', filters, page, pageSize],
     queryFn: async () => {
-      console.log('Fetching sessions...');
+      console.log('Fetching sessions with auto-sync...');
       const sessions = await getSessions();
-      console.log('Sessions fetched:', sessions);
+      console.log('Sessions fetched with synced status:', sessions);
       
-      // Evaluate session status based on current date
-      const evaluatedSessions = evaluateSessionsStatus(sessions);
-      console.log('Sessions with evaluated status:', evaluatedSessions);
-      
-      setTotal(evaluatedSessions.length);
-      return evaluatedSessions;
+      setTotal(sessions.length);
+      return sessions;
     },
   });
 
@@ -155,7 +151,7 @@ const SessionsPage = () => {
     },
   });
 
-  // Define columns for the DataTable
+  // Define columns for the DataTable with enhanced status display
   const columns: Column<Session>[] = [
     {
       id: 'name',
@@ -193,9 +189,14 @@ const SessionsPage = () => {
           : 'outline';
         
         return (
-          <Badge variant={badgeVariant} className="text-xs">
-            {computedStatus}
-          </Badge>
+          <div className="flex flex-col gap-1">
+            <Badge variant={badgeVariant} className="text-xs">
+              {computedStatus}
+            </Badge>
+            {computedStatus === 'Active Session' && sessionItem.status !== 'active' && (
+              <span className="text-xs text-orange-600">Auto-syncing...</span>
+            )}
+          </div>
         );
       },
     },
@@ -403,7 +404,7 @@ const SessionsPage = () => {
     <PageTemplate title="Sessions" subtitle="Manage sessions">
       <PageHeader
         title="Sessions"
-        description="Create and manage sessions. Only one session can be active at a time."
+        description="Create and manage sessions. Sessions are automatically activated when their date range matches the current date."
         primaryAction={{
           label: "Add Session",
           onClick: handleCreateSession,

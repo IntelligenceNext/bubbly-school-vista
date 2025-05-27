@@ -66,6 +66,37 @@ export const evaluateSessionsStatus = <T extends { start_date: string; end_date:
 };
 
 /**
+ * Evaluates sessions and automatically syncs system status with date status
+ * @param sessions - Array of session objects with system status
+ * @param currentDate - Optional current date (defaults to today)
+ * @returns Array of sessions with synced status
+ */
+export const evaluateAndSyncSessionsStatus = <T extends { 
+  start_date: string; 
+  end_date: string; 
+  status: string; 
+  is_active?: boolean | null;
+}>(
+  sessions: T[],
+  currentDate: Date = new Date()
+): (T & { computed_status: SessionStatus; should_update_system_status: boolean })[] => {
+  return sessions.map(session => {
+    const computedStatus = evaluateSessionStatus(session, currentDate);
+    const isDateActive = computedStatus === 'Active Session';
+    const isSystemActive = session.status === 'active';
+    
+    // Determine if system status should be updated
+    const shouldUpdateSystemStatus = isDateActive && !isSystemActive;
+    
+    return {
+      ...session,
+      computed_status: computedStatus,
+      should_update_system_status: shouldUpdateSystemStatus
+    };
+  });
+};
+
+/**
  * Gets the currently active session from a list of sessions
  * @param sessions - Array of session objects
  * @param currentDate - Optional current date (defaults to today)
