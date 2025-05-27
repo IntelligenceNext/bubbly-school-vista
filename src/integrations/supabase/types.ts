@@ -416,11 +416,18 @@ export type Database = {
         Row: {
           address: string
           admins_count: number
+          admission_base_number: number | null
+          admission_base_padding: number | null
+          admission_prefix: string | null
           classes_count: number
           code: string | null
           created_at: string | null
           created_by: string | null
+          description: string | null
           email: string
+          enrollment_base_number: number | null
+          enrollment_base_padding: number | null
+          enrollment_prefix: string | null
           id: string
           logo: string | null
           logo_url: string | null
@@ -432,11 +439,18 @@ export type Database = {
         Insert: {
           address?: string
           admins_count?: number
+          admission_base_number?: number | null
+          admission_base_padding?: number | null
+          admission_prefix?: string | null
           classes_count?: number
           code?: string | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           email: string
+          enrollment_base_number?: number | null
+          enrollment_base_padding?: number | null
+          enrollment_prefix?: string | null
           id?: string
           logo?: string | null
           logo_url?: string | null
@@ -448,11 +462,18 @@ export type Database = {
         Update: {
           address?: string
           admins_count?: number
+          admission_base_number?: number | null
+          admission_base_padding?: number | null
+          admission_prefix?: string | null
           classes_count?: number
           code?: string | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           email?: string
+          enrollment_base_number?: number | null
+          enrollment_base_padding?: number | null
+          enrollment_prefix?: string | null
           id?: string
           logo?: string | null
           logo_url?: string | null

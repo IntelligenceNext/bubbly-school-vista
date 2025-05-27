@@ -1,641 +1,293 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
-import DataTable, { Column } from '@/components/DataTable';
-import PageHeader from '@/components/PageHeader';
-import { School, getSchools, deleteSchool, bulkUpdateSchoolStatus, updateSchool, createSchool } from '@/services/schoolManagementService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Label } from '@/components/ui/label';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Pencil, Plus, Trash2 } from 'lucide-react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-import FilterDropdown from '@/components/FilterDropdown';
-import usePagination from '@/hooks/usePagination';
-import FileUpload from '@/components/FileUpload';
-import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { School, getSchools, createSchool, updateSchool, deleteSchool } from '@/services/schoolManagementService';
+import SchoolForm from '@/components/SchoolForm';
+import DeleteConfirmationDialog from '@/components/common/DeleteConfirmationDialog';
 
-const schoolSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  code: z.string().min(2, "Code must be at least 2 characters"),
-  email: z.string().email("Invalid email").optional().nullable(),
-  phone: z.string().optional().nullable(),
-  address: z.string().optional().nullable(),
-  status: z.enum(["active", "inactive"]).default("active"),
-});
-
-type SchoolFormValues = z.infer<typeof schoolSchema>;
-
-const SchoolsPage = () => {
-  // ALL HOOKS MUST BE CALLED AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
-  const { user, loading: authLoading } = useAuth();
-  const [isSchoolDialogOpen, setIsSchoolDialogOpen] = useState(false);
-  const [editingSchool, setEditingSchool] = useState<School | null>(null);
+const Schools = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
-  const [filters, setFilters] = useState({
-    name: '',
-    status: '',
-    created_at_start: '',
-    created_at_end: '',
-  });
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
 
-  const pagination = usePagination();
-  const { page, pageSize, setTotal } = pagination;
+  const queryClient = useQueryClient();
 
-  const form = useForm<SchoolFormValues>({
-    resolver: zodResolver(schoolSchema),
-    defaultValues: {
-      name: '',
-      code: '',
-      email: '',
-      phone: '',
-      address: '',
-      status: 'active',
-    },
+  // Fetch schools
+  const { data: schoolsResponse, isLoading, error } = useQuery({
+    queryKey: ['schools', searchTerm],
+    queryFn: () => getSchools({ 
+      page: 1, 
+      pageSize: 100,
+      search: searchTerm || undefined 
+    }),
   });
 
-  const { data: schoolsData, isLoading, refetch } = useQuery({
-    queryKey: ['schools', filters, page, pageSize],
-    queryFn: async () => {
-      const result = await getSchools({
-        ...filters,
-        page,
-        pageSize,
-        status: filters.status as "active" | "inactive" | undefined,
+  // Create school mutation
+  const createMutation = useMutation({
+    mutationFn: createSchool,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schools'] });
+      setIsFormOpen(false);
+      setSelectedSchool(null);
+      toast({
+        title: 'School created',
+        description: 'The school has been created successfully.',
       });
-      setTotal(result.count);
-      return result.data;
     },
-    enabled: !!user, // Only run query if user is authenticated
+    onError: (error: any) => {
+      toast({
+        title: 'Error creating school',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    },
   });
 
-  // NOW HANDLE CONDITIONAL RENDERING AFTER ALL HOOKS ARE CALLED
-  if (authLoading) {
-    return (
-      <PageTemplate title="Schools" subtitle="Manage all schools in the system">
-        <div className="flex justify-center items-center py-10">
-          <p>Loading...</p>
-        </div>
-      </PageTemplate>
-    );
-  }
+  // Update school mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<School> }) =>
+      updateSchool(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schools'] });
+      setIsFormOpen(false);
+      setSelectedSchool(null);
+      toast({
+        title: 'School updated',
+        description: 'The school has been updated successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error updating school',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    },
+  });
 
-  if (!user) {
-    return (
-      <PageTemplate title="Schools" subtitle="Manage all schools in the system">
-        <div className="flex flex-col justify-center items-center py-10">
-          <h3 className="text-lg font-medium mb-2">Authentication Required</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Please log in to access the schools management system.
-          </p>
-          <Button onClick={() => window.location.href = '/auth'}>
-            Go to Login
-          </Button>
-        </div>
-      </PageTemplate>
-    );
-  }
+  // Delete school mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteSchool,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schools'] });
+      setIsDeleteDialogOpen(false);
+      setSchoolToDelete(null);
+      toast({
+        title: 'School deleted',
+        description: 'The school has been deleted successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error deleting school',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    },
+  });
 
-  // ... keep existing code (all the remaining functions and JSX rendering logic)
-
-  const columns: Column<School>[] = [
-    {
-      id: 'name',
-      header: 'Name',
-      cell: (school) => <div className="font-medium">{school.name}</div>,
-      isSortable: true,
-      sortKey: 'name',
-    },
-    {
-      id: 'code',
-      header: 'Code',
-      cell: (school) => <div>{school.code}</div>,
-    },
-    {
-      id: 'email',
-      header: 'Email',
-      cell: (school) => <div>{school.email || '-'}</div>,
-    },
-    {
-      id: 'phone',
-      header: 'Phone',
-      cell: (school) => <div>{school.phone || '-'}</div>,
-      isVisible: false, // Changed 'visible' to 'isVisible'
-    },
-    {
-      id: 'status',
-      header: 'Status',
-      cell: (school) => (
-        <Badge variant={school.status === 'active' ? 'success' : 'secondary'}>
-          {school.status === 'active' ? 'Active' : 'Inactive'}
-        </Badge>
-      ),
-    },
-    {
-      id: 'created_at',
-      header: 'Created',
-      cell: (school) => <div>{format(new Date(school.created_at), 'MMM d, yyyy')}</div>,
-    },
-  ];
-
-  const actions = [
-    {
-      label: 'Edit',
-      onClick: (school: School) => handleEditSchool(school),
-    },
-    {
-      label: 'Delete',
-      onClick: (school: School) => {
-        setSelectedSchool(school);
-        setIsDeleteDialogOpen(true);
-      },
-      variant: 'destructive' as const,
-    },
-  ];
-
-  const bulkActions = [
-    {
-      label: 'Activate',
-      onClick: (schools: School[]) => handleBulkStatusChange(schools, 'active'),
-    },
-    {
-      label: 'Deactivate',
-      onClick: (schools: School[]) => handleBulkStatusChange(schools, 'inactive'),
-    },
-  ];
-
-  const applyFilters = () => {
-    const active: string[] = [];
-    if (filters.name) active.push('name');
-    if (filters.status) active.push('status');
-    if (filters.created_at_start || filters.created_at_end) active.push('date');
-    
-    setActiveFilters(active);
-    refetch();
+  const handleCreateSchool = async (data: any) => {
+    await createMutation.mutateAsync(data);
   };
 
-  const clearFilters = () => {
-    setFilters({
-      name: '',
-      status: '',
-      created_at_start: '',
-      created_at_end: '',
-    });
-    setActiveFilters([]);
-    refetch();
-  };
-
-  const handleCreateSchool = () => {
-    setEditingSchool(null);
-    form.reset({
-      name: '',
-      code: '',
-      email: '',
-      phone: '',
-      address: '',
-      status: 'active',
-    });
-    setIsSchoolDialogOpen(true);
-  };
-
-  const handleEditSchool = (school: School) => {
-    setEditingSchool(school);
-    form.reset({
-      name: school.name,
-      code: school.code,
-      email: school.email || '',
-      phone: school.phone || '',
-      address: school.address || '',
-      status: school.status,
-    });
-    setIsSchoolDialogOpen(true);
+  const handleUpdateSchool = async (data: any) => {
+    if (selectedSchool) {
+      await updateMutation.mutateAsync({ id: selectedSchool.id, data });
+    }
   };
 
   const handleDeleteSchool = async () => {
-    if (!selectedSchool) return;
-    
-    const success = await deleteSchool(selectedSchool.id);
-    if (success) {
-      refetch();
-      setIsDeleteDialogOpen(false);
-      setSelectedSchool(null);
+    if (schoolToDelete) {
+      await deleteMutation.mutateAsync(schoolToDelete.id);
     }
   };
 
-  const handleBulkStatusChange = async (schools: School[], status: 'active' | 'inactive') => {
-    const schoolIds = schools.map(school => school.id);
-    const success = await bulkUpdateSchoolStatus(schoolIds, status);
-    if (success) {
-      refetch();
-    }
+  const openEditForm = (school: School) => {
+    setSelectedSchool(school);
+    setIsFormOpen(true);
   };
 
-  const onSubmit = async (data: SchoolFormValues) => {
-    try {
-      console.log('Submitting form data:', data);
-      
-      if (editingSchool) {
-        // Update existing school
-        console.log('Updating school with ID:', editingSchool.id);
-        const updatedSchool = await updateSchool(editingSchool.id, data);
-
-        if (updatedSchool) {
-          toast({
-            title: 'School updated',
-            description: `${data.name} has been updated successfully.`,
-          });
-          setIsSchoolDialogOpen(false);
-          refetch();
-        }
-      } else {
-        // Create new school - using fixed createSchool function
-        console.log('Creating new school with data:', data);
-        const newSchool = await createSchool({
-          name: data.name,
-          code: data.code,
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-          status: data.status,
-          logo_url: null
-        });
-
-        if (newSchool) {
-          toast({
-            title: 'School created',
-            description: `${data.name} has been created successfully.`,
-          });
-          setIsSchoolDialogOpen(false);
-          refetch();
-        }
-      }
-    } catch (error: any) {
-      console.error('Error in form submission:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'An unexpected error occurred',
-        variant: 'destructive',
-      });
-    }
+  const openCreateForm = () => {
+    setSelectedSchool(null);
+    setIsFormOpen(true);
   };
 
-  const handleLogoUpload = async (schoolId: string, path: string) => {
-    if (!path) return;
-    
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase
-        .from('schools')
-        .update({
-          logo_url: path,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', schoolId);
-
-      if (error) throw error;
-      
-      toast({
-        title: 'Logo updated',
-        description: 'School logo has been updated successfully.',
-      });
-      
-      refetch();
-    } catch (error: any) {
-      toast({
-        title: 'Error updating logo',
-        description: error.message || 'An unexpected error occurred',
-        variant: 'destructive',
-      });
-    }
+  const openDeleteDialog = (school: School) => {
+    setSchoolToDelete(school);
+    setIsDeleteDialogOpen(true);
   };
+
+  const schools = schoolsResponse?.data || [];
+
+  if (error) {
+    return (
+      <PageTemplate title="Schools" subtitle="Manage educational institutions">
+        <div className="text-center py-8">
+          <p className="text-red-600">Error loading schools: {(error as Error).message}</p>
+        </div>
+      </PageTemplate>
+    );
+  }
 
   return (
-    <PageTemplate title="Schools" subtitle="Manage all schools in the system">
-      <PageHeader
-        title="Schools"
-        description="Create and manage schools in the system"
-        primaryAction={{
-          label: "Add School",
-          onClick: handleCreateSchool,
-          icon: <Plus className="h-4 w-4 mr-2" />,
-        }}
-        actions={[
-          <FilterDropdown
-            key="filter"
-            filters={
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name-filter">School Name</Label>
-                  <Input
-                    id="name-filter"
-                    placeholder="Search by name"
-                    value={filters.name}
-                    onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="status-filter">Status</Label>
-                  <Select
-                    value={filters.status}
-                    onValueChange={(value) => setFilters({ ...filters, status: value })}
-                  >
-                    <SelectTrigger id="status-filter">
-                      <SelectValue placeholder="All statuses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Created Date Range</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filters.created_at_start ? (
-                            format(new Date(filters.created_at_start), "PPP")
-                          ) : (
-                            <span>From date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={filters.created_at_start ? new Date(filters.created_at_start) : undefined}
-                          onSelect={(date) =>
-                            setFilters({
-                              ...filters,
-                              created_at_start: date ? date.toISOString() : "",
-                            })
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filters.created_at_end ? (
-                            format(new Date(filters.created_at_end), "PPP")
-                          ) : (
-                            <span>To date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={filters.created_at_end ? new Date(filters.created_at_end) : undefined}
-                          onSelect={(date) =>
-                            setFilters({
-                              ...filters,
-                              created_at_end: date ? date.toISOString() : "",
-                            })
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </div>
-            }
-            onClear={clearFilters}
-            onApply={applyFilters}
-            activeFiltersCount={activeFilters.length}
-          />,
-        ]}
-      />
-
-      <DataTable
-        data={schoolsData || []}
-        columns={columns}
-        keyField="id"
-        isLoading={isLoading}
-        selectable={true}
-        actions={actions}
-        bulkActions={bulkActions}
-        emptyState={
-          <div className="text-center py-10">
-            <h3 className="text-lg font-medium">No schools found</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Add a new school to get started.
-            </p>
-            <Button className="mt-4" onClick={handleCreateSchool}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add School
-            </Button>
+    <PageTemplate title="Schools" subtitle="Manage educational institutions">
+      <div className="space-y-6">
+        {/* Header Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search schools..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        }
-      />
+          <Button onClick={openCreateForm} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add School
+          </Button>
+        </div>
 
-      {/* School Dialog */}
-      <Dialog open={isSchoolDialogOpen} onOpenChange={setIsSchoolDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>
-              {editingSchool ? "Edit School" : "Add New School"}
-            </DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>School Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter school name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>School Code</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter school code" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter email" {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter phone" {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        {/* Schools Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Schools ({schools.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">Loading schools...</div>
+            ) : schools.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No schools found</p>
               </div>
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter address" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {editingSchool && (
-                <div className="pt-4 border-t">
-                  <FormLabel>School Logo</FormLabel>
-                  <div className="mt-2">
-                    <FileUpload 
-                      bucket="school_logos"
-                      maxSize={1}
-                      acceptedFileTypes={["image/*"]}
-                      buttonText="Upload Logo"
-                      onUploadComplete={(path) => handleLogoUpload(editingSchool.id, path)}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsSchoolDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingSchool ? "Update School" : "Create School"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Enrollment</TableHead>
+                    <TableHead>Admission</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {schools.map((school) => (
+                    <TableRow key={school.id}>
+                      <TableCell className="font-medium">{school.name}</TableCell>
+                      <TableCell>
+                        {school.code && (
+                          <Badge variant="outline">{school.code}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{school.email}</div>
+                          <div className="text-gray-500">{school.phone}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {school.address}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={school.status === 'active' ? 'default' : 'secondary'}>
+                          {school.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {school.enrollment_prefix && (
+                            <div>Prefix: {school.enrollment_prefix}</div>
+                          )}
+                          {school.enrollment_base_number !== undefined && (
+                            <div>Base: {school.enrollment_base_number}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {school.admission_prefix && (
+                            <div>Prefix: {school.admission_prefix}</div>
+                          )}
+                          {school.admission_base_number !== undefined && (
+                            <div>Base: {school.admission_base_number}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditForm(school)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDeleteDialog(school)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold">{selectedSchool?.name}</span>?
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              This action cannot be undone. This will permanently delete the
-              school and all associated data.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDeleteSchool}
-            >
-              Delete School
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* School Form Dialog */}
+        <SchoolForm
+          isOpen={isFormOpen}
+          onClose={() => {
+            setIsFormOpen(false);
+            setSelectedSchool(null);
+          }}
+          onSubmit={selectedSchool ? handleUpdateSchool : handleCreateSchool}
+          school={selectedSchool}
+          isLoading={createMutation.isPending || updateMutation.isPending}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => {
+            setIsDeleteDialogOpen(false);
+            setSchoolToDelete(null);
+          }}
+          onConfirm={handleDeleteSchool}
+          title="Delete School"
+          description={`Are you sure you want to delete "${schoolToDelete?.name}"? This action cannot be undone.`}
+          isLoading={deleteMutation.isPending}
+        />
+      </div>
     </PageTemplate>
   );
 };
 
-export default SchoolsPage;
+export default Schools;
