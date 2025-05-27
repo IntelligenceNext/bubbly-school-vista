@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -6,6 +5,7 @@ import {
   DollarSign, Award, Truck, Activity, Landmark, BookOpen as Book, LifeBuoy, Library 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUserSchool } from '@/hooks/useUserSchool';
 
 interface NavItemProps {
   title: string;
@@ -91,6 +91,7 @@ interface SidebarNavigationProps {
 const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigationProps) => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { isSuperAdmin, isSchoolAdmin, loading } = useUserSchool();
 
   return (
     <aside 
@@ -117,38 +118,42 @@ const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigatio
       <div className="flex-1 px-3 py-4 overflow-y-auto">
         <nav>
           <ul className="space-y-1">
-            <NavItem 
-              title="School Management" 
-              icon={<Home size={18} />} 
-              isActive={currentPath.startsWith('/school-management')}
-            >
-              <SubNavItem 
-                title="Dashboard" 
-                isActive={currentPath === '/school-management/dashboard'} 
-                to="/school-management/dashboard" 
-              />
-              <SubNavItem 
-                title="Schools" 
-                isActive={currentPath === '/school-management/schools'} 
-                to="/school-management/schools" 
-              />
-              <SubNavItem 
-                title="Classes" 
-                isActive={currentPath === '/school-management/classes'} 
-                to="/school-management/classes" 
-              />
-              <SubNavItem 
-                title="Sessions" 
-                isActive={currentPath === '/school-management/sessions'} 
-                to="/school-management/sessions" 
-              />
-              <SubNavItem 
-                title="Settings" 
-                isActive={currentPath === '/school-management/settings'} 
-                to="/school-management/settings" 
-              />
-            </NavItem>
+            {/* School Management - Only visible to Super Admins */}
+            {!loading && isSuperAdmin && (
+              <NavItem 
+                title="School Management" 
+                icon={<Home size={18} />} 
+                isActive={currentPath.startsWith('/school-management')}
+              >
+                <SubNavItem 
+                  title="Dashboard" 
+                  isActive={currentPath === '/school-management/dashboard'} 
+                  to="/school-management/dashboard" 
+                />
+                <SubNavItem 
+                  title="Schools" 
+                  isActive={currentPath === '/school-management/schools'} 
+                  to="/school-management/schools" 
+                />
+                <SubNavItem 
+                  title="Classes" 
+                  isActive={currentPath === '/school-management/classes'} 
+                  to="/school-management/classes" 
+                />
+                <SubNavItem 
+                  title="Sessions" 
+                  isActive={currentPath === '/school-management/sessions'} 
+                  to="/school-management/sessions" 
+                />
+                <SubNavItem 
+                  title="Settings" 
+                  isActive={currentPath === '/school-management/settings'} 
+                  to="/school-management/settings" 
+                />
+              </NavItem>
+            )}
             
+            {/* School - Visible to both Super Admins and School Admins */}
             <NavItem 
               title="School" 
               icon={<Settings size={18} />}
@@ -176,6 +181,7 @@ const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigatio
               />
             </NavItem>
             
+            {/* Academic - Visible to both roles */}
             <NavItem 
               title="Academic" 
               icon={<BookOpen size={18} />}
@@ -258,6 +264,7 @@ const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigatio
               />
             </NavItem>
             
+            {/* Student - Visible to both roles */}
             <NavItem 
               title="Student" 
               icon={<Users size={18} />}
@@ -305,6 +312,7 @@ const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigatio
               />
             </NavItem>
             
+            {/* Administrator - Visible to both roles */}
             <NavItem 
               title="Administrator" 
               icon={<UserCheck size={18} />}
@@ -342,6 +350,7 @@ const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigatio
               />
             </NavItem>
             
+            {/* Rest of the menu items remain the same */}
             <NavItem 
               title="Accounting" 
               icon={<DollarSign size={18} />}
