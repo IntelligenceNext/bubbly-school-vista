@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -461,35 +462,24 @@ const SessionsPage = () => {
   
   const getRoleDisplay = () => {
     if (isSuperAdmin) {
-      return (
-        <div className="flex items-center gap-2 text-sm">
-          <Shield className="h-4 w-4 text-purple-600" />
-          <span className="font-medium text-purple-600">Super Admin</span>
-          <span className="text-muted-foreground">- Full system access</span>
-        </div>
-      );
+      return `Super Admin - Full system access`;
     } else if (isSchoolAdmin) {
-      return (
-        <div className="flex items-center gap-2 text-sm">
-          <User className="h-4 w-4 text-blue-600" />
-          <span className="font-medium text-blue-600">School Admin</span>
-          <span className="text-muted-foreground">- {userSchoolAssignment?.school_id ? 'Assigned school access' : 'No school assigned'}</span>
-        </div>
-      );
+      return `School Admin - ${userSchoolAssignment?.school_id ? 'Assigned school access' : 'No school assigned'}`;
     }
-    return null;
+    return '';
+  };
+  
+  const getDescriptionText = () => {
+    const baseText = `Create and manage sessions for ${isSuperAdmin ? 'all schools' : 'your school'}. Sessions are automatically activated when their date range matches the current date.`;
+    const roleText = getRoleDisplay();
+    return roleText ? `${baseText} ${roleText}` : baseText;
   };
   
   return (
     <PageTemplate title="Sessions" subtitle="Manage sessions">
       <PageHeader
         title="Sessions"
-        description={
-          <div className="space-y-2">
-            <p>Create and manage sessions for {isSuperAdmin ? 'all schools' : 'your school'}. Sessions are automatically activated when their date range matches the current date.</p>
-            {getRoleDisplay()}
-          </div>
-        }
+        description={getDescriptionText()}
         primaryAction={{
           label: "Add Session",
           onClick: handleCreateSession,
@@ -533,6 +523,22 @@ const SessionsPage = () => {
           />,
         ]}
       />
+
+      {isSuperAdmin && (
+        <div className="flex items-center gap-2 text-sm mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+          <Shield className="h-4 w-4 text-purple-600" />
+          <span className="font-medium text-purple-600">Super Admin</span>
+          <span className="text-purple-700">- Full system access</span>
+        </div>
+      )}
+
+      {isSchoolAdmin && (
+        <div className="flex items-center gap-2 text-sm mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <User className="h-4 w-4 text-blue-600" />
+          <span className="font-medium text-blue-600">School Admin</span>
+          <span className="text-blue-700">- {userSchoolAssignment?.school_id ? 'Assigned school access' : 'No school assigned'}</span>
+        </div>
+      )}
 
       <DataTable
         data={sessionsData || []}
