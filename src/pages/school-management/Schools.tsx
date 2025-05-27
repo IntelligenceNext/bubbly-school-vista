@@ -276,14 +276,15 @@ const Schools = () => {
         {/* Delete Confirmation Dialog */}
         <DeleteConfirmationDialog
           open={isDeleteDialogOpen}
-          onClose={() => {
-            setIsDeleteDialogOpen(false);
-            setSchoolToDelete(null);
+          onOpenChange={(open) => {
+            setIsDeleteDialogOpen(open);
+            if (!open) {
+              setSchoolToDelete(null);
+            }
           }}
           onConfirm={handleDeleteSchool}
           title="Delete School"
           description={`Are you sure you want to delete "${schoolToDelete?.name}"? This action cannot be undone.`}
-          isLoading={deleteMutation.isPending}
         />
       </div>
     </PageTemplate>
