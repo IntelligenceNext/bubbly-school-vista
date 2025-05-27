@@ -290,6 +290,36 @@ export type Database = {
         }
         Relationships: []
       }
+      mediums: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          school_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          school_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          school_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       permissions: {
         Row: {
           category: string
@@ -831,6 +861,44 @@ export type Database = {
           },
         ]
       }
+      user_school_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["user_role"]
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["user_role"]
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["user_role"]
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_school_assignments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users_to_schools: {
         Row: {
           created_at: string | null
@@ -904,13 +972,25 @@ export type Database = {
       }
     }
     Functions: {
+      get_user_school_id: {
+        Args: { user_uuid?: string }
+        Returns: string
+      }
+      is_school_admin_for_school: {
+        Args: { school_uuid: string; user_uuid?: string }
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
       user_has_permission: {
         Args: { permission_name: string }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "super_admin" | "school_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1025,6 +1105,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["super_admin", "school_admin"],
+    },
   },
 } as const
