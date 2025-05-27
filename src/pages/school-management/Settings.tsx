@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Settings as SettingsIcon, Save, Upload, Palette, Mail, Globe } from 'lucide-react';
+import { getSchools } from '@/services/schoolManagementService';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState({
+    schoolId: '',
     schoolName: 'Greenwood Academy',
     email: 'admin@greenwood.edu',
     phone: '+1 (555) 123-4567',
@@ -22,11 +24,32 @@ const Settings = () => {
     logo: null as File | null
   });
 
+  // Fetch schools for the lookup
+  const { data: schoolsData, isLoading: isLoadingSchools } = useQuery({
+    queryKey: ['schools'],
+    queryFn: async () => {
+      const result = await getSchools({ page: 1, pageSize: 100 });
+      return result.data;
+    },
+  });
+
   const handleSettingChange = (key: string, value: string | File | null) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: value
-    }));
+    setSettings(prev => {
+      const newSettings = {
+        ...prev,
+        [key]: value
+      };
+      
+      // If school selection changes, update school name
+      if (key === 'schoolId' && schoolsData) {
+        const selectedSchool = schoolsData.find(school => school.id === value);
+        if (selectedSchool) {
+          newSettings.schoolName = selectedSchool.name;
+        }
+      }
+      
+      return newSettings;
+    });
   };
 
   const handleSave = () => {
@@ -54,13 +77,23 @@ const Settings = () => {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="schoolName">School Name</Label>
-              <Input
-                id="schoolName"
-                value={settings.schoolName}
-                onChange={(e) => handleSettingChange('schoolName', e.target.value)}
-                placeholder="Enter school name"
-              />
+              <Label htmlFor="schoolSelect">Select School</Label>
+              <Select
+                value={settings.schoolId}
+                onValueChange={(value) => handleSettingChange('schoolId', value)}
+                disabled={isLoadingSchools}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingSchools ? "Loading schools..." : "Select a school"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {schoolsData?.map((school) => (
+                    <SelectItem key={school.id} value={school.id}>
+                      {school.name} {school.code ? `(${school.code})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="logo">School Logo</Label>
