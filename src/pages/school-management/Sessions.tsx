@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -22,7 +23,6 @@ import usePagination from '@/hooks/usePagination';
 import { Session, getSessions, createSession, updateSession, deleteSession } from '@/services/sessionService';
 
 // Define a default school_id to use throughout the application
-// In a real application, you would get this from user context/authentication
 const DEFAULT_SCHOOL_ID = 'your_school_id';
 
 const sessionSchema = z.object({
@@ -30,7 +30,7 @@ const sessionSchema = z.object({
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().min(1, "End date is required"),
   status: z.enum(["active", "inactive"]).default("active"),
-  school_id: z.string().uuid(),
+  school_id: z.string().min(1, "School ID is required"),
 }).refine((data) => {
   const startDate = new Date(data.start_date);
   const endDate = new Date(data.end_date);
@@ -89,13 +89,8 @@ const SessionsPage = () => {
         description: 'Session created successfully.',
       });
       setIsSessionDialogOpen(false);
-      form.reset({
-        name: '',
-        start_date: '',
-        end_date: '',
-        status: 'active',
-        school_id: DEFAULT_SCHOOL_ID,
-      });
+      setEditingSession(null);
+      form.reset();
     },
     onError: (error: any) => {
       console.error('Create session error:', error);
@@ -118,13 +113,7 @@ const SessionsPage = () => {
       });
       setIsSessionDialogOpen(false);
       setEditingSession(null);
-      form.reset({
-        name: '',
-        start_date: '',
-        end_date: '',
-        status: 'active',
-        school_id: DEFAULT_SCHOOL_ID,
-      });
+      form.reset();
     },
     onError: (error: any) => {
       console.error('Update session error:', error);
@@ -235,8 +224,7 @@ const SessionsPage = () => {
   };
 
   const handleCreateSession = () => {
-    console.log('handleCreateSession called - Create Session button clicked');
-    console.log('Current dialog state:', isSessionDialogOpen);
+    console.log('Opening create session dialog');
     setEditingSession(null);
     form.reset({
       name: '',
@@ -245,9 +233,7 @@ const SessionsPage = () => {
       status: 'active',
       school_id: DEFAULT_SCHOOL_ID,
     });
-    console.log('Setting dialog to open...');
     setIsSessionDialogOpen(true);
-    console.log('Dialog should now be open');
   };
 
   const handleEditSession = (sessionItem: Session) => {
@@ -272,34 +258,7 @@ const SessionsPage = () => {
   };
 
   const onSubmit = async (data: SessionFormValues) => {
-    console.log('onSubmit called with data:', data);
-    console.log('Form validation state:', form.formState);
-    console.log('Form errors:', form.formState.errors);
-    
-    // Validate that we have all required fields
-    if (!data.name || !data.start_date || !data.end_date) {
-      console.log('Missing required fields');
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate date order
-    const startDate = new Date(data.start_date);
-    const endDate = new Date(data.end_date);
-    
-    if (endDate <= startDate) {
-      console.log('Invalid date range');
-      toast({
-        title: 'Error',
-        description: 'End date must be after start date.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    console.log('Form submitted with data:', data);
     
     try {
       if (editingSession) {
@@ -315,16 +274,14 @@ const SessionsPage = () => {
           }
         });
       } else {
-        console.log('Creating new session with data:', data);
-        console.log('Mutation pending state:', createSessionMutation.isPending);
-        const result = await createSessionMutation.mutateAsync({
+        console.log('Creating new session');
+        await createSessionMutation.mutateAsync({
           name: data.name,
           start_date: data.start_date,
           end_date: data.end_date,
           status: data.status,
           school_id: data.school_id,
         });
-        console.log('Session creation result:', result);
       }
     } catch (error) {
       console.error('Form submission error:', error);
@@ -332,17 +289,25 @@ const SessionsPage = () => {
   };
 
   const handleDateChange = (field: any, date: Date | undefined) => {
-    console.log('Date change called:', date);
     if (date) {
       const formattedDate = format(date, 'yyyy-MM-dd');
-      console.log('Formatted date:', formattedDate);
       field.onChange(formattedDate);
     } else {
       field.onChange('');
     }
   };
-  
-  console.log('Rendering SessionsPage with dialog state:', isSessionDialogOpen);
+
+  const handleDialogClose = () => {
+    setIsSessionDialogOpen(false);
+    setEditingSession(null);
+    form.reset({
+      name: '',
+      start_date: '',
+      end_date: '',
+      status: 'active',
+      school_id: DEFAULT_SCHOOL_ID,
+    });
+  };
   
   return (
     <PageTemplate title="Sessions" subtitle="Manage sessions">
@@ -416,10 +381,7 @@ const SessionsPage = () => {
       />
 
       {/* Session Dialog */}
-      <Dialog open={isSessionDialogOpen} onOpenChange={(open) => {
-        console.log('Dialog onOpenChange called with:', open);
-        setIsSessionDialogOpen(open);
-      }}>
+      <Dialog open={isSessionDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
             <DialogTitle>
@@ -522,24 +484,13 @@ const SessionsPage = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    console.log('Cancel button clicked');
-                    setIsSessionDialogOpen(false);
-                    form.reset({
-                      name: '',
-                      start_date: '',
-                      end_date: '',
-                      status: 'active',
-                      school_id: DEFAULT_SCHOOL_ID,
-                    });
-                  }}
+                  onClick={handleDialogClose}
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={createSessionMutation.isPending || updateSessionMutation.isPending}
-                  onClick={() => console.log('Submit button clicked')}
                 >
                   {createSessionMutation.isPending || updateSessionMutation.isPending 
                     ? 'Saving...' 
