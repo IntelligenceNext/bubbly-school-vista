@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { DatePickerWithMonthYear } from '@/components/ui/DatePickerWithMonthYear';
-import { Plus, Crown, CheckCircle } from 'lucide-react';
+import { Plus, Crown, CheckCircle, Building2 } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -21,6 +21,7 @@ import FilterDropdown from '@/components/FilterDropdown';
 import usePagination from '@/hooks/usePagination';
 import { Session, getSessions, createSession, updateSession, deleteSession } from '@/services/sessionService';
 import { evaluateSessionsStatus, evaluateSessionStatus, getCurrentActiveSession } from '@/utils/sessionUtils';
+import { useUserSchool } from '@/hooks/useUserSchool';
 
 const sessionSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -40,6 +41,8 @@ const sessionSchema = z.object({
 type SessionFormValues = z.infer<typeof sessionSchema>;
 
 const SessionsPage = () => {
+  const { userSchoolAssignment, schoolId, loading: schoolLoading } = useUserSchool();
+  
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -67,15 +70,21 @@ const SessionsPage = () => {
   });
 
   const { data: sessionsData, isLoading, refetch } = useQuery({
-    queryKey: ['sessions', filters, page, pageSize],
+    queryKey: ['sessions', filters, page, pageSize, schoolId],
     queryFn: async () => {
-      console.log('Fetching sessions with auto-sync...');
+      if (!schoolId) {
+        console.log('No school assigned to user, skipping sessions fetch');
+        return [];
+      }
+      
+      console.log('Fetching sessions with auto-sync for school:', schoolId);
       const sessions = await getSessions();
       console.log('Sessions fetched with synced status:', sessions);
       
       setTotal(sessions.length);
       return sessions;
     },
+    enabled: !!schoolId && !schoolLoading,
   });
 
   const createSessionMutation = useMutation({
@@ -150,6 +159,38 @@ const SessionsPage = () => {
       });
     },
   });
+
+  // Show loading or no school assignment message
+  if (schoolLoading) {
+    return (
+      <PageTemplate title="Sessions" subtitle="Loading...">
+        <div className="flex items-center justify-center py-10">
+          <div className="text-center">
+            <h3 className="text-lg font-medium">Loading...</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Checking your school assignment...
+            </p>
+          </div>
+        </div>
+      </PageTemplate>
+    );
+  }
+
+  if (!userSchoolAssignment || !schoolId) {
+    return (
+      <PageTemplate title="Sessions" subtitle="No School Access">
+        <div className="flex items-center justify-center py-10">
+          <div className="text-center">
+            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium">No School Assignment</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              You are not assigned to any school. Please contact your administrator.
+            </p>
+          </div>
+        </div>
+      </PageTemplate>
+    );
+  }
 
   // Define columns for the DataTable with enhanced status display
   const columns: Column<Session>[] = [
@@ -277,14 +318,23 @@ const SessionsPage = () => {
   };
 
   const handleCreateSession = () => {
-    console.log('Opening create session dialog');
+    if (!schoolId) {
+      toast({
+        title: 'Error',
+        description: 'No school assigned. Cannot create session.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    console.log('Opening create session dialog for school:', schoolId);
     setEditingSession(null);
     form.reset({
       name: '',
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: 'temp',
+      school_id: schoolId,
     });
     setIsSessionDialogOpen(true);
   };
@@ -344,10 +394,19 @@ const SessionsPage = () => {
   const onSubmit = async (data: SessionFormValues) => {
     console.log('Form submitted with data:', data);
     
+    if (!schoolId) {
+      toast({
+        title: 'Error',
+        description: 'No school assigned. Cannot save session.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       const sessionData = {
         ...data,
-        school_id: editingSession ? editingSession.school_id : crypto.randomUUID(),
+        school_id: schoolId,
         is_active: data.status === 'active',
       };
 
@@ -365,7 +424,7 @@ const SessionsPage = () => {
           }
         });
       } else {
-        console.log('Creating new session');
+        console.log('Creating new session for school:', schoolId);
         await createSessionMutation.mutateAsync({
           name: sessionData.name,
           start_date: sessionData.start_date,
@@ -396,7 +455,7 @@ const SessionsPage = () => {
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: '',
+      school_id: schoolId || '',
     });
   };
   
@@ -404,7 +463,7 @@ const SessionsPage = () => {
     <PageTemplate title="Sessions" subtitle="Manage sessions">
       <PageHeader
         title="Sessions"
-        description="Create and manage sessions. Sessions are automatically activated when their date range matches the current date."
+        description={`Create and manage sessions for your school. Sessions are automatically activated when their date range matches the current date. (Role: ${userSchoolAssignment.role})`}
         primaryAction={{
           label: "Add Session",
           onClick: handleCreateSession,
