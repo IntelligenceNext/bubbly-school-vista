@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import { evaluateSessionsStatus, evaluateAndSyncSessionsStatus, type SessionStatus } from '@/utils/sessionUtils';
-import { isSuperAdmin } from './userSchoolService';
 
 export interface Session {
   id: string;
@@ -18,7 +17,7 @@ export interface Session {
 
 export const getSessions = async () => {
   try {
-    console.log('Fetching sessions with role-based filtering...');
+    console.log('Fetching sessions with school-based filtering...');
     
     // Check if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
@@ -26,10 +25,6 @@ export const getSessions = async () => {
       console.error('User not authenticated');
       return [];
     }
-
-    // Check if user is super admin
-    const userIsSuperAdmin = await isSuperAdmin();
-    console.log('User is super admin:', userIsSuperAdmin);
 
     const { data, error } = await supabase
       .from('sessions')
@@ -41,7 +36,7 @@ export const getSessions = async () => {
       throw error;
     }
     
-    console.log(`Fetched ${data?.length || 0} sessions (super admin: ${userIsSuperAdmin})`);
+    console.log(`Fetched ${data?.length || 0} sessions for user's assigned school`);
     
     // Evaluate sessions with computed status and check if system status needs updating
     const sessionsWithStatus = evaluateAndSyncSessionsStatus(data || []);

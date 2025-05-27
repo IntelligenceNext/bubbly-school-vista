@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { isSuperAdmin } from './userSchoolService';
 
 // Interfaces for tables
 export interface School {
@@ -116,9 +115,7 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
       return { data: [], count: 0 };
     }
 
-    // Check if user is super admin
-    const userIsSuperAdmin = await isSuperAdmin();
-    console.log('User is super admin:', userIsSuperAdmin, 'proceeding with query');
+    console.log('User is authenticated, proceeding with query');
     
     let query = supabase
       .from('schools')
@@ -165,7 +162,7 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
       throw error;
     }
     
-    console.log(`Retrieved ${count} schools (super admin: ${userIsSuperAdmin}):`, data);
+    console.log(`Retrieved ${count} schools:`, data);
     
     // Ensure status is cast to the correct type
     const typedData = data?.map(school => ({
