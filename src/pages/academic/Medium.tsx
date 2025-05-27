@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -21,7 +20,10 @@ const MediumPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
-  const { currentSchoolId } = useUserSchool();
+  const { currentSchoolId, isLoading: isSchoolLoading } = useUserSchool();
+
+  console.log('Current school ID:', currentSchoolId);
+  console.log('Is school loading:', isSchoolLoading);
 
   const { data: mediums = [], isLoading } = useQuery({
     queryKey: ['mediums'],
@@ -40,6 +42,7 @@ const MediumPage = () => {
       setEditingMedium(null);
     },
     onError: (error: any) => {
+      console.error('Create medium error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to create medium.',
@@ -60,6 +63,7 @@ const MediumPage = () => {
       setEditingMedium(null);
     },
     onError: (error: any) => {
+      console.error('Update medium error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to update medium.',
@@ -80,6 +84,7 @@ const MediumPage = () => {
       setSelectedMedium(null);
     },
     onError: (error: any) => {
+      console.error('Delete medium error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete medium.',
@@ -133,6 +138,14 @@ const MediumPage = () => {
   ];
 
   const handleCreateMedium = () => {
+    if (!currentSchoolId) {
+      toast({
+        title: 'Error',
+        description: 'No school assigned. Please contact your administrator.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setEditingMedium(null);
     setIsMediumDialogOpen(true);
   };
@@ -143,6 +156,17 @@ const MediumPage = () => {
   };
 
   const handleFormSubmit = async (data: any) => {
+    console.log('Form submitted with data:', data);
+    
+    if (!currentSchoolId) {
+      toast({
+        title: 'Error',
+        description: 'No school assigned. Please contact your administrator.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       if (editingMedium) {
         await updateMediumMutation.mutateAsync({
@@ -150,10 +174,12 @@ const MediumPage = () => {
           data,
         });
       } else {
-        await createMediumMutation.mutateAsync({
+        const mediumData = {
           ...data,
-          school_id: currentSchoolId || crypto.randomUUID(),
-        });
+          school_id: currentSchoolId,
+        };
+        console.log('Creating medium with data:', mediumData);
+        await createMediumMutation.mutateAsync(mediumData);
       }
     } catch (error) {
       console.error('Form submission error:', error);
@@ -169,6 +195,35 @@ const MediumPage = () => {
     setIsMediumDialogOpen(false);
     setEditingMedium(null);
   };
+
+  // Show loading if school info is still loading
+  if (isSchoolLoading) {
+    return (
+      <PageTemplate title="Manage Medium" subtitle="Configure teaching mediums for your school">
+        <div className="flex items-center justify-center py-10">
+          <div className="text-center">
+            <p>Loading...</p>
+          </div>
+        </div>
+      </PageTemplate>
+    );
+  }
+
+  // Show error if no school is assigned
+  if (!currentSchoolId) {
+    return (
+      <PageTemplate title="Manage Medium" subtitle="Configure teaching mediums for your school">
+        <div className="flex items-center justify-center py-10">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-red-600">No School Assigned</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              You are not assigned to any school. Please contact your administrator.
+            </p>
+          </div>
+        </div>
+      </PageTemplate>
+    );
+  }
 
   return (
     <PageTemplate title="Manage Medium" subtitle="Configure teaching mediums for your school">
