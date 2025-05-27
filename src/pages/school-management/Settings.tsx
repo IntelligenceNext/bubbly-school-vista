@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Save, Upload, Palette, Mail, Globe } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Upload, Palette, Mail, Globe } from 'lucide-react';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -42,7 +42,7 @@ const Settings = () => {
   };
 
   const tabs = [
-    { id: 'general', label: 'General', icon: Settings },
+    { id: 'general', label: 'General', icon: SettingsIcon },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'contact', label: 'Contact', icon: Mail },
     { id: 'website', label: 'Website', icon: Globe }
