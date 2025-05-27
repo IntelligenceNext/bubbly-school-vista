@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useCurrentSchool } from '@/contexts/CurrentSchoolContext';
 import { 
   Users, 
   BookOpen, 
@@ -28,8 +29,11 @@ import { getSchools, getClasses, getSessions } from '@/services/schoolManagement
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Dashboard = () => {
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('');
+  const { currentSchoolId, setCurrentSchoolId } = useCurrentSchool();
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+
+  // Use currentSchoolId from context instead of local state
+  const selectedSchoolId = currentSchoolId || '';
 
   // Fetch all schools for the dropdown
   const { data: schoolsResponse, isLoading: isLoadingSchools } = useQuery({
@@ -68,6 +72,23 @@ const Dashboard = () => {
   // Find selected school and session
   const selectedSchool = schools.find(school => school.id === selectedSchoolId);
   const selectedSession = sessions.find(session => session.id === selectedSessionId) || sessions.find(s => s.is_current);
+
+  // Auto-select first school if no current school is set
+  useEffect(() => {
+    if (!selectedSchoolId && schools.length > 0) {
+      setCurrentSchoolId(schools[0].id);
+    }
+  }, [schools, selectedSchoolId, setCurrentSchoolId]);
+
+  // Auto-select current session if available
+  useEffect(() => {
+    if (!selectedSessionId && sessions.length > 0) {
+      const currentSession = sessions.find(s => s.is_current);
+      if (currentSession) {
+        setSelectedSessionId(currentSession.id);
+      }
+    }
+  }, [sessions, selectedSessionId]);
 
   // Mock data for demonstration (in a real app, these would come from API calls filtered by school/session)
   const dashboardStats = {
@@ -175,7 +196,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="school-select">School</Label>
-                <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
+                <Select value={selectedSchoolId} onValueChange={setCurrentSchoolId}>
                   <SelectTrigger id="school-select">
                     <SelectValue placeholder="Select a school" />
                   </SelectTrigger>
