@@ -831,44 +831,6 @@ export type Database = {
           },
         ]
       }
-      user_school_assignments: {
-        Row: {
-          assigned_at: string
-          assigned_by: string | null
-          id: string
-          is_active: boolean
-          role: string
-          school_id: string
-          user_id: string
-        }
-        Insert: {
-          assigned_at?: string
-          assigned_by?: string | null
-          id?: string
-          is_active?: boolean
-          role?: string
-          school_id: string
-          user_id: string
-        }
-        Update: {
-          assigned_at?: string
-          assigned_by?: string | null
-          id?: string
-          is_active?: boolean
-          role?: string
-          school_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_school_assignments_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "schools"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       users_to_schools: {
         Row: {
           created_at: string | null
@@ -942,10 +904,6 @@ export type Database = {
       }
     }
     Functions: {
-      get_user_school_id: {
-        Args: { user_uuid?: string }
-        Returns: string
-      }
       user_has_permission: {
         Args: { permission_name: string }
         Returns: boolean
