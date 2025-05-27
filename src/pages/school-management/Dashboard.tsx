@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
@@ -7,15 +8,17 @@ import RecentActivity from '@/components/RecentActivity';
 import UpcomingEvents from '@/components/UpcomingEvents';
 import { getSchools, getClasses, getSessions } from '@/services/schoolManagementService';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { School, School2, GraduationCap, Calendar, ChevronRight, BookOpen, Users } from 'lucide-react';
+import { School, School2, GraduationCap, Calendar, ChevronRight, BookOpen, Users, Shield, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useUserSchool } from '@/hooks/useUserSchool';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { isSuperAdmin, isSchoolAdmin, userSchoolAssignment, loading: userLoading } = useUserSchool();
 
   const { data: schools, isLoading: isLoadingSchools } = useQuery({
     queryKey: ['dashboard-schools'],
@@ -23,6 +26,7 @@ const Dashboard = () => {
       const result = await getSchools({ pageSize: 100 });
       return result.data;
     },
+    enabled: !userLoading,
   });
 
   const { data: classes, isLoading: isLoadingClasses } = useQuery({
@@ -31,6 +35,7 @@ const Dashboard = () => {
       const result = await getClasses({ pageSize: 100 });
       return result.data;
     },
+    enabled: !userLoading,
   });
 
   const { data: sessions, isLoading: isLoadingSessions } = useQuery({
@@ -39,6 +44,7 @@ const Dashboard = () => {
       const result = await getSessions({ pageSize: 100, is_current: true });
       return result.data;
     },
+    enabled: !userLoading,
   });
 
   const activeSchools = schools?.filter(school => school.status === 'active').length || 0;
@@ -50,14 +56,70 @@ const Dashboard = () => {
     inactive: schools?.filter(school => school.status === 'inactive').length || 0,
   };
 
+  const getRoleDisplay = () => {
+    if (isSuperAdmin) {
+      return (
+        <div className="flex items-center gap-2 text-sm mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+          <Shield className="h-4 w-4 text-purple-600" />
+          <span className="font-medium text-purple-600">Super Admin</span>
+          <span className="text-purple-700">- Full system access to all schools</span>
+        </div>
+      );
+    } else if (isSchoolAdmin) {
+      return (
+        <div className="flex items-center gap-2 text-sm mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <User className="h-4 w-4 text-blue-600" />
+          <span className="font-medium text-blue-600">School Admin</span>
+          <span className="text-blue-700">- Access to assigned school only</span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getPageTitle = () => {
+    if (isSuperAdmin) {
+      return "School Management Dashboard";
+    } else if (isSchoolAdmin) {
+      return "School Dashboard";
+    }
+    return "Dashboard";
+  };
+
+  const getPageSubtitle = () => {
+    if (isSuperAdmin) {
+      return "Manage multiple schools from a central dashboard";
+    } else if (isSchoolAdmin) {
+      return "Manage your assigned school";
+    }
+    return "Loading...";
+  };
+
+  if (userLoading) {
+    return (
+      <PageTemplate title="Dashboard" subtitle="Loading...">
+        <div className="flex items-center justify-center py-10">
+          <div className="text-center">
+            <h3 className="text-lg font-medium">Loading...</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Checking your role and permissions...
+            </p>
+          </div>
+        </div>
+      </PageTemplate>
+    );
+  }
+
   return (
-    <PageTemplate title="School Management Dashboard" subtitle="Manage multiple schools from a central dashboard">
+    <PageTemplate title={getPageTitle()} subtitle={getPageSubtitle()}>
+      {getRoleDisplay()}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <StatsCard
           title="Schools"
           value={schools?.length || 0}
           icon={<School className="h-5 w-5" />}
-          description={`${activeSchools} active schools`}
+          description={isSuperAdmin ? `${activeSchools} active schools` : `${activeSchools} school${activeSchools !== 1 ? 's' : ''} available`}
           loading={isLoadingSchools}
           onClick={() => navigate('/school-management/schools')}
         />

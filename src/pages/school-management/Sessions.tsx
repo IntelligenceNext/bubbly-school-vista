@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { DatePickerWithMonthYear } from '@/components/ui/DatePickerWithMonthYear';
-import { Plus, Crown, CheckCircle, Building2 } from 'lucide-react';
+import { Plus, Crown, CheckCircle, Building2, Shield, User } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -41,7 +41,7 @@ const sessionSchema = z.object({
 type SessionFormValues = z.infer<typeof sessionSchema>;
 
 const SessionsPage = () => {
-  const { userSchoolAssignment, schoolId, loading: schoolLoading } = useUserSchool();
+  const { userSchoolAssignment, schoolId, isSuperAdmin, isSchoolAdmin, loading: schoolLoading } = useUserSchool();
   
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
@@ -70,21 +70,21 @@ const SessionsPage = () => {
   });
 
   const { data: sessionsData, isLoading, refetch } = useQuery({
-    queryKey: ['sessions', filters, page, pageSize, schoolId],
+    queryKey: ['sessions', filters, page, pageSize, schoolId, isSuperAdmin],
     queryFn: async () => {
-      if (!schoolId) {
-        console.log('No school assigned to user, skipping sessions fetch');
+      if (!isSuperAdmin && !schoolId) {
+        console.log('No school assigned to user and not super admin, skipping sessions fetch');
         return [];
       }
       
-      console.log('Fetching sessions with auto-sync for school:', schoolId);
+      console.log('Fetching sessions with auto-sync. Super admin:', isSuperAdmin, 'School ID:', schoolId);
       const sessions = await getSessions();
       console.log('Sessions fetched with synced status:', sessions);
       
       setTotal(sessions.length);
       return sessions;
     },
-    enabled: !!schoolId && !schoolLoading,
+    enabled: (isSuperAdmin || !!schoolId) && !schoolLoading,
   });
 
   const createSessionMutation = useMutation({
@@ -168,7 +168,7 @@ const SessionsPage = () => {
           <div className="text-center">
             <h3 className="text-lg font-medium">Loading...</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Checking your school assignment...
+              Checking your role and school assignment...
             </p>
           </div>
         </div>
@@ -176,7 +176,7 @@ const SessionsPage = () => {
     );
   }
 
-  if (!userSchoolAssignment || !schoolId) {
+  if (!isSuperAdmin && (!userSchoolAssignment || !schoolId)) {
     return (
       <PageTemplate title="Sessions" subtitle="No School Access">
         <div className="flex items-center justify-center py-10">
@@ -318,7 +318,7 @@ const SessionsPage = () => {
   };
 
   const handleCreateSession = () => {
-    if (!schoolId) {
+    if (!isSuperAdmin && !schoolId) {
       toast({
         title: 'Error',
         description: 'No school assigned. Cannot create session.',
@@ -327,14 +327,14 @@ const SessionsPage = () => {
       return;
     }
     
-    console.log('Opening create session dialog for school:', schoolId);
+    console.log('Opening create session dialog. Super admin:', isSuperAdmin, 'School ID:', schoolId);
     setEditingSession(null);
     form.reset({
       name: '',
       start_date: '',
       end_date: '',
       status: 'active',
-      school_id: schoolId,
+      school_id: schoolId || '',
     });
     setIsSessionDialogOpen(true);
   };
@@ -394,7 +394,7 @@ const SessionsPage = () => {
   const onSubmit = async (data: SessionFormValues) => {
     console.log('Form submitted with data:', data);
     
-    if (!schoolId) {
+    if (!isSuperAdmin && !schoolId) {
       toast({
         title: 'Error',
         description: 'No school assigned. Cannot save session.',
@@ -406,7 +406,7 @@ const SessionsPage = () => {
     try {
       const sessionData = {
         ...data,
-        school_id: schoolId,
+        school_id: data.school_id || schoolId || '',
         is_active: data.status === 'active',
       };
 
@@ -424,7 +424,7 @@ const SessionsPage = () => {
           }
         });
       } else {
-        console.log('Creating new session for school:', schoolId);
+        console.log('Creating new session for school:', sessionData.school_id);
         await createSessionMutation.mutateAsync({
           name: sessionData.name,
           start_date: sessionData.start_date,
@@ -459,11 +459,37 @@ const SessionsPage = () => {
     });
   };
   
+  const getRoleDisplay = () => {
+    if (isSuperAdmin) {
+      return (
+        <div className="flex items-center gap-2 text-sm">
+          <Shield className="h-4 w-4 text-purple-600" />
+          <span className="font-medium text-purple-600">Super Admin</span>
+          <span className="text-muted-foreground">- Full system access</span>
+        </div>
+      );
+    } else if (isSchoolAdmin) {
+      return (
+        <div className="flex items-center gap-2 text-sm">
+          <User className="h-4 w-4 text-blue-600" />
+          <span className="font-medium text-blue-600">School Admin</span>
+          <span className="text-muted-foreground">- {userSchoolAssignment?.school_id ? 'Assigned school access' : 'No school assigned'}</span>
+        </div>
+      );
+    }
+    return null;
+  };
+  
   return (
     <PageTemplate title="Sessions" subtitle="Manage sessions">
       <PageHeader
         title="Sessions"
-        description={`Create and manage sessions for your school. Sessions are automatically activated when their date range matches the current date. (Role: ${userSchoolAssignment.role})`}
+        description={
+          <div className="space-y-2">
+            <p>Create and manage sessions for {isSuperAdmin ? 'all schools' : 'your school'}. Sessions are automatically activated when their date range matches the current date.</p>
+            {getRoleDisplay()}
+          </div>
+        }
         primaryAction={{
           label: "Add Session",
           onClick: handleCreateSession,

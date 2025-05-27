@@ -837,7 +837,7 @@ export type Database = {
           assigned_by: string | null
           id: string
           is_active: boolean
-          role: string
+          role: Database["public"]["Enums"]["user_role"]
           school_id: string
           user_id: string
         }
@@ -846,7 +846,7 @@ export type Database = {
           assigned_by?: string | null
           id?: string
           is_active?: boolean
-          role?: string
+          role?: Database["public"]["Enums"]["user_role"]
           school_id: string
           user_id: string
         }
@@ -855,7 +855,7 @@ export type Database = {
           assigned_by?: string | null
           id?: string
           is_active?: boolean
-          role?: string
+          role?: Database["public"]["Enums"]["user_role"]
           school_id?: string
           user_id?: string
         }
@@ -946,13 +946,21 @@ export type Database = {
         Args: { user_uuid?: string }
         Returns: string
       }
+      is_school_admin_for_school: {
+        Args: { school_uuid: string; user_uuid?: string }
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
       user_has_permission: {
         Args: { permission_name: string }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "super_admin" | "school_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1067,6 +1075,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["super_admin", "school_admin"],
+    },
   },
 } as const

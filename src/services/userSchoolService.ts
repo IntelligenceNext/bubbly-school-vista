@@ -1,11 +1,13 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+export type UserRole = 'super_admin' | 'school_admin';
+
 export interface UserSchoolAssignment {
   id: string;
   user_id: string;
   school_id: string;
-  role: string;
+  role: UserRole;
   is_active: boolean;
   assigned_at: string;
   assigned_by?: string;
@@ -35,7 +37,7 @@ export const getUserSchoolAssignment = async (userId?: string) => {
 export const assignUserToSchool = async (
   userId: string, 
   schoolId: string, 
-  role: string = 'admin'
+  role: UserRole = 'school_admin'
 ) => {
   try {
     const { data, error } = await supabase
@@ -68,5 +70,41 @@ export const getUserAssignedSchoolId = async (): Promise<string | null> => {
   } catch (error) {
     console.error('Error getting user assigned school ID:', error);
     return null;
+  }
+};
+
+// Check if current user is super admin
+export const isSuperAdmin = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('is_super_admin');
+    
+    if (error) {
+      console.error('Error checking super admin status:', error);
+      return false;
+    }
+    
+    return data || false;
+  } catch (error) {
+    console.error('Error in isSuperAdmin:', error);
+    return false;
+  }
+};
+
+// Check if current user is school admin for a specific school
+export const isSchoolAdminForSchool = async (schoolId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('is_school_admin_for_school', {
+      school_uuid: schoolId
+    });
+    
+    if (error) {
+      console.error('Error checking school admin status:', error);
+      return false;
+    }
+    
+    return data || false;
+  } catch (error) {
+    console.error('Error in isSchoolAdminForSchool:', error);
+    return false;
   }
 };
