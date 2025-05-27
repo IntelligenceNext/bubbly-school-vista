@@ -15,6 +15,7 @@ const mediumSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().optional(),
   status: z.enum(["active", "inactive"]).default("active"),
+  school_id: z.string().optional(),
 });
 
 type MediumFormValues = z.infer<typeof mediumSchema>;
@@ -24,13 +25,17 @@ interface MediumFormProps {
   onSubmit: (data: MediumFormValues) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  userRole?: 'super_admin' | 'school_admin' | null;
+  currentSchoolId?: string | null;
 }
 
 const MediumForm: React.FC<MediumFormProps> = ({ 
   initialData, 
   onSubmit, 
   onCancel, 
-  isLoading = false 
+  isLoading = false,
+  userRole,
+  currentSchoolId
 }) => {
   const form = useForm<MediumFormValues>({
     resolver: zodResolver(mediumSchema),
@@ -38,6 +43,7 @@ const MediumForm: React.FC<MediumFormProps> = ({
       name: initialData?.name || '',
       description: initialData?.description || '',
       status: (initialData?.status as 'active' | 'inactive') || 'active',
+      school_id: initialData?.school_id || (userRole === 'school_admin' ? currentSchoolId || '' : ''),
     },
   });
 
@@ -79,6 +85,26 @@ const MediumForm: React.FC<MediumFormProps> = ({
             </FormItem>
           )}
         />
+
+        {userRole === 'super_admin' && (
+          <FormField
+            control={form.control}
+            name="school_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>School ID</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Enter school ID" 
+                    {...field} 
+                    value={field.value || ''} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         
         <FormField
           control={form.control}
