@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageTemplate from '@/components/PageTemplate';
@@ -56,7 +55,7 @@ const Dashboard = () => {
     queryFn: async () => {
       const result = await getClasses({ 
         pageSize: 100,
-        schoolId: selectedSchoolId || undefined 
+        school_id: selectedSchoolId || undefined 
       });
       return result.data;
     },
@@ -182,9 +181,9 @@ const Dashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {isLoadingSchools ? (
-                      <SelectItem value="" disabled>Loading schools...</SelectItem>
+                      <SelectItem value="loading" disabled>Loading schools...</SelectItem>
                     ) : schools.length === 0 ? (
-                      <SelectItem value="" disabled>No schools available</SelectItem>
+                      <SelectItem value="empty" disabled>No schools available</SelectItem>
                     ) : (
                       schools.map((school) => (
                         <SelectItem key={school.id} value={school.id}>
@@ -204,9 +203,9 @@ const Dashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {isLoadingSessions ? (
-                      <SelectItem value="" disabled>Loading sessions...</SelectItem>
+                      <SelectItem value="loading" disabled>Loading sessions...</SelectItem>
                     ) : sessions.length === 0 ? (
-                      <SelectItem value="" disabled>No sessions available</SelectItem>
+                      <SelectItem value="empty" disabled>No sessions available</SelectItem>
                     ) : (
                       sessions.map((session) => (
                         <SelectItem key={session.id} value={session.id}>
