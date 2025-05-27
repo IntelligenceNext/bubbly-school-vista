@@ -13,6 +13,12 @@ interface Session {
   refresh_token: string;
 }
 
+interface UserSchoolInfo {
+  currentSchoolId: string | null;
+  role: 'super_admin' | 'school_admin' | null;
+  isLoading: boolean;
+}
+
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userSession, setUserSession] = useState<Session | null>(null);
@@ -83,5 +89,50 @@ export const useAuth = () => {
     userSession,
     loading,
     logout,
+  };
+};
+
+export const useUserSchool = (): UserSchoolInfo => {
+  const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
+  const [role, setRole] = useState<'super_admin' | 'school_admin' | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchUserSchoolInfo = async () => {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Get user school assignment
+        const { data: assignment, error } = await supabase
+          .from('user_school_assignments')
+          .select('school_id, role')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user school info:', error);
+        } else if (assignment) {
+          setCurrentSchoolId(assignment.school_id);
+          setRole(assignment.role as 'super_admin' | 'school_admin');
+        }
+      } catch (error) {
+        console.error('Error in fetchUserSchoolInfo:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserSchoolInfo();
+  }, [user?.id]);
+
+  return {
+    currentSchoolId,
+    role,
+    isLoading,
   };
 };
