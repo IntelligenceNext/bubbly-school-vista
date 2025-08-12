@@ -23,7 +23,8 @@ const Settings = () => {
     website: 'www.greenwood.edu',
     primaryColor: '#3b82f6',
     secondaryColor: '#10b981',
-    logo: null as File | null
+    logo: null as File | null,
+    logoUrl: '' as string,
   });
 
   // Fetch schools for the lookup
@@ -60,6 +61,7 @@ const Settings = () => {
           website: typeof map.website === 'string' ? map.website : (map.website?.url ?? prev.website),
           primaryColor: map.colors?.primary ?? prev.primaryColor,
           secondaryColor: map.colors?.secondary ?? prev.secondaryColor,
+          logoUrl: map.logo?.url ?? prev.logoUrl,
         }));
       } catch (e) {
         console.error('Failed to load school settings:', e);
@@ -106,6 +108,7 @@ const Settings = () => {
         if (!uploadedPath) throw new Error('Logo upload failed');
         const publicUrl = getFileUrl('school_logos', uploadedPath);
         await updateSchoolSetting({ key: 'logo', value: { path: uploadedPath, url: publicUrl } }, settings.schoolId);
+        setSettings(prev => ({ ...prev, logo: null, logoUrl: publicUrl }));
       }
 
       await Promise.all([
@@ -178,6 +181,16 @@ const Settings = () => {
                 <Badge variant="secondary">
                   Logo selected: {settings.logo.name}
                 </Badge>
+              )}
+              {settings.logoUrl && (
+                <div className="mt-2">
+                  <img
+                    src={settings.logoUrl}
+                    alt={`${settings.schoolName} logo`}
+                    className="h-16 w-auto rounded-md border"
+                    loading="lazy"
+                  />
+                </div>
               )}
             </div>
           </div>
