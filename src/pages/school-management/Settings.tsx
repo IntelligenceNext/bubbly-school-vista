@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Settings as SettingsIcon, Save, Upload, Palette, Mail, Globe } from 'lucide-react';
 import { getSchools } from '@/services/schoolManagementService';
-
+import { getSchoolSettings, updateSchoolSetting } from '@/services/schoolSettingsService';
+import { uploadFile, getFileUrl } from '@/utils/storageUtils';
+import { toast } from '@/hooks/use-toast';
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState({
@@ -33,6 +35,39 @@ const Settings = () => {
     },
   });
 
+  // Initialize schoolId from localStorage
+  useEffect(() => {
+    const sid = localStorage.getItem('currentSchoolId');
+    if (sid && !settings.schoolId) {
+      setSettings(prev => ({ ...prev, schoolId: sid }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load saved settings for selected school
+  useEffect(() => {
+    const load = async () => {
+      if (!settings.schoolId) return;
+      try {
+        const data = await getSchoolSettings(settings.schoolId);
+        const map: Record<string, any> = {};
+        for (const item of data) map[item.key] = item.value;
+        setSettings(prev => ({
+          ...prev,
+          email: map.contact_info?.email ?? prev.email,
+          phone: map.contact_info?.phone ?? prev.phone,
+          address: map.contact_info?.address ?? prev.address,
+          website: typeof map.website === 'string' ? map.website : (map.website?.url ?? prev.website),
+          primaryColor: map.colors?.primary ?? prev.primaryColor,
+          secondaryColor: map.colors?.secondary ?? prev.secondaryColor,
+        }));
+      } catch (e) {
+        console.error('Failed to load school settings:', e);
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.schoolId]);
   const handleSettingChange = (key: string, value: string | File | null) => {
     setSettings(prev => {
       const newSettings = {
@@ -52,11 +87,40 @@ const Settings = () => {
     });
   };
 
-  const handleSave = () => {
-    console.log('Saving settings:', settings);
-    // Here you would typically save to your backend
-  };
+  const handleSave = async () => {
+    try {
+      if (!settings.schoolId) {
+        toast({
+          title: 'Select a school',
+          description: 'Please select a school first.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
+      // Upload logo if selected
+      if (settings.logo) {
+        const file = settings.logo as File;
+        const path = `${settings.schoolId}/logo-${Date.now()}-${file.name}`;
+        const uploadedPath = await uploadFile('school_logos', file, path);
+        if (!uploadedPath) throw new Error('Logo upload failed');
+        const publicUrl = getFileUrl('school_logos', uploadedPath);
+        await updateSchoolSetting({ key: 'logo', value: { path: uploadedPath, url: publicUrl } }, settings.schoolId);
+      }
+
+      await Promise.all([
+        updateSchoolSetting({ key: 'colors', value: { primary: settings.primaryColor, secondary: settings.secondaryColor } }, settings.schoolId),
+        updateSchoolSetting({ key: 'contact_info', value: { email: settings.email, phone: settings.phone, address: settings.address } }, settings.schoolId),
+        updateSchoolSetting({ key: 'website', value: settings.website }, settings.schoolId),
+      ]);
+
+      toast({ title: 'Settings saved', description: 'Your settings have been updated.' });
+      setSettings(prev => ({ ...prev, logo: null }));
+    } catch (e: any) {
+      console.error('Save settings failed:', e);
+      toast({ title: 'Failed to save settings', description: e?.message ?? 'Unexpected error', variant: 'destructive' });
+    }
+  };
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {

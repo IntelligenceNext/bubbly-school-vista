@@ -11,40 +11,64 @@ export interface SchoolSetting {
 
 // Get settings for a school
 export const getSchoolSettings = async (schoolId: string) => {
-  // This function intentionally returns dummy data since there's no 'school_settings' table
-  // You would replace this with actual Supabase calls once the table exists
-  return [
-    {
-      id: '1',
-      key: 'logo',
-      value: {
-        url: '/placeholder.svg',
-        alt: 'School Logo'
-      }
-    },
-    {
-      id: '2',
-      key: 'colors',
-      value: {
-        primary: '#3b82f6',
-        secondary: '#10b981'
-      }
-    },
-    {
-      id: '3',
-      key: 'contact_info',
-      value: {
-        email: 'school@example.com',
-        phone: '+1 234 567 8900',
-        address: '123 Education Ave, Learning City'
-      }
+  try {
+    const { data, error } = await supabase
+      .from('sm_settings')
+      .select('id, key, value')
+      .eq('school_id', schoolId);
+
+    if (error) {
+      console.error('Error fetching school settings:', error);
+      return [] as SchoolSetting[];
     }
-  ];
+
+    return (data || []) as SchoolSetting[];
+  } catch (err) {
+    console.error('Unexpected error fetching school settings:', err);
+    return [] as SchoolSetting[];
+  }
 };
 
-// Update a school setting
-export const updateSchoolSetting = async (setting: SchoolSetting) => {
-  // Mocked implementation - would be replaced with actual Supabase call
-  console.log('Updating school setting:', setting);
-  return setting;
+// Create or update a school setting
+export const updateSchoolSetting = async (
+  setting: SchoolSetting,
+  schoolIdParam?: string
+) => {
+  try {
+    const schoolId = schoolIdParam || localStorage.getItem('currentSchoolId');
+    if (!schoolId) {
+      throw new Error('No school selected.');
+    }
+
+    if (setting.id) {
+      const { data, error } = await supabase
+        .from('sm_settings')
+        .update({ value: setting.value })
+        .eq('id', setting.id)
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as SchoolSetting;
+    }
+
+    const { data, error } = await supabase
+      .from('sm_settings')
+      .upsert(
+        {
+          school_id: schoolId,
+          key: setting.key,
+          value: setting.value,
+        },
+        { onConflict: 'school_id,key' }
+      )
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data as SchoolSetting;
+  } catch (err) {
+    console.error('Error updating school setting:', err);
+    throw err;
+  }
 };
