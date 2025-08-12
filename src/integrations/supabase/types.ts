@@ -14,7 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      classes: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          school_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          school_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          school_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      schools: {
+        Row: {
+          address: string | null
+          admission_base_number: number
+          admission_base_padding: number
+          admission_prefix: string | null
+          code: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          enrollment_base_number: number
+          enrollment_base_padding: number
+          enrollment_prefix: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          admission_base_number?: number
+          admission_base_padding?: number
+          admission_prefix?: string | null
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          enrollment_base_number?: number
+          enrollment_base_padding?: number
+          enrollment_prefix?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          admission_base_number?: number
+          admission_base_padding?: number
+          admission_prefix?: string | null
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          enrollment_base_number?: number
+          enrollment_base_padding?: number
+          enrollment_prefix?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          is_current: boolean
+          name: string
+          school_id: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          is_current?: boolean
+          name: string
+          school_id: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          is_current?: boolean
+          name?: string
+          school_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sm_settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          school_id: string
+          updated_at: string
+          value: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          school_id: string
+          updated_at?: string
+          value?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          school_id?: string
+          updated_at?: string
+          value?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
