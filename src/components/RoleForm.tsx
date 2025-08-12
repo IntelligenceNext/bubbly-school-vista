@@ -157,21 +157,23 @@ const RoleForm: React.FC<RoleFormProps> = ({
                 return (
                   <div key={category} className="border-b last:border-b-0">
                     <Collapsible open={isExpanded}>
-                      <CollapsibleTrigger
-                        className="flex items-center justify-between w-full p-4 hover:bg-muted cursor-pointer"
-                        onClick={() => toggleCategory(category)}
-                      >
-                        <div className="flex items-center space-x-2">
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          )}
-                          <span className="font-medium">{category}</span>
-                          <span className="text-sm text-muted-foreground">
-                            ({selectedInCategory}/{totalInCategory})
-                          </span>
-                        </div>
+                      <div className="flex items-center justify-between w-full p-4 hover:bg-muted">
+                        <CollapsibleTrigger asChild>
+                          <div
+                            className="flex items-center space-x-2 cursor-pointer"
+                            onClick={() => toggleCategory(category)}
+                         >
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <span className="font-medium">{category}</span>
+                            <span className="text-sm text-muted-foreground">
+                              ({selectedInCategory}/{totalInCategory})
+                            </span>
+                          </div>
+                        </CollapsibleTrigger>
                         <Button
                           type="button"
                           variant="outline"
@@ -183,7 +185,7 @@ const RoleForm: React.FC<RoleFormProps> = ({
                         >
                           {selectedInCategory === totalInCategory ? 'Deselect All' : 'Select All'}
                         </Button>
-                      </CollapsibleTrigger>
+                      </div>
                       <CollapsibleContent>
                         <div className="bg-muted/50 p-4 grid md:grid-cols-2 lg:grid-cols-4 gap-3">
                           {sortedCategoryPermissions.map((permission) => (
