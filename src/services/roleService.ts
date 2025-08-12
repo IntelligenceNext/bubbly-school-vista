@@ -107,14 +107,13 @@ export const getRoleWithPermissions = async (roleId: string): Promise<RoleWithPe
       return null;
     }
 
-    const { data: userCountData, error: userCountError } = await supabase
-      .from('user_roles')
-      .select('id', { count: 'exact' })
+    const { count: userCount = 0, error: userCountError } = await supabase
+      .from('user_custom_roles')
+      .select('id', { count: 'exact', head: true })
       .eq('role_id', roleId);
 
     const permissionsRaw = (permissionsData || []).map((item: any) => item.permissions).filter(Boolean);
     const permissions: Permission[] = permissionsRaw.flatMap((p: any) => Array.isArray(p) ? p : [p]);
-    const userCount = (userCountData || []).length;
 
     return {
       ...roleData,
