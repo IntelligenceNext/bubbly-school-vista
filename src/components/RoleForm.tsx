@@ -53,6 +53,12 @@ const RoleForm: React.FC<RoleFormProps> = ({
     return acc;
   }, {} as Record<string, Permission[]>);
 
+  // Expand all categories by default so admins can see everything at a glance
+  useEffect(() => {
+    const allCategories = Object.keys(groupedPermissions);
+    setExpandedCategories(allCategories);
+  }, [permissions]);
+
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev =>
       prev.includes(category)
@@ -138,21 +144,31 @@ const RoleForm: React.FC<RoleFormProps> = ({
                 const selectedInCategory = categoryPermissions.filter(p => selectedPermissions.includes(p.id)).length;
                 const totalInCategory = categoryPermissions.length;
 
+                // Order actions consistently across entities
+                const actionKey = (n: string) => n.toLowerCase().split(' ')[0].replace('_', ' ');
+                const actionOrder = ['read','view','write','update','assign','assign to','append','append to'];
+                const sortedCategoryPermissions = [...categoryPermissions].sort((a, b) => {
+                  const ai = actionOrder.indexOf(actionKey(a.name));
+                  const bi = actionOrder.indexOf(actionKey(b.name));
+                  if (ai !== bi) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+                  return a.name.localeCompare(b.name);
+                });
+
                 return (
                   <div key={category} className="border-b last:border-b-0">
                     <Collapsible open={isExpanded}>
                       <CollapsibleTrigger
-                        className="flex items-center justify-between w-full p-4 hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center justify-between w-full p-4 hover:bg-muted cursor-pointer"
                         onClick={() => toggleCategory(category)}
                       >
                         <div className="flex items-center space-x-2">
                           {isExpanded ? (
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           )}
                           <span className="font-medium">{category}</span>
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-muted-foreground">
                             ({selectedInCategory}/{totalInCategory})
                           </span>
                         </div>
@@ -169,8 +185,8 @@ const RoleForm: React.FC<RoleFormProps> = ({
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <div className="bg-gray-50 p-4 grid md:grid-cols-2 gap-3">
-                          {categoryPermissions.map((permission) => (
+                        <div className="bg-muted/50 p-4 grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {sortedCategoryPermissions.map((permission) => (
                             <div key={permission.id} className="flex items-center space-x-2">
                               <Checkbox
                                 id={permission.id}
@@ -178,7 +194,7 @@ const RoleForm: React.FC<RoleFormProps> = ({
                                 onCheckedChange={() => togglePermission(permission.id)}
                               />
                               <Label htmlFor={permission.id} className="text-sm font-normal cursor-pointer">
-                                {permission.name}
+                                {permission.name.replace(/_/g, ' ')}
                               </Label>
                             </div>
                           ))}
