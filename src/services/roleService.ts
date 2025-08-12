@@ -112,12 +112,13 @@ export const getRoleWithPermissions = async (roleId: string): Promise<RoleWithPe
       .select('id', { count: 'exact' })
       .eq('role_id', roleId);
 
-    const permissions = permissionsData?.map(item => item.permissions).filter(Boolean) || [];
-    const userCount = userCountData?.length || 0;
+    const permissionsRaw = (permissionsData || []).map((item: any) => item.permissions).filter(Boolean);
+    const permissions: Permission[] = permissionsRaw.flatMap((p: any) => Array.isArray(p) ? p : [p]);
+    const userCount = (userCountData || []).length;
 
     return {
       ...roleData,
-      permissions: permissions as Permission[],
+      permissions,
       user_count: userCount
     };
   } catch (error) {

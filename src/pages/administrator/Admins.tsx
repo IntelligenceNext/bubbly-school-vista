@@ -174,16 +174,23 @@ const Admins = () => {
         }
         
         // Transform to our Administrator type
-        const formattedData: Administrator[] = (data || []).map(admin => ({
-          id: admin.id,
-          name: admin.full_name,
-          email: admin.email,
-          role: admin.roles?.name || admin.role || 'Unknown Role',
-          username: admin.username,
-          status: admin.status || 'Inactive',
-          lastLogin: admin.last_login,
-          school: admin.schools?.name || (admin.school_id ? 'Unknown School' : 'All Schools')
-        }));
+        const formattedData: Administrator[] = (data || []).map((admin: any) => {
+          const roleRel = (admin as any).roles;
+          const schoolRel = (admin as any).schools;
+          const roleName = Array.isArray(roleRel) ? roleRel[0]?.name : roleRel?.name;
+          const schoolName = Array.isArray(schoolRel) ? schoolRel[0]?.name : schoolRel?.name;
+
+          return {
+            id: admin.id,
+            name: admin.full_name,
+            email: admin.email,
+            role: roleName || admin.role || 'Unknown Role',
+            username: admin.username,
+            status: admin.status || 'Inactive',
+            lastLogin: admin.last_login,
+            school: schoolName || (admin.school_id ? 'Unknown School' : 'All Schools')
+          };
+        });
         
         setAdministrators(formattedData);
       } catch (error: any) {
