@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      administrators: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          last_login: string | null
+          phone: string | null
+          role: string
+          role_id: string | null
+          school_id: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          last_login?: string | null
+          phone?: string | null
+          role?: string
+          role_id?: string | null
+          school_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          last_login?: string | null
+          phone?: string | null
+          role?: string
+          role_id?: string | null
+          school_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "administrators_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrators_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           code: string
@@ -332,6 +395,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_school_assignments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users_to_schools: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_to_schools_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
