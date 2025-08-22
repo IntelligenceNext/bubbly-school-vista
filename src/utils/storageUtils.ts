@@ -138,3 +138,53 @@ export const listFiles = async (
     return null;
   }
 };
+
+/**
+ * Set the default school for the user
+ * @param schoolId - The school ID to set as default
+ */
+export const setDefaultSchool = (schoolId: string): void => {
+  try {
+    localStorage.setItem('defaultSchoolId', schoolId);
+    // Also update the current school if it's not set
+    if (!localStorage.getItem('currentSchoolId')) {
+      localStorage.setItem('currentSchoolId', schoolId);
+    }
+  } catch (error) {
+    console.error('Error setting default school:', error);
+  }
+};
+
+/**
+ * Get the default school ID
+ * @returns The default school ID or null if not set
+ */
+export const getDefaultSchoolId = (): string | null => {
+  try {
+    return localStorage.getItem('defaultSchoolId');
+  } catch (error) {
+    console.error('Error getting default school ID:', error);
+    return null;
+  }
+};
+
+/**
+ * Check if a school is the default school
+ * @param schoolId - The school ID to check
+ * @returns True if the school is the default school
+ */
+export const isDefaultSchool = (schoolId: string): boolean => {
+  const defaultSchoolId = getDefaultSchoolId();
+  return defaultSchoolId === schoolId;
+};
+
+/**
+ * Remove the default school setting
+ */
+export const removeDefaultSchool = (): void => {
+  try {
+    localStorage.removeItem('defaultSchoolId');
+  } catch (error) {
+    console.error('Error removing default school:', error);
+  }
+};

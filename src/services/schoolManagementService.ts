@@ -123,6 +123,7 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
     
     console.log('Query initialized for schools table');
     
+    // Apply text filters
     if (name) {
       query = query.ilike('name', `%${name}%`);
     }
@@ -145,6 +146,52 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
       query = query.lt('created_at', endDate.toISOString());
     }
 
+    // IMPORTANT: Scope visibility to user's permitted schools
+    // 1) If user is an administrator, honor their assignment
+    const { data: adminData, error: adminError } = await supabase
+      .from('administrators')
+      .select('school_id, status')
+      .eq('user_id', session.user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (adminError) {
+      console.warn('Admin check error (non-fatal):', adminError.message);
+    }
+
+    if (adminData) {
+      // Assigned to a specific school → restrict to that school
+      if (adminData.school_id) {
+        query = query.eq('id', adminData.school_id);
+      } else {
+        // Super admin (no specific school), do not restrict
+      }
+    } else {
+      // 2) Non-admins: restrict to schools assigned via users_to_schools
+      const { data: assignments, error: assignError } = await supabase
+        .from('users_to_schools')
+        .select('school_id')
+        .eq('user_id', session.user.id)
+        .eq('is_active', true);
+
+      if (assignError) {
+        console.warn('Assignment check error (non-fatal):', assignError.message);
+      }
+
+      if (assignments && assignments.length > 0) {
+        const allowedIds = assignments.map(a => a.school_id).filter(Boolean);
+        if (allowedIds.length > 0) {
+          query = query.in('id', allowedIds);
+        } else {
+          // No valid assignments → return empty result early
+          return { data: [], count: 0 };
+        }
+      } else {
+        // No admin, no assignments → likely no access per RLS
+        return { data: [], count: 0 };
+      }
+    }
+
     // Apply pagination if provided
     if (page !== undefined && pageSize !== undefined) {
       const start = (page - 1) * pageSize;
@@ -154,7 +201,7 @@ export const getSchools = async (params: GetSchoolsParams = {}): Promise<Paginat
     // Sort by created_at date, newest first
     query = query.order('created_at', { ascending: false });
     
-    console.log('Executing query:', query);
+    console.log('Executing scoped schools query');
     const { data, error, count } = await query;
     
     if (error) {

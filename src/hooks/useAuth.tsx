@@ -6,6 +6,8 @@ interface User {
   id: string;
   email: string;
   full_name?: string;
+  role?: 'administrator' | 'school_admin' | 'super_admin' | 'user';
+  isAdmin?: boolean;
 }
 
 interface Session {
@@ -24,6 +26,60 @@ export const useAuth = () => {
   const [userSession, setUserSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Function to check user role and update user object
+  const checkUserRole = async (userId: string) => {
+    try {
+      // Check if user is an administrator
+      const { data: adminData, error: adminError } = await supabase
+        .from('administrators')
+        .select('id, role, school_id, status')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
+
+      if (adminError && adminError.code !== 'PGRST116') {
+        console.error('Error checking admin status:', adminError);
+      }
+
+      if (adminData) {
+        return {
+          role: 'administrator' as const,
+          isAdmin: true,
+        };
+      }
+
+      // Check if user has school assignments
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('users_to_schools')
+        .select('school_id, role')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .single();
+
+      if (schoolError && schoolError.code !== 'PGRST116') {
+        console.error('Error checking school assignment:', schoolError);
+      }
+
+      if (schoolData) {
+        return {
+          role: schoolData.role as 'school_admin' | 'super_admin' | 'user',
+          isAdmin: false,
+        };
+      }
+
+      return {
+        role: 'user' as const,
+        isAdmin: false,
+      };
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      return {
+        role: 'user' as const,
+        isAdmin: false,
+      };
+    }
+  };
+
   useEffect(() => {
     // Get initial session
     const initializeAuth = async () => {
@@ -36,10 +92,15 @@ export const useAuth = () => {
         
         if (session?.user) {
           console.log('User data from session:', session.user);
+          
+          // Check user role
+          const roleInfo = await checkUserRole(session.user.id);
+          
           setUser({
             id: session.user.id,
             email: session.user.email || '',
             full_name: session.user.user_metadata?.full_name,
+            ...roleInfo,
           });
         }
       } catch (error) {
@@ -50,15 +111,20 @@ export const useAuth = () => {
       
       // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (_event, session) => {
+        async (_event, session) => {
           setUserSession(session);
           
           if (session?.user) {
             console.log('Auth state changed, new user data:', session.user);
+            
+            // Check user role
+            const roleInfo = await checkUserRole(session.user.id);
+            
             setUser({
               id: session.user.id,
               email: session.user.email || '',
               full_name: session.user.user_metadata?.full_name,
+              ...roleInfo,
             });
           } else {
             setUser(null);
@@ -106,19 +172,41 @@ export const useUserSchool = (): UserSchoolInfo => {
       }
 
       try {
-        // Get user school assignment
-        const { data: assignment, error } = await supabase
-          .from('user_school_assignments')
-          .select('school_id, role')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .single();
+        // If user is an admin, they might have access to all schools
+        if (user.isAdmin) {
+          // Check if admin has a specific school assignment
+          const { data: adminData, error: adminError } = await supabase
+            .from('administrators')
+            .select('school_id, role')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .single();
 
-        if (error) {
-          console.error('Error fetching user school info:', error);
-        } else if (assignment) {
-          setCurrentSchoolId(assignment.school_id);
-          setRole(assignment.role as 'super_admin' | 'school_admin');
+          if (adminError && adminError.code !== 'PGRST116') {
+            console.error('Error fetching admin school info:', adminError);
+          } else if (adminData && adminData.school_id) {
+            setCurrentSchoolId(adminData.school_id);
+            setRole(adminData.role as 'super_admin' | 'school_admin');
+          } else {
+            // Admin with access to all schools
+            setCurrentSchoolId(null);
+            setRole('super_admin');
+          }
+        } else {
+          // Regular user - get school assignment
+          const { data: assignment, error } = await supabase
+            .from('users_to_schools')
+            .select('school_id, role')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .single();
+
+          if (error) {
+            console.error('Error fetching user school info:', error);
+          } else if (assignment) {
+            setCurrentSchoolId(assignment.school_id);
+            setRole(assignment.role as 'super_admin' | 'school_admin');
+          }
         }
       } catch (error) {
         console.error('Error in fetchUserSchoolInfo:', error);
@@ -128,7 +216,7 @@ export const useUserSchool = (): UserSchoolInfo => {
     };
 
     fetchUserSchoolInfo();
-  }, [user?.id]);
+  }, [user?.id, user?.isAdmin]);
 
   return {
     currentSchoolId,

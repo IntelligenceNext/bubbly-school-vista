@@ -1,73 +1,141 @@
-# Welcome to your Lovable project
+# Bubbly School Vista
 
-## Project info
+A comprehensive school management system built with React, TypeScript, and Supabase.
 
-**URL**: https://lovable.dev/projects/6bd8a28e-2ed3-495c-bedb-77beb193df55
+## Features
 
-## How can I edit this code?
+### Default School Management
+The system now includes a powerful default school feature that allows users to:
 
-There are several ways of editing your application.
+- **Set a Default School**: Users can designate one school as their default school from the School Management Settings page
+- **Automatic School Selection**: When users log in, the system automatically selects their default school
+- **Quick Access**: A "Go to Default School" button appears in the header when users are not currently in their default school
+- **Visual Indicators**: The sidebar shows which school is currently selected and whether it's the default school
+- **Persistent Settings**: Default school preferences are saved in localStorage and persist across sessions
 
-**Use Lovable**
+### Admin Authentication System (FIXED)
+The system now includes a fully functional admin authentication system:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6bd8a28e-2ed3-495c-bedb-77beb193df55) and start prompting.
+- **Proper User Creation**: Admin users are created with both database records and Supabase authentication accounts
+- **Role-Based Access**: Different user types (admin, school_admin, super_admin) have appropriate access levels
+- **Smart Routing**: Users are automatically redirected to the appropriate dashboard based on their role
+- **Functional Admin Dashboard**: Comprehensive admin dashboard with quick actions and system monitoring
+- **Email Confirmation**: New admin accounts require email confirmation before they can log in
+- **Working Logout**: Users can properly log out and are redirected to the login page
 
-Changes made via Lovable will be committed automatically to this repo.
+#### What Was Fixed:
+1. **Admin Creation**: Now properly creates Supabase authentication users instead of just database records
+2. **Login Authentication**: Admin users can now successfully log in with their email and password
+3. **Role Detection**: System properly detects user roles and redirects accordingly
+4. **Logout Functionality**: Users can now properly log out and are redirected to login page
+5. **User Control**: Admins have full control over the system and can manage other users
 
-**Use your preferred IDE**
+#### Admin User Creation Process:
+1. **Authentication User**: Creates a Supabase authentication user with email/password
+2. **Database Record**: Creates an administrator record in the administrators table
+3. **School Assignment**: Links the admin to specific schools if applicable
+4. **Email Confirmation**: Sends confirmation email (required for first login)
+5. **Role Assignment**: Assigns appropriate role and permissions
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+#### How to Use Admin Features:
+1. **Create Admin**: Go to `/administrator/admins` → "Add Administrator" tab
+2. **Fill Details**: Enter full name, email, username, password, and role
+3. **Set School Access**: Choose specific school or "Access to All Schools"
+4. **Send Invitation**: Optionally send invitation email
+5. **Email Confirmation**: New admin must confirm email before first login
+6. **Login Access**: Admin can then log in with email/password
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+#### Troubleshooting Admin Login Issues:
+- **Email Not Confirmed**: Check email for confirmation link
+- **Invalid Credentials**: Verify email and password are correct
+- **Account Not Found**: Ensure admin was created successfully
+- **Role Issues**: Check administrator status in database
 
-Follow these steps:
+#### Benefits:
+- **Secure Authentication**: Proper Supabase authentication integration
+- **Role-Based Security**: Different access levels for different user types
+- **Centralized Management**: Easy admin user management from one interface
+- **Audit Trail**: Track admin activities and system usage
+- **Scalable**: Support for multiple admin users and schools
+- **Fully Functional**: Admin users can now log in, access dashboards, and log out properly
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+#### How to Use Default School Feature:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. **Navigate to Settings**: Go to `/school-management/settings`
+2. **Select General Tab**: The default school section is located in the General tab
+3. **Set Default School**: 
+   - View all available schools in the "Available Schools" list
+   - Click "Set as Default" next to any school to make it your default
+   - The selected school will be marked with a star icon
+4. **Remove Default School**: Click "Remove Default" to clear your default school setting
+5. **Quick Access**: Use the "Go to Default School" button in the header to quickly switch to your default school
 
-# Step 3: Install the necessary dependencies.
-npm i
+#### Benefits:
+- **Faster Access**: No need to manually select your primary school each time
+- **Improved UX**: Streamlined workflow for users who primarily work with one school
+- **Flexibility**: Easy to change default school or work with multiple schools
+- **Visual Feedback**: Clear indicators show current school status and default school
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## Getting Started
+
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Supabase account and project
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd bubbly-school-vista
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Fill in your Supabase credentials
+```
+
+4. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Project Structure
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+src/
+├── components/          # Reusable UI components
+├── contexts/           # React contexts (including CurrentSchoolContext)
+├── hooks/              # Custom React hooks
+├── pages/              # Page components
+├── services/           # API service functions
+├── types/              # TypeScript type definitions
+├── utils/              # Utility functions (including storageUtils)
+└── integrations/       # External service integrations
+```
 
-**Use GitHub Codespaces**
+## Key Components
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **CurrentSchoolContext**: Manages the currently selected school and default school logic
+- **Settings Page**: Provides interface for managing default school preferences
+- **Header**: Shows "Go to Default School" button when applicable
+- **Sidebar**: Displays current school information and default school status
 
-## What technologies are used for this project?
+## Contributing
 
-This project is built with:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## License
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/6bd8a28e-2ed3-495c-bedb-77beb193df55) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License.
