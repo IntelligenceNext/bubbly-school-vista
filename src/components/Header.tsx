@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Search, Menu, Settings, User, LogOut, UserCog, FileText, Calendar, Shield, Key, Moon, Sun, History, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Bell, Search, Menu, Settings, User, LogOut, UserCog, FileText, Calendar, Shield, Key, Moon, Sun, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -15,10 +15,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { useCurrentSchool } from '@/contexts/CurrentSchoolContext';
-import { getDefaultSchoolId, isDefaultSchool } from '@/utils/storageUtils';
-import { getSchoolById } from '@/services/schoolManagementService';
-import { toast } from '@/hooks/use-toast';
 
 interface HeaderProps {
   setIsSidebarOpen: (open: boolean) => void;
@@ -27,78 +23,17 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const { user, logout } = useAuth();
-  const { currentSchoolId, setCurrentSchoolId } = useCurrentSchool();
-  const navigate = useNavigate();
-  const [defaultSchoolName, setDefaultSchoolName] = useState<string>('');
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   const handleLogout = async () => {
-    try {
-      const { success } = await logout();
-      if (success) {
-        // Clear any stored data
-        localStorage.removeItem('currentSchoolId');
-        localStorage.removeItem('defaultSchoolId');
-        
-        // Redirect to login page
-        navigate('/auth/login');
-        
-        // Show success message
-        toast({
-          title: 'Logged out successfully',
-          description: 'You have been logged out of the system.',
-        });
-      } else {
-        toast({
-          title: 'Logout failed',
-          description: 'There was an error logging out. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast({
-        title: 'Logout failed',
-        description: 'There was an error logging out. Please try again.',
-        variant: 'destructive',
-      });
+    const { success } = await logout();
+    if (success) {
+      // Will be handled by auth state change in useAuth
     }
   };
-
-  const handleGoToDefaultSchool = () => {
-    const defaultSchoolId = getDefaultSchoolId();
-    if (defaultSchoolId && defaultSchoolId !== currentSchoolId) {
-      setCurrentSchoolId(defaultSchoolId);
-      navigate('/school/dashboard');
-    }
-  };
-
-  // Check if current school is the default school
-  const isCurrentSchoolDefault = currentSchoolId ? isDefaultSchool(currentSchoolId) : false;
-  const hasDefaultSchool = getDefaultSchoolId() !== null;
-
-  // Fetch default school name
-  useEffect(() => {
-    const fetchDefaultSchoolName = async () => {
-      const defaultSchoolId = getDefaultSchoolId();
-      if (defaultSchoolId) {
-        try {
-          const school = await getSchoolById(defaultSchoolId);
-          if (school) {
-            setDefaultSchoolName(school.name);
-          }
-        } catch (error) {
-          console.error('Failed to fetch default school name:', error);
-          setDefaultSchoolName('Default School');
-        }
-      }
-    };
-
-    fetchDefaultSchoolName();
-  }, []);
 
   // Extract initials for avatar fallback
   const getInitials = () => {
@@ -131,19 +66,6 @@ const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
           className="bg-transparent border-none outline-none text-sm flex-1"
         />
       </div>
-
-      {/* Default School Button */}
-      {hasDefaultSchool && !isCurrentSchoolDefault && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleGoToDefaultSchool}
-          className="hidden md:flex items-center space-x-2 text-sm"
-        >
-          <Star className="h-4 w-4 text-yellow-500" />
-          <span>Go to {defaultSchoolName || 'Default School'}</span>
-        </Button>
-      )}
 
       <div className="flex items-center gap-3">
         <div className="relative">

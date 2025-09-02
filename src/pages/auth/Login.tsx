@@ -44,88 +44,23 @@ const Login = () => {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
       
       if (error) throw error;
       
-      if (authData.user) {
-        // Check if user is an administrator
-        const { data: adminData, error: adminError } = await supabase
-          .from('administrators')
-          .select('id, role, school_id, status')
-          .eq('user_id', authData.user.id)
-          .eq('status', 'active')
-          .single();
-
-        if (adminError && adminError.code !== 'PGRST116') {
-          console.error('Error checking admin status:', adminError);
-        }
-
-        if (adminData) {
-          // User is an administrator
-          toast({
-            title: 'Login successful',
-            description: 'Welcome back to the administration panel.',
-          });
-          
-          // Redirect to admin dashboard
-          navigate('/administrator/dashboard');
-        } else {
-          // Check if user has school assignments
-          const { data: schoolData, error: schoolError } = await supabase
-            .from('users_to_schools')
-            .select('school_id, role')
-            .eq('user_id', authData.user.id)
-            .eq('is_active', true)
-            .single();
-
-          if (schoolError && schoolError.code !== 'PGRST116') {
-            console.error('Error checking school assignment:', schoolError);
-          }
-
-          if (schoolData) {
-            // User has school access
-            toast({
-              title: 'Login successful',
-              description: 'Welcome back to the school management system.',
-            });
-            
-            // Redirect to school dashboard
-            navigate('/school/dashboard');
-          } else {
-            // Regular user or no specific role
-            toast({
-              title: 'Login successful',
-              description: 'Welcome back to the system.',
-            });
-            
-            // Redirect to main dashboard
-            navigate('/school-management/dashboard');
-          }
-        }
-      }
+      toast({
+        title: 'Login successful',
+        description: 'Welcome back to the administration panel.',
+      });
+      
+      navigate('/administrator/dashboard');
     } catch (error: any) {
-      console.error('Login error:', error);
-      
-      let errorMessage = 'Please check your credentials and try again.';
-      
-      // Handle specific error cases
-      if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = 'Invalid email or password. Please check your credentials.';
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = 'Please check your email and click the confirmation link before logging in.';
-      } else if (error.message?.includes('Too many requests')) {
-        errorMessage = 'Too many login attempts. Please wait a moment before trying again.';
-      } else if (error.message?.includes('User not found')) {
-        errorMessage = 'No account found with this email address.';
-      }
-      
       toast({
         title: 'Login failed',
-        description: errorMessage,
+        description: error.message || 'Please check your credentials and try again.',
         variant: 'destructive',
       });
     } finally {

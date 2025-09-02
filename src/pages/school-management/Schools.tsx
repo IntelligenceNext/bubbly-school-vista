@@ -19,7 +19,6 @@ import { toast } from '@/hooks/use-toast';
 import { School, getSchools, createSchool, updateSchool, deleteSchool } from '@/services/schoolManagementService';
 import SchoolForm from '@/components/SchoolForm';
 import DeleteConfirmationDialog from '@/components/common/DeleteConfirmationDialog';
-import { useAuth } from '@/hooks/useAuth';
 
 const Schools = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,12 +27,11 @@ const Schools = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
 
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // Fetch schools
   const { data: schoolsResponse, isLoading, error } = useQuery({
-    queryKey: ['schools', user?.id ?? 'anonymous', searchTerm],
+    queryKey: ['schools', searchTerm],
     queryFn: () => getSchools({ 
       page: 1, 
       pageSize: 100,

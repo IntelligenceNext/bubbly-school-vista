@@ -1,15 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   ChevronDown, ChevronRight, Menu, X, Home, Settings, Users, BookOpen, UserCheck, 
-  DollarSign, Award, Truck, Activity, Landmark, BookOpen as Book, LifeBuoy, Library, Star 
+  DollarSign, Award, Truck, Activity, Landmark, BookOpen as Book, LifeBuoy, Library 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCurrentSchool } from '@/contexts/CurrentSchoolContext';
-import { getDefaultSchoolId, isDefaultSchool } from '@/utils/storageUtils';
-import { Badge } from '@/components/ui/badge';
-import { getSchoolById } from '@/services/schoolManagementService';
 
 interface NavItemProps {
   title: string;
@@ -95,31 +91,6 @@ interface SidebarNavigationProps {
 const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigationProps) => {
   const location = useLocation();
   const currentPath = location.pathname;
-  const { currentSchoolId } = useCurrentSchool();
-  const defaultSchoolId = getDefaultSchoolId();
-  const isCurrentSchoolDefault = currentSchoolId ? isDefaultSchool(currentSchoolId) : false;
-  const [currentSchoolName, setCurrentSchoolName] = useState<string>('');
-
-  // Fetch current school name
-  useEffect(() => {
-    const fetchSchoolName = async () => {
-      if (currentSchoolId) {
-        try {
-          const school = await getSchoolById(currentSchoolId);
-          if (school) {
-            setCurrentSchoolName(school.name);
-          }
-        } catch (error) {
-          console.error('Failed to fetch school name:', error);
-          setCurrentSchoolName('Unknown School');
-        }
-      } else {
-        setCurrentSchoolName('');
-      }
-    };
-
-    fetchSchoolName();
-  }, [currentSchoolId]);
 
   return (
     <aside 
@@ -142,34 +113,6 @@ const SidebarNavigation = ({ isSidebarOpen, setIsSidebarOpen }: SidebarNavigatio
           <X size={20} />
         </button>
       </div>
-
-      {/* Current School Indicator */}
-      {currentSchoolId && (
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {isCurrentSchoolDefault ? (
-                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-              ) : (
-                <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {currentSchoolName || 'Loading...'}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {isCurrentSchoolDefault ? 'Default School' : 'Selected School'}
-                </p>
-              </div>
-            </div>
-            {isCurrentSchoolDefault && (
-              <Badge variant="secondary" className="text-xs">
-                Default
-              </Badge>
-            )}
-          </div>
-        </div>
-      )}
       
       <div className="flex-1 px-3 py-4 overflow-y-auto">
         <nav>

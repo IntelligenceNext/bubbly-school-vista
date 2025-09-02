@@ -3,9 +3,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CurrentSchoolProvider } from "@/contexts/CurrentSchoolContext";
-import { TenantProvider } from "@/contexts/TenantContext";
-import { ProtectedRoute } from "@/components/common/ProtectedRoute";
-import { TenantSelectionPage } from "@/components/common/TenantSelector";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -130,82 +127,32 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CurrentSchoolProvider>
-        <TenantProvider>
-          <TooltipProvider>
-            <Toaster />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                
-                {/* Auth Routes */}
-                <Route path="/auth/login" element={<Login />} />
-                <Route path="/auth/register" element={<Register />} />
-                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                <Route path="/auth/select-tenant" element={<TenantSelectionPage />} />
+        <TooltipProvider>
+          <Toaster />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              
+              {/* Auth Routes */}
+              <Route path="/auth/login" element={<Login />} />
+              <Route path="/auth/register" element={<Register />} />
+              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
               
               {/* Profile Routes */}
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile/settings" element={
-                <ProtectedRoute>
-                  <ProfileSettings />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile/security" element={
-                <ProtectedRoute>
-                  <SecurityPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile/documents" element={
-                <ProtectedRoute>
-                  <DocumentsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile/attendance" element={
-                <ProtectedRoute>
-                  <AttendancePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile/permissions" element={
-                <ProtectedRoute>
-                  <PermissionsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile/activity" element={
-                <ProtectedRoute>
-                  <ActivityPage />
-                </ProtectedRoute>
-              } />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/settings" element={<ProfileSettings />} />
+              <Route path="/profile/security" element={<SecurityPage />} />
+              <Route path="/profile/documents" element={<DocumentsPage />} />
+              <Route path="/profile/attendance" element={<AttendancePage />} />
+              <Route path="/profile/permissions" element={<PermissionsPage />} />
+              <Route path="/profile/activity" element={<ActivityPage />} />
               
               {/* School Management Routes */}
-              <Route path="/school-management/dashboard" element={
-                <ProtectedRoute requiredModule="administration">
-                  <SchoolDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/school-management/schools" element={
-                <ProtectedRoute requiredPermission={{ resource: 'system.schools', action: 'manage' }}>
-                  <Schools />
-                </ProtectedRoute>
-              } />
-              <Route path="/school-management/classes" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.classes', action: 'manage' }}>
-                  <Classes />
-                </ProtectedRoute>
-              } />
-              <Route path="/school-management/sessions" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.sessions', action: 'manage' }}>
-                  <Sessions />
-                </ProtectedRoute>
-              } />
-              <Route path="/school-management/settings" element={
-                <ProtectedRoute requiredPermission={{ resource: 'system.settings', action: 'manage' }}>
-                  <SchoolManagementSettings />
-                </ProtectedRoute>
-              } />
+              <Route path="/school-management/dashboard" element={<SchoolDashboard />} />
+              <Route path="/school-management/schools" element={<Schools />} />
+              <Route path="/school-management/classes" element={<Classes />} />
+              <Route path="/school-management/sessions" element={<Sessions />} />
+              <Route path="/school-management/settings" element={<SchoolManagementSettings />} />
               
               {/* School Routes */}
               <Route path="/school/dashboard" element={<SchoolHome />} />
@@ -215,351 +162,91 @@ function App() {
               <Route path="/school/logs" element={<Logs />} />
               
               {/* Academic Routes */}
-              <Route path="/academic/dashboard" element={
-                <ProtectedRoute requiredModule="academic">
-                  <AcademicDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/class-sections" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.classes', action: 'manage' }}>
-                  <ClassSections />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/medium" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.settings', action: 'manage' }}>
-                  <Medium />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/student-type" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.settings', action: 'manage' }}>
-                  <StudentType />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/subjects" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.subjects', action: 'manage' }}>
-                  <Subjects />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/class-time-table" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.timetable', action: 'manage' }}>
-                  <ClassTimeTable />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/attendance" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.attendance', action: 'manage' }}>
-                  <Attendance />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/student-leaves" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.leaves', action: 'manage' }}>
-                  <StudentLeaves />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/study-materials" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.materials', action: 'read' }}>
-                  <StudyMaterials />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/homework" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.homework', action: 'manage' }}>
-                  <Homework />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/noticeboard" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.noticeboard', action: 'manage' }}>
-                  <Noticeboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/event" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.events', action: 'manage' }}>
-                  <Event />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/live-classes" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.live_classes', action: 'manage' }}>
-                  <LiveClasses />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/staff-ratting" element={
-                <ProtectedRoute requiredPermission={{ resource: 'staff.ratings', action: 'manage' }}>
-                  <StaffRatting />
-                </ProtectedRoute>
-              } />
-              <Route path="/academic/student-birthdays" element={
-                <ProtectedRoute requiredPermission={{ resource: 'students.birthdays', action: 'read' }}>
-                  <StudentBirthdays />
-                </ProtectedRoute>
-              } />
+              <Route path="/academic/dashboard" element={<AcademicDashboard />} />
+              <Route path="/academic/class-sections" element={<ClassSections />} />
+              <Route path="/academic/medium" element={<Medium />} />
+              <Route path="/academic/student-type" element={<StudentType />} />
+              <Route path="/academic/subjects" element={<Subjects />} />
+              <Route path="/academic/class-time-table" element={<ClassTimeTable />} />
+              <Route path="/academic/attendance" element={<Attendance />} />
+              <Route path="/academic/student-leaves" element={<StudentLeaves />} />
+              <Route path="/academic/study-materials" element={<StudyMaterials />} />
+              <Route path="/academic/homework" element={<Homework />} />
+              <Route path="/academic/noticeboard" element={<Noticeboard />} />
+              <Route path="/academic/event" element={<Event />} />
+              <Route path="/academic/live-classes" element={<LiveClasses />} />
+              <Route path="/academic/staff-ratting" element={<StaffRatting />} />
+              <Route path="/academic/student-birthdays" element={<StudentBirthdays />} />
               
               {/* Student Routes */}
-              <Route path="/student/dashboard" element={
-                <ProtectedRoute requiredModule="student_management">
-                  <StudentDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/admission" element={
-                <ProtectedRoute requiredPermission={{ resource: 'students.admissions', action: 'manage' }}>
-                  <Admission />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/students" element={
-                <ProtectedRoute requiredPermission={{ resource: 'students', action: 'read' }}>
-                  <Students />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/id-cards" element={
-                <ProtectedRoute requiredPermission={{ resource: 'students.id_cards', action: 'manage' }}>
-                  <IDCards />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/promote" element={
-                <ProtectedRoute requiredPermission={{ resource: 'students.promotion', action: 'manage' }}>
-                  <Promote />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/transfer-student" element={
-                <ProtectedRoute requiredPermission={{ resource: 'students.transfer', action: 'manage' }}>
-                  <TransferStudent />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/certificates" element={
-                <ProtectedRoute requiredPermission={{ resource: 'students.certificates', action: 'manage' }}>
-                  <Certificates />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/notifications" element={
-                <ProtectedRoute requiredPermission={{ resource: 'students.notifications', action: 'manage' }}>
-                  <Notifications />
-                </ProtectedRoute>
-              } />
+              <Route path="/student/dashboard" element={<StudentDashboard />} />
+              <Route path="/student/admission" element={<Admission />} />
+              <Route path="/student/students" element={<Students />} />
+              <Route path="/student/id-cards" element={<IDCards />} />
+              <Route path="/student/promote" element={<Promote />} />
+              <Route path="/student/transfer-student" element={<TransferStudent />} />
+              <Route path="/student/certificates" element={<Certificates />} />
+              <Route path="/student/notifications" element={<Notifications />} />
               
               {/* Administrator Routes */}
-              <Route path="/administrator/dashboard" element={
-                <ProtectedRoute requiredModule="staff_management">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/administrator/admins" element={
-                <ProtectedRoute requiredPermission={{ resource: 'system.users', action: 'manage' }}>
-                  <Admins />
-                </ProtectedRoute>
-              } />
-              <Route path="/administrator/roles" element={
-                <ProtectedRoute requiredPermission={{ resource: 'system.roles', action: 'manage' }}>
-                  <Roles />
-                </ProtectedRoute>
-              } />
-              <Route path="/administrator/staff-list" element={
-                <ProtectedRoute requiredPermission={{ resource: 'staff', action: 'read' }}>
-                  <StaffList />
-                </ProtectedRoute>
-              } />
-              <Route path="/administrator/staff-attendance" element={
-                <ProtectedRoute requiredPermission={{ resource: 'staff.attendance', action: 'manage' }}>
-                  <StaffAttendance />
-                </ProtectedRoute>
-              } />
-              <Route path="/administrator/staff-leaves" element={
-                <ProtectedRoute requiredPermission={{ resource: 'staff.leaves', action: 'manage' }}>
-                  <StaffLeaves />
-                </ProtectedRoute>
-              } />
+              <Route path="/administrator/dashboard" element={<AdminDashboard />} />
+              <Route path="/administrator/admins" element={<Admins />} />
+              <Route path="/administrator/roles" element={<Roles />} />
+              <Route path="/administrator/staff-list" element={<StaffList />} />
+              <Route path="/administrator/staff-attendance" element={<StaffAttendance />} />
+              <Route path="/administrator/staff-leaves" element={<StaffLeaves />} />
               
               {/* Accounting Routes */}
-              <Route path="/accounting/dashboard" element={
-                <ProtectedRoute requiredModule="accounting">
-                  <AccountingDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/accounting/income" element={
-                <ProtectedRoute requiredPermission={{ resource: 'accounting.income', action: 'manage' }}>
-                  <Income />
-                </ProtectedRoute>
-              } />
-              <Route path="/accounting/expenses" element={
-                <ProtectedRoute requiredPermission={{ resource: 'accounting.expenses', action: 'manage' }}>
-                  <Expenses />
-                </ProtectedRoute>
-              } />
-              <Route path="/accounting/fee-invoices" element={
-                <ProtectedRoute requiredPermission={{ resource: 'accounting.invoices', action: 'manage' }}>
-                  <FeeInvoices />
-                </ProtectedRoute>
-              } />
-              <Route path="/accounting/collect-payments" element={
-                <ProtectedRoute requiredPermission={{ resource: 'accounting.payments', action: 'manage' }}>
-                  <CollectPayments />
-                </ProtectedRoute>
-              } />
-              <Route path="/accounting/fee-types" element={
-                <ProtectedRoute requiredPermission={{ resource: 'accounting.fee_types', action: 'manage' }}>
-                  <FeeTypes />
-                </ProtectedRoute>
-              } />
-              <Route path="/accounting/bulk-invoice-prints" element={
-                <ProtectedRoute requiredPermission={{ resource: 'accounting.reports', action: 'export' }}>
-                  <BulkInvoicePrints />
-                </ProtectedRoute>
-              } />
-              <Route path="/accounting/invoices-report" element={
-                <ProtectedRoute requiredPermission={{ resource: 'accounting.reports', action: 'read' }}>
-                  <InvoicesReport />
-                </ProtectedRoute>
-              } />
+              <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
+              <Route path="/accounting/income" element={<Income />} />
+              <Route path="/accounting/expenses" element={<Expenses />} />
+              <Route path="/accounting/fee-invoices" element={<FeeInvoices />} />
+              <Route path="/accounting/collect-payments" element={<CollectPayments />} />
+              <Route path="/accounting/fee-types" element={<FeeTypes />} />
+              <Route path="/accounting/bulk-invoice-prints" element={<BulkInvoicePrints />} />
+              <Route path="/accounting/invoices-report" element={<InvoicesReport />} />
               
               {/* Examination Routes */}
-              <Route path="/examination/dashboard" element={
-                <ProtectedRoute requiredModule="examination">
-                  <ExaminationDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/examination/manage-exams" element={
-                <ProtectedRoute requiredPermission={{ resource: 'examination.exams', action: 'manage' }}>
-                  <ManageExams />
-                </ProtectedRoute>
-              } />
-              <Route path="/examination/manage-groups" element={
-                <ProtectedRoute requiredPermission={{ resource: 'examination.groups', action: 'manage' }}>
-                  <ManageGroups />
-                </ProtectedRoute>
-              } />
-              <Route path="/examination/admit-cards" element={
-                <ProtectedRoute requiredPermission={{ resource: 'examination.admit_cards', action: 'manage' }}>
-                  <AdmitCards />
-                </ProtectedRoute>
-              } />
-              <Route path="/examination/admit-cards-bulk-print" element={
-                <ProtectedRoute requiredPermission={{ resource: 'examination.reports', action: 'export' }}>
-                  <AdmitCardsBulkPrint />
-                </ProtectedRoute>
-              } />
-              <Route path="/examination/exam-results" element={
-                <ProtectedRoute requiredPermission={{ resource: 'examination.results', action: 'manage' }}>
-                  <ExamResults />
-                </ProtectedRoute>
-              } />
-              <Route path="/examination/bulk-print-results" element={
-                <ProtectedRoute requiredPermission={{ resource: 'examination.reports', action: 'export' }}>
-                  <BulkPrintResults />
-                </ProtectedRoute>
-              } />
-              <Route path="/examination/academic-report" element={
-                <ProtectedRoute requiredPermission={{ resource: 'examination.reports', action: 'read' }}>
-                  <AcademicReport />
-                </ProtectedRoute>
-              } />
+              <Route path="/examination/dashboard" element={<ExaminationDashboard />} />
+              <Route path="/examination/manage-exams" element={<ManageExams />} />
+              <Route path="/examination/manage-groups" element={<ManageGroups />} />
+              <Route path="/examination/admit-cards" element={<AdmitCards />} />
+              <Route path="/examination/admit-cards-bulk-print" element={<AdmitCardsBulkPrint />} />
+              <Route path="/examination/exam-results" element={<ExamResults />} />
+              <Route path="/examination/bulk-print-results" element={<BulkPrintResults />} />
+              <Route path="/examination/academic-report" element={<AcademicReport />} />
               
               {/* Transportation Routes */}
-              <Route path="/transportation/dashboard" element={
-                <ProtectedRoute requiredModule="transportation">
-                  <TransportationDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/transportation/vehicles" element={
-                <ProtectedRoute requiredPermission={{ resource: 'transportation.vehicles', action: 'manage' }}>
-                  <Vehicles />
-                </ProtectedRoute>
-              } />
-              <Route path="/transportation/routes" element={
-                <ProtectedRoute requiredPermission={{ resource: 'transportation.routes', action: 'manage' }}>
-                  <TransportRoutes />
-                </ProtectedRoute>
-              } />
-              <Route path="/transportation/report" element={
-                <ProtectedRoute requiredPermission={{ resource: 'transportation.reports', action: 'read' }}>
-                  <Report />
-                </ProtectedRoute>
-              } />
+              <Route path="/transportation/dashboard" element={<TransportationDashboard />} />
+              <Route path="/transportation/vehicles" element={<Vehicles />} />
+              <Route path="/transportation/routes" element={<TransportRoutes />} /> {/* Updated to TransportRoutes */}
+              <Route path="/transportation/report" element={<Report />} />
               
               {/* Activities Routes */}
-              <Route path="/activities/dashboard" element={
-                <ProtectedRoute requiredModule="activities">
-                  <ActivitiesDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/activities" element={
-                <ProtectedRoute requiredPermission={{ resource: 'activities', action: 'read' }}>
-                  <ActivitiesList />
-                </ProtectedRoute>
-              } />
-              <Route path="/activities/categories" element={
-                <ProtectedRoute requiredPermission={{ resource: 'activities.categories', action: 'manage' }}>
-                  <Categories />
-                </ProtectedRoute>
-              } />
-              <Route path="/activities/participation" element={
-                <ProtectedRoute requiredPermission={{ resource: 'activities.participation', action: 'manage' }}>
-                  <Participation />
-                </ProtectedRoute>
-              } />
-              <Route path="/activities/reports" element={
-                <ProtectedRoute requiredPermission={{ resource: 'activities.reports', action: 'read' }}>
-                  <Reports />
-                </ProtectedRoute>
-              } />
+              <Route path="/activities/dashboard" element={<ActivitiesDashboard />} />
+              <Route path="/activities" element={<ActivitiesList />} />
+              <Route path="/activities/categories" element={<Categories />} />
+              <Route path="/activities/participation" element={<Participation />} />
+              <Route path="/activities/reports" element={<Reports />} />
               
               {/* Hostel Routes */}
-              <Route path="/hostel/dashboard" element={
-                <ProtectedRoute requiredModule="hostel">
-                  <HostelDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/hostel/hostels" element={
-                <ProtectedRoute requiredPermission={{ resource: 'hostel.hostels', action: 'manage' }}>
-                  <Hostels />
-                </ProtectedRoute>
-              } />
-              <Route path="/hostel/rooms" element={
-                <ProtectedRoute requiredPermission={{ resource: 'hostel.rooms', action: 'manage' }}>
-                  <Rooms />
-                </ProtectedRoute>
-              } />
+              <Route path="/hostel/dashboard" element={<HostelDashboard />} />
+              <Route path="/hostel/hostels" element={<Hostels />} />
+              <Route path="/hostel/rooms" element={<Rooms />} />
               
               {/* Lessons Routes */}
-              <Route path="/lessons" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.lessons', action: 'read' }}>
-                  <Lessons />
-                </ProtectedRoute>
-              } />
-              <Route path="/lessons/chapters" element={
-                <ProtectedRoute requiredPermission={{ resource: 'academic.chapters', action: 'manage' }}>
-                  <Chapters />
-                </ProtectedRoute>
-              } />
+              <Route path="/lessons" element={<Lessons />} />
+              <Route path="/lessons/chapters" element={<Chapters />} />
               
               {/* Tickets Routes */}
-              <Route path="/tickets/dashboard" element={
-                <ProtectedRoute requiredModule="tickets">
-                  <TicketsDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/tickets/tickets" element={
-                <ProtectedRoute requiredPermission={{ resource: 'tickets', action: 'manage' }}>
-                  <Tickets />
-                </ProtectedRoute>
-              } />
+              <Route path="/tickets/dashboard" element={<TicketsDashboard />} />
+              <Route path="/tickets/tickets" element={<Tickets />} />
               
               {/* Library Routes */}
-              <Route path="/library/dashboard" element={
-                <ProtectedRoute requiredModule="library">
-                  <LibraryDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/library/all-books" element={
-                <ProtectedRoute requiredPermission={{ resource: 'library.books', action: 'read' }}>
-                  <AllBooks />
-                </ProtectedRoute>
-              } />
-              <Route path="/library/books-issued" element={
-                <ProtectedRoute requiredPermission={{ resource: 'library.issued_books', action: 'manage' }}>
-                  <BooksIssued />
-                </ProtectedRoute>
-              } />
-              <Route path="/library/library-cards" element={
-                <ProtectedRoute requiredPermission={{ resource: 'library.cards', action: 'manage' }}>
-                  <LibraryCards />
-                </ProtectedRoute>
-              } />
+              <Route path="/library/dashboard" element={<LibraryDashboard />} />
+              <Route path="/library/all-books" element={<AllBooks />} />
+              <Route path="/library/books-issued" element={<BooksIssued />} />
+              <Route path="/library/library-cards" element={<LibraryCards />} />
               
               {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />
